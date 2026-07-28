@@ -17,7 +17,38 @@ export enum ModalName {
   SetupWizard = 'setupWizard',
 }
 
+export interface RecentProject {
+  name: string
+  lastOpenedAt: number
+  jsonContent?: string
+}
+
+const RECENT_KEY = 'moy.asr.recent.projects'
+const MAX_RECENT = 10
+
 export const useUiStore = defineStore('ui', () => {
+  const recentProjects = ref<RecentProject[]>(loadRecentProjects())
+
+  function loadRecentProjects(): RecentProject[] {
+    try {
+      return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]')
+    } catch { return [] }
+  }
+
+  function saveRecentProjects() {
+    try {
+      localStorage.setItem(RECENT_KEY, JSON.stringify(recentProjects.value))
+    } catch { /* ignore */ }
+  }
+
+  function addRecentProject(name: string, jsonContent?: string) {
+    const existing = recentProjects.value.findIndex((p) => p.name === name)
+    if (existing >= 0) recentProjects.value.splice(existing, 1)
+    recentProjects.value.unshift({ name, lastOpenedAt: Date.now(), jsonContent })
+    if (recentProjects.value.length > MAX_RECENT) recentProjects.value.pop()
+    saveRecentProjects()
+  }
+
   // ===== 模态框 =====
   const openModals = ref<Set<ModalName>>(new Set())
 
@@ -61,6 +92,11 @@ export const useUiStore = defineStore('ui', () => {
     if (dragCounter.value === 0) dragOverlayVisible.value = false
   }
 
+  function resetDrag() {
+    dragCounter.value = 0
+    dragOverlayVisible.value = false
+  }
+
   // ===== 提示消息 =====
   const flashMessage = ref('')
   let flashTimeout: ReturnType<typeof setTimeout> | null = null
@@ -89,10 +125,13 @@ export const useUiStore = defineStore('ui', () => {
   function setInterceptedPlayerSpace(value: boolean) { interceptedPlayerSpace.value = value }
 
   return {
+    // Recent projects
+    recentProjects, addRecentProject,
+    // Modals
     openModals, openModal, closeModal, toggleModal, isModalOpen,
     contextMenuVisible, contextMenuX, contextMenuY, contextMenuItems,
     showContextMenu, hideContextMenu,
-    dragOverlayVisible, dragCounter, incrementDrag, decrementDrag,
+    dragOverlayVisible, dragCounter, incrementDrag, decrementDrag, resetDrag,
     flashMessage, flash,
     searchQuery, filterOverOnly, setSearchQuery, setFilterOverOnly,
     playerFocused, interceptedPlayerSpace, setPlayerFocused, setInterceptedPlayerSpace,

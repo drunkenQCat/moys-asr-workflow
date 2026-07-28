@@ -2,15 +2,39 @@
 
 import { normalizeLanguage } from './language-map.js'
 import { stripTrailingPunctuation } from './punctuation.js'
+import { splitWordsToSegments } from './segment-split.js'
+import { ensureAudioFile } from './audio-extract.js'
 
-const DASHSCOPE_BASE_URL = 'https://dashscope.aliyuncs.com'
 const FILETRANS_MODEL = 'qwen3-asr-flash-filetrans'
 
 export interface AsrConfig {
   apiKey: string
   language?: string
   model?: string
+  /** 百炼工作空间 ID，设置后 baseUrl 变为 https://{workspaceId}.cn-beijing.maas.aliyuncs.com */
+  workspaceId?: string
 }
+
+/**
+ * 计算 DashScope API base URL。
+ * dev 模式下走 Vite proxy（/dashscope → dashscope.aliyuncs.com）绕过 CORS。
+ * 百炼用户：https://{workspaceId}.cn-beijing.maas.aliyuncs.com
+ * 标准用户：https://dashscope.aliyuncs.com
+ */
+export function computeBaseUrl(workspaceId?: string): string {
+  if (import.meta.env.DEV) return '/dashscope'
+  if (workspaceId && workspaceId.trim()) {
+    return `https://${workspaceId.trim()}.cn-beijing.maas.aliyuncs.com`
+  }
+  return 'https://dashscope.aliyuncs.com'
+}
+
+/**
+ * 上传凭证端点始终使用 dashscope.aliyuncs.com，
+ * 百炼 workspace 域名上不提供 /api/v1/uploads 端点。
+ * dev 模式下走 Vite proxy。
+ */
+const UPLOAD_BASE_URL = import.meta.env.DEV ? '/dashscope' : 'https://dashscope.aliyuncs.com'
 
 export interface AsrProgress {
   stage: 'uploading' | 'submitted' | 'processing' | 'done' | 'error'
@@ -210,7 +234,7 @@ async function pollTask(
     if (output.task_status === 'SUCCEEDED') {
       onProgress?.({ stage: 'done', message: '转写完成' })
       return {
-        transcriptionUrl: output.transcription_url || output.result,
+        transcriptionUrl: output.transcription_url || output.result?.transcription_url || output.result,
         usage: output.task_metrics || {},
       }
     }
@@ -301,14 +325,17 @@ export async function transcribe(
     throw new Error('未配置 API Key')
   }
 
-  const baseUrl = DASHSCOPE_BASE_URL
+  const baseUrl = computeBaseUrl(config.workspaceId)
 
-  // Step 1: 获取上传凭证
+  // Step 0: 如果是视频文件，提取音频
+  const audioFile = await ensureAudioFile(file, (msg) => onProgress?.({ stage: 'uploading', message: msg }))
+
+  // Step 1: 获取上传凭证（始终用 dashscope.aliyuncs.com，workspace 域名不提供此端点）
   onProgress?.({ stage: 'uploading', message: '获取上传凭证...' })
-  const policy = await getUploadPolicy(baseUrl, apiKey, model)
+  const policy = await getUploadPolicy(UPLOAD_BASE_URL, apiKey, model)
 
   // Step 2: 上传到 OSS
-  const fileUrl = await uploadToOss(policy, file, onProgress)
+  const fileUrl = await uploadToOss(policy, audioFile, onProgress)
 
   // Step 3: 提交转写任务
   onProgress?.({ stage: 'submitted', message: '提交转写任务...' })
@@ -323,23 +350,14 @@ export async function transcribe(
   const raw = await downloadTranscription(transcriptionUrl)
   const parsed = parseTranscriptionResult(raw)
 
-  // 组装 segments 并剥离句末标点
+  // 组装 segments：断句 + 剥离句末标点
   const segments = parsed.items.length > 0
-    ? stripTrailingPunctuation([{
-        start: parsed.items[0].start,
-        end: parsed.items[parsed.items.length - 1].end,
-        text: parsed.text,
-        items: parsed.items,
-        sticker: null,
-        sticker_ref: null,
-        color: null,
-        color_ref: null,
-      }])
+    ? stripTrailingPunctuation(splitWordsToSegments(parsed.items, 15, 5, 0))
     : []
 
   return {
     segments,
     language: parsed.language || language || 'zh',
-    durationMs: segments.length > 0 ? segments[0].end - segments[0].start : 0,
+    durationMs: segments.length > 0 ? segments[segments.length - 1].end - segments[0].start : 0,
   }
 }

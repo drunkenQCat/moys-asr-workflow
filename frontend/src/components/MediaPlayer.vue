@@ -1,12 +1,24 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { ref } from 'vue'
 import { useProjectStore } from '../stores/project.js'
+import OverlayPreview from './OverlayPreview.vue'
+
+const emit = defineEmits<{
+  timeupdate: [timeMs: number]
+}>()
 
 const project = useProjectStore()
 const videoRef = ref<HTMLVideoElement | HTMLAudioElement | null>(null)
 const isPlaying = ref(false)
 const currentTime = ref(0)
 const playbackRate = ref(1)
+
+function onTimeUpdate(e: Event) {
+  const target = e.target as HTMLVideoElement | HTMLAudioElement
+  const ms = Math.round(target.currentTime * 1000)
+  currentTime.value = ms
+  emit('timeupdate', ms)
+}
 
 function togglePlayback() {
   if (!videoRef.value) return
@@ -30,19 +42,6 @@ function setRate(rate: number) {
   playbackRate.value = rate
 }
 
-watch(() => project.mediaUrl, (url) => {
-  if (videoRef.value && url) {
-    videoRef.value.src = url
-    videoRef.value.load()
-  }
-})
-
-onMounted(() => {
-  if (videoRef.value && project.mediaUrl) {
-    videoRef.value.src = project.mediaUrl
-  }
-})
-
 defineExpose({ togglePlayback, seekTo, setRate })
 </script>
 
@@ -51,8 +50,9 @@ defineExpose({ togglePlayback, seekTo, setRate })
     <video
       v-if="project.mediaName?.match(/\.(mp4|mkv|webm|mov|avi)$/i)"
       ref="videoRef"
+      :src="project.mediaUrl"
       class="player-element"
-      @timeupdate="currentTime = Math.round(($event.target as HTMLVideoElement).currentTime * 1000)"
+      @timeupdate="onTimeUpdate"
       @ended="isPlaying = false"
       @play="isPlaying = true"
       @pause="isPlaying = false"
@@ -61,8 +61,9 @@ defineExpose({ togglePlayback, seekTo, setRate })
     <audio
       v-else-if="project.mediaName"
       ref="videoRef"
+      :src="project.mediaUrl"
       class="player-element"
-      @timeupdate="currentTime = Math.round(($event.target as HTMLAudioElement).currentTime * 1000)"
+      @timeupdate="onTimeUpdate"
       @ended="isPlaying = false"
       @play="isPlaying = true"
       @pause="isPlaying = false"
@@ -72,6 +73,7 @@ defineExpose({ togglePlayback, seekTo, setRate })
       <p>暂无媒体文件</p>
       <p class="hint">打开工程或拖拽媒体文件到此处</p>
     </div>
+    <OverlayPreview />
   </div>
 </template>
 

@@ -1,6 +1,8 @@
-// 波形峰值提取 — 浏览器原生解码优先，ffmpeg.wasm 降级（CDN 懒加载）
+// 波形峰值提取 — 浏览器原生解码优先，ffmpeg.wasm 降级
 
 import type { WaveformPayload } from '../types/project.js'
+import { FFmpeg } from '@ffmpeg/ffmpeg'
+import { toBlobURL } from '@ffmpeg/util'
 
 const PEAKS_PER_SECOND = 100
 
@@ -91,10 +93,6 @@ async function extractWithFfmpeg(
   file: File,
   peaksPerSecond: number,
 ): Promise<WaveformPayload> {
-  // 动态导入（懒加载，CDN 加载）
-  const { FFmpeg } = await import(/* @vite-ignore */ '@ffmpeg/ffmpeg')
-  const { toBlobURL } = await import(/* @vite-ignore */ '@ffmpeg/util')
-
   const ffmpeg = new FFmpeg()
   const coreVersion = '0.12.10'
   const baseCDN = `https://unpkg.com/@ffmpeg/core@${coreVersion}/dist/esm`

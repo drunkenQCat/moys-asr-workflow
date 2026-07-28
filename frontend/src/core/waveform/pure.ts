@@ -219,14 +219,14 @@ export function splitLayoutNode(
   }
 }
 
-export function normalizeFreeOrder(value: string[]): string[] {
+export function normalizeFreeOrder(value: string[] | undefined): string[] {
   return Array.isArray(value) && value.length === MODULE_IDS.length
     && value.every((id) => (MODULE_IDS as readonly string[]).includes(id))
     && new Set(value).size === MODULE_IDS.length
     ? [...value] : [...DEFAULT_FREE_ORDER]
 }
 
-export function normalizeLayoutRows(value: number[]): number[] {
+export function normalizeLayoutRows(value: number[] | undefined): number[] {
   const rows = Array.isArray(value) && value.length === 3
     ? value.map(Number) : [...DEFAULT_LAYOUT_ROWS]
   const top = clamp(Number.isFinite(rows[0]) ? rows[0] : 42, 12, 76)
@@ -403,16 +403,12 @@ export function layoutRootDropIntent(
   if (!rect || rect.width <= 0 || rect.height <= 0) return null
   const x = clamp(clientX - rect.left, 0, rect.width)
   const y = clamp(clientY - rect.top, 0, rect.height)
-  const candidates = [
-    ['left', x],
-    ['right', rect.width - x],
-    ['top', y],
-    ['bottom', rect.height - y],
-  ].map(([direction, distance]) => ({
-    direction,
-    distance: distance as number,
-    size: layoutRootEdgeSize(rect, direction as string),
-  })).filter((candidate) => candidate.distance <= candidate.size)
+  const candidates: { direction: string; distance: number; size: number }[] = [
+    { direction: 'left', distance: x, size: layoutRootEdgeSize(rect, 'left') },
+    { direction: 'right', distance: rect.width - x, size: layoutRootEdgeSize(rect, 'right') },
+    { direction: 'top', distance: y, size: layoutRootEdgeSize(rect, 'top') },
+    { direction: 'bottom', distance: rect.height - y, size: layoutRootEdgeSize(rect, 'bottom') },
+  ].filter((candidate) => candidate.distance <= candidate.size)
   if (!candidates.length) return null
   candidates.sort((a, b) => (a.distance / a.size) - (b.distance / b.size))
   return { mode: 'root-insert', direction: candidates[0].direction }
@@ -462,12 +458,13 @@ export function normalizeLayoutData(value: Record<string, unknown>): {
   const source = value && typeof value === 'object' ? value : {}
   const preset = (LAYOUT_PRESETS as readonly string[]).includes(source.preset as string)
     ? (source.preset as string) : DEFAULT_FREE_ORDER[0] === 'player' ? 'wave-right' : 'free'
-  const normalizedRows = normalizeLayoutRows(source.rows as number[] | undefined)
+  const normalizedRows = normalizeLayoutRows(Array.isArray(source.rows) ? source.rows : undefined)
   const rows = preset === 'wave-right' && isPreviousDefaultLayoutRows(normalizedRows)
     ? [...DEFAULT_LAYOUT_ROWS] : normalizedRows
   const columnPercent = clamp(Number(source.columnPercent) || 58, 30, 75)
   const splitPercent = clamp(Number(source.splitPercent) || 60, 35, 75)
-  const legacyOrder = normalizeFreeOrder((source.freeOrder || source.dockOrder) as string[] | undefined)
+  const orderValue = source.freeOrder || source.dockOrder
+  const legacyOrder = normalizeFreeOrder(Array.isArray(orderValue) ? orderValue : undefined)
   const candidateTree = normalizeLayoutTree(source.tree || source.layoutTree)
   const tree = isCompleteLayoutTree(candidateTree)
     ? candidateTree

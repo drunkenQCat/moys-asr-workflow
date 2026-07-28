@@ -10,6 +10,18 @@ export default defineConfig({
     assetsInlineLimit: 100000000,
     chunkSizeWarningLimit: 5000,
   },
+  optimizeDeps: {
+    exclude: ['@ffmpeg/ffmpeg'],
+  },
+  server: {
+    proxy: {
+      '/dashscope': {
+        target: 'https://dashscope.aliyuncs.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/dashscope/, ''),
+      },
+    },
+  },
   test: {
     environment: 'jsdom',
     globals: true,

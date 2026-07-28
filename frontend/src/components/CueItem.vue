@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, nextTick } from 'vue'
 import type { Segment } from '../types/project.js'
-import { cueMetrics } from '../core/editor-utils.js'
+import { cueMetrics, configuredEnterAction } from '../core/editor-utils.js'
+import { useEditorSettingsStore } from '../stores/editor-settings.js'
 
 const props = defineProps<{
   segment: Segment
@@ -26,6 +27,7 @@ const emit = defineEmits<{
   'edit-split': [index: number, charOffset: number]
 }>()
 
+const settings = useEditorSettingsStore()
 const editText = ref('')
 const editTextarea = ref<HTMLTextAreaElement | null>(null)
 
@@ -71,6 +73,19 @@ function escapeHtml(text: string): string {
 function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') {
     cancelEdit()
+    return
+  }
+  const action = configuredEnterAction(e, settings.settings.splitKey)
+  if (action === 'save') {
+    e.preventDefault()
+    saveEdit()
+  } else if (action === 'split') {
+    e.preventDefault()
+    const textarea = e.target as HTMLTextAreaElement
+    const cursorPos = textarea.selectionStart
+    emit('edit-split', props.index, cursorPos)
+  } else if (action === 'newline') {
+    // Shift+Enter: insert newline, let default behavior handle it
   }
 }
 
@@ -101,6 +116,8 @@ function onContextmenu(e: MouseEvent) {
     <span v-if="showSticker && segment.sticker" class="cue-sticker">
       {{ segment.sticker.name }}
     </span>
+    <span v-if="segment.color" class="cue-color-dot" :style="{ background: segment.color.value }" title="颜色标记"></span>
+    <span v-if="segment.color_ref" class="cue-color-dot" :style="{ background: '#9b59b6' }" title="颜色标记"></span>
     <div class="cue-text">
       <template v-if="!isEditing">
         <span
@@ -156,6 +173,13 @@ function onContextmenu(e: MouseEvent) {
 .cue-sticker {
   color: #ffa500;
   font-size: 11px;
+}
+.cue-color-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 .cue-text {
   flex: 1;

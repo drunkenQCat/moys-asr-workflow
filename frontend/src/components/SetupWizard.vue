@@ -1,12 +1,21 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { loadAsrConfig, saveAsrConfig, hasApiKey } from '../core/asr-config.js'
+import { computeBaseUrl } from '../core/asr.js'
+
+const props = withDefaults(defineProps<{
+  /** 设置模式：first-time 自动弹出，settings 由按钮触发 */
+  mode?: 'auto' | 'manual'
+}>(), {
+  mode: 'auto',
+})
 
 const emit = defineEmits<{
   done: []
 }>()
 
 const apiKey = ref('')
+const workspaceId = ref('')
 const language = ref('zh')
 const model = ref('qwen3-asr-flash-filetrans')
 const testing = ref(false)
@@ -14,22 +23,46 @@ const testResult = ref('')
 const show = ref(false)
 
 onMounted(() => {
-  if (!hasApiKey()) {
-    show.value = true
+  if (props.mode !== 'manual' && !hasApiKey()) {
+    open()
   }
 })
+
+function open() {
+  const config = loadAsrConfig()
+  apiKey.value = config.apiKey || ''
+  workspaceId.value = config.workspaceId || ''
+  language.value = config.language || 'zh'
+  model.value = config.model || 'qwen3-asr-flash-filetrans'
+  show.value = true
+}
 
 async function testConnection() {
   testing.value = true
   testResult.value = ''
   try {
-    const resp = await fetch('https://dashscope.aliyuncs.com/api/v1/uploads', {
-      headers: { Authorization: `Bearer ${apiKey.value}` },
+    const baseUrl = computeBaseUrl(workspaceId.value)
+    // 用 transcription 端点测试连接，upload 端点可能不存在于 workspace 域名
+    const resp = await fetch(`${baseUrl}/api/v1/services/audio/asr/transcription`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey.value}`,
+        'Content-Type': 'application/json',
+        'X-DashScope-Async': 'enable',
+      },
+      body: JSON.stringify({
+        model: 'qwen3-asr-flash-filetrans',
+        input: { file_url: 'oss://placeholder/test.wav' },
+        parameters: { channel_id: [0] },
+      }),
     })
-    if (resp.ok) {
+    if (resp.ok || resp.status === 400) {
+      // 200 或 400（参数错误）说明 API key 有效
       testResult.value = '✅ 连接成功'
     } else if (resp.status === 401) {
       testResult.value = '❌ API Key 无效'
+    } else if (resp.status === 403) {
+      testResult.value = '❌ 鉴权失败，请检查工作空间 ID 和 API Key'
     } else {
       testResult.value = `❌ HTTP ${resp.status}: ${resp.statusText}`
     }
@@ -43,6 +76,7 @@ async function testConnection() {
 function save() {
   saveAsrConfig({
     apiKey: apiKey.value,
+    workspaceId: workspaceId.value,
     language: language.value,
     model: model.value,
   })
@@ -54,20 +88,26 @@ function skip() {
   apiKey.value = ''
   saveAsrConfig({
     apiKey: '',
+    workspaceId: workspaceId.value,
     language: language.value,
     model: model.value,
   })
   show.value = false
   emit('done')
 }
+
+defineExpose({ open })
 </script>
 
 <template>
   <Teleport to="body">
-    <div v-if="show" class="setup-overlay">
+    <div v-if="show" class="setup-overlay" @click.self="mode === 'manual' ? show = false : undefined">
       <div class="setup-modal">
-        <h2>首次设置</h2>
-        <p class="setup-desc">配置 DashScope API Key 以使用 ASR 转写功能</p>
+        <h2>ASR 设置</h2>
+        <p class="setup-desc">
+          配置 API Key 以使用 ASR 转写功能。
+          {{ mode === 'manual' ? '点击遮罩关闭。' : '' }}
+        </p>
 
         <div class="field">
           <label>API Key <span class="required">*</span></label>
@@ -81,6 +121,20 @@ function skip() {
             在
             <a href="https://bailian.console.aliyun.com/" target="_blank">阿里云百炼控制台</a>
             获取
+          </p>
+        </div>
+
+        <div class="field">
+          <label>百炼工作空间 ID</label>
+          <input
+            v-model="workspaceId"
+            type="text"
+            placeholder="可选，留空使用标准 DashScope 端点"
+            class="input"
+          />
+          <p class="hint">
+            百炼用户需填写，标准 DashScope 用户留空。
+            填后 API 端点变为 <code>https://{workspaceId}.cn-beijing.maas.aliyuncs.com</code>
           </p>
         </div>
 
@@ -111,7 +165,7 @@ function skip() {
         </div>
 
         <div class="actions-bottom">
-          <button class="btn btn-skip" @click="skip">跳过</button>
+          <button v-if="mode === 'auto'" class="btn btn-skip" @click="skip">跳过</button>
           <button class="btn btn-primary" :disabled="!apiKey" @click="save">
             保存
           </button>
@@ -135,7 +189,7 @@ function skip() {
   background: #2a2a3e;
   border-radius: 12px;
   padding: 32px;
-  width: 460px;
+  width: 480px;
   max-width: 90vw;
   color: #e0e0e0;
 }
@@ -181,6 +235,12 @@ select.input {
 }
 .hint a {
   color: #6c63ff;
+}
+.hint code {
+  font-size: 11px;
+  background: #1a1a2e;
+  padding: 1px 4px;
+  border-radius: 3px;
 }
 .actions {
   display: flex;

@@ -1,8 +1,23 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { setActivePinia, createPinia } from 'pinia'
 import CueItem from '../../src/components/CueItem.vue'
 import type { Segment } from '../../src/types/project.js'
+
+beforeEach(() => {
+  // Mock localStorage for editor-settings store
+  const store: Record<string, string> = {}
+  globalThis.localStorage = {
+    getItem: (key: string) => store[key] ?? null,
+    setItem: (key: string, val: string) => { store[key] = val },
+    removeItem: (key: string) => { delete store[key] },
+    clear: () => { for (const k in store) delete store[k] },
+    get length() { return Object.keys(store).length },
+    key: () => null,
+  }
+  setActivePinia(createPinia())
+})
 
 const baseSegment: Segment = {
   start: 1000,

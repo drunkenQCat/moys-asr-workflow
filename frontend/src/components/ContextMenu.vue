@@ -11,6 +11,13 @@ const selection = useSelectionStore()
 const menuRef = ref<HTMLElement | null>(null)
 
 function handleAction(action: string) {
+  const COLOR_MAP: Record<string, string> = {
+    'color-red': '#e74c3c',
+    'color-yellow': '#f1c40f',
+    'color-blue': '#168cff',
+    'color-green': '#2ecc71',
+    'color-purple': '#9b59b6',
+  }
   switch (action) {
     case 'split': {
       const idx = selection.lastActive
@@ -21,11 +28,22 @@ function handleAction(action: string) {
       }
       break
     }
+    case 'sticker': {
+      // Emit event to open sticker modal — handled by parent
+      break
+    }
     case 'merge': {
       const indexes = [...selection.selectedIdxs].sort((a, b) => a - b)
       if (indexes.length >= 2) {
         project.mergeSegments(indexes)
       }
+      break
+    }
+    case 'color-clear': {
+      const indexes = [...selection.selectedIdxs]
+      indexes.forEach((i) => {
+        project.updateSegment(i, { color: null, color_ref: null })
+      })
       break
     }
     case 'toggle-disabled': {
@@ -34,6 +52,16 @@ function handleAction(action: string) {
         project.updateSegment(i, { disabled: !project.segments[i].disabled })
       })
       break
+    }
+    default: {
+      // Handle color assignments
+      const color = COLOR_MAP[action]
+      if (color) {
+        const indexes = [...selection.selectedIdxs]
+        indexes.forEach((i) => {
+          project.updateSegment(i, { color: { name: action.replace('color-', '') as any, value: color, start: project.segments[i].start, end: project.segments[i].end }, color_ref: null })
+        })
+      }
     }
   }
   ui.hideContextMenu()

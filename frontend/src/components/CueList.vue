@@ -22,6 +22,10 @@ const filteredSegments = computed(() => {
 })
 
 function onCueClick(index: number, event: MouseEvent) {
+  if (event.altKey) {
+    project.updateSegment(index, { disabled: !project.segments[index].disabled })
+    return
+  }
   if (event.shiftKey) {
     const from = selection.lastActive >= 0 ? selection.lastActive : 0
     selection.rangeSelect(from, index)
@@ -42,11 +46,20 @@ function onCueContextmenu(index: number, event: MouseEvent) {
   if (!selection.selectedIdxs.has(index)) {
     selection.select(index)
   }
-  // TODO: show context menu with items
+  const isSingle = selection.selectedIdxs.size === 1
+  const colorItems = [
+    { label: '🔴 红色', action: 'color-red' },
+    { label: '🟡 黄色', action: 'color-yellow' },
+    { label: '🔵 蓝色', action: 'color-blue' },
+    { label: '🟢 绿色', action: 'color-green' },
+    { label: '🟣 紫色', action: 'color-purple' },
+    { label: '清除颜色', action: 'color-clear', divider: true },
+  ]
   ui.showContextMenu(event.clientX, event.clientY, [
     { label: '拆分', action: 'split' },
     { label: '分配表情包', action: 'sticker' },
     { label: '合并字幕', action: 'merge' },
+    ...colorItems,
     { label: '禁用', action: 'toggle-disabled' },
   ])
 }

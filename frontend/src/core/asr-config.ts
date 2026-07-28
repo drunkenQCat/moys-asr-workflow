@@ -8,6 +8,7 @@ const DEFAULT_CONFIG: AsrConfig = {
   apiKey: '',
   language: 'zh',
   model: 'qwen3-asr-flash-filetrans',
+  workspaceId: '',
 }
 
 export function loadAsrConfig(): AsrConfig {

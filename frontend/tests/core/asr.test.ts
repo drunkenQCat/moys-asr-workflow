@@ -84,7 +84,7 @@ describe('transcribe', () => {
     )
 
     expect(result.segments.length).toBe(1)
-    expect(result.segments[0].text).toBe('你好世界今天天气真好')
+    expect(result.segments[0].text).toBe('你好世界今天，天气真好')
     expect(result.language).toBe('zh')
     // Should have gone through all stages
     expect(progress).toContain('uploading')
