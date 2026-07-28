@@ -61,7 +61,7 @@ onMounted(() => {
     />
     <ToolbarSubtitle />
     <ToolbarWaveform />
-    <div class="editor-workspace" style="position: relative;">
+    <div id="editor-workspace" class="editor-workspace" style="position: relative;">
       <div class="workspace-left">
         <MediaPlayer ref="mediaPlayerRef" @timeupdate="onPlayerTimeUpdate" />
         <CurrentCuePanel />

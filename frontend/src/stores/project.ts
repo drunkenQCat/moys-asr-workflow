@@ -48,6 +48,42 @@ export const useProjectStore = defineStore('project', () => {
   const gapRemoveDirty = ref(false)
   const generatedAt = ref('')
 
+  // ===== localStorage 持久化 =====
+  const STORAGE_PREFIX = 'moy.asr.project.'
+
+  function storageKey(file: File): string {
+    return `${STORAGE_PREFIX}${file.name}.${file.size}.${file.lastModified}`
+  }
+
+  function saveToStorage(): void {
+    const file = mediaFile.value
+    if (!file) return
+    const data = {
+      segments: segments.value,
+      projectName: projectName.value,
+      language: '', // 已 encoded in segments, 留作扩展
+    }
+    try {
+      localStorage.setItem(storageKey(file), JSON.stringify(data))
+    } catch {
+      // storage full — silently ignore
+    }
+  }
+
+  function restoreFromStorage(file: File): boolean {
+    try {
+      const raw = localStorage.getItem(storageKey(file))
+      if (!raw) return false
+      const data = JSON.parse(raw)
+      if (!data.segments || !Array.isArray(data.segments) || data.segments.length === 0) return false
+      segments.value = data.segments
+      projectName.value = data.projectName || file.name.replace(/\.[^.]+$/, '')
+      return true
+    } catch {
+      return false
+    }
+  }
+
   // ===== Undo =====
   const undo = useUndo()
 
@@ -232,7 +268,7 @@ export const useProjectStore = defineStore('project', () => {
     projectName, mediaName, mediaUrl, mediaDurationMs, mediaFile,
     hasUnsavedChanges, gapRemoveDirty, generatedAt,
     // Actions
-    loadProject, loadMedia,
+    loadProject, loadMedia, saveToStorage, restoreFromStorage,
     updateSegment, insertSegment, deleteSegments, mergeSegments, splitSegment,
     setGapRemove, markDirty, clearProject, getExportData,
     // Undo

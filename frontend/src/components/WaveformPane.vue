@@ -1,11 +1,16 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useWaveformEditor } from '../composables/useWaveformEditor.js'
+import { useWaveformStore } from '../stores/waveform.js'
+import { useProjectStore } from '../stores/project.js'
 
 const containerRef = ref<HTMLElement | null>(null)
-const { isReady, init, destroy } = useWaveformEditor(containerRef)
+const { isReady, init, setPayload, setSegments, destroy } = useWaveformEditor(containerRef)
 
-// 初始化 waveform（挂载后自动）
+const waveform = useWaveformStore()
+const project = useProjectStore()
+
+// 挂载后初始化
 import { onMounted, onUnmounted } from 'vue'
 onMounted(() => {
   init()
@@ -13,11 +18,22 @@ onMounted(() => {
 onUnmounted(() => {
   destroy()
 })
+
+// 波形数据变化 → 更新 canvas
+watch(() => waveform.payload, (payload) => {
+  if (payload) setPayload(payload)
+}, { immediate: true })
+
+// 字幕段变化 → 更新 canvas
+watch(() => project.segments, (segments) => {
+  setSegments(segments as any)
+}, { deep: true, immediate: true })
 </script>
 
 <template>
   <div
     ref="containerRef"
+    id="waveform-pane"
     class="waveform-pane"
     :class="{ ready: isReady }"
   >

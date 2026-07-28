@@ -158,6 +158,7 @@ async function startTranscribe() {
       }
     }
     ui.flash(`转写完成: ${result.segments.length} 条字幕`)
+    project.saveToStorage()
   } catch (err: unknown) {
     ui.flash(`转写失败: ${err instanceof Error ? err.message : String(err)}`, 5000)
   } finally {

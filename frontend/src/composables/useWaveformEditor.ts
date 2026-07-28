@@ -1,6 +1,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { WaveformEditor } from '../core/waveform/editor.js'
 import type { WaveformPayload } from '../types/project.js'
+import type { SegmentLike } from '../core/waveform/pure.js'
 import type { WaveformCallbacks } from '../types/waveform.js'
 
 /**
@@ -41,6 +42,10 @@ export function useWaveformEditor(containerRef: { value: HTMLElement | null }) {
     waveformInstance?.setPayload(payload)
   }
 
+  function setSegments(segments: SegmentLike[]) {
+    waveformInstance?.setSegments(segments)
+  }
+
   function renderSegments() {
     waveformInstance?.renderSegments()
   }
@@ -59,6 +64,7 @@ export function useWaveformEditor(containerRef: { value: HTMLElement | null }) {
     isReady,
     init,
     setPayload,
+    setSegments,
     renderSegments,
     updateSelection,
     destroy,
