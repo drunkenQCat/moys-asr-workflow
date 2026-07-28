@@ -52,28 +52,34 @@ export function setupWaveformDOM(): void {
 
 export function setupCanvasMock(): void {
   // Mock Canvas getContext
-  HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
-    fillRect: vi.fn(),
-    clearRect: vi.fn(),
-    fillText: vi.fn(),
-    measureText: vi.fn(() => ({ width: 10 })),
-    beginPath: vi.fn(),
-    closePath: vi.fn(),
-    moveTo: vi.fn(),
-    lineTo: vi.fn(),
-    stroke: vi.fn(),
-    fill: vi.fn(),
-    arc: vi.fn(),
-    rect: vi.fn(),
-    strokeRect: vi.fn(),
-    setLineDash: vi.fn(),
-    save: vi.fn(),
-    restore: vi.fn(),
-    scale: vi.fn(),
-    translate: vi.fn(),
-    rotate: vi.fn(),
-    canvas: { width: 100, height: 100 },
-  } as any))
+  HTMLCanvasElement.prototype.getContext = vi.fn(function (this: HTMLCanvasElement) {
+    return {
+      fillRect: vi.fn(),
+      clearRect: vi.fn(),
+      fillText: vi.fn(),
+      measureText: vi.fn(() => ({ width: 10 })),
+      beginPath: vi.fn(),
+      closePath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      stroke: vi.fn(),
+      fill: vi.fn(),
+      arc: vi.fn(),
+      rect: vi.fn(),
+      strokeRect: vi.fn(),
+      clip: vi.fn(),
+      setLineDash: vi.fn(),
+      save: vi.fn(),
+      restore: vi.fn(),
+      scale: vi.fn(),
+      translate: vi.fn(),
+      rotate: vi.fn(),
+      canvas: this,
+      getImageData: vi.fn(() => ({ data: new Uint8ClampedArray(4) })),
+      putImageData: vi.fn(),
+      createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
+    } as any
+  })
 }
 
 export function setupResizeObserverMock(): void {
@@ -82,6 +88,16 @@ export function setupResizeObserverMock(): void {
     unobserve() {}
     disconnect() {}
   } as any
+}
+
+export function setupPointerEventPolyfill(): void {
+  if (typeof globalThis.PointerEvent === 'undefined') {
+    globalThis.PointerEvent = class PointerEvent extends MouseEvent {
+      constructor(type: string, init?: MouseEventInit) {
+        super(type, init)
+      }
+    } as any
+  }
 }
 
 export function setupLocalStorageMock(): void {
@@ -100,5 +116,6 @@ export function setupAllMocks(): void {
   setupWaveformDOM()
   setupCanvasMock()
   setupResizeObserverMock()
+  setupPointerEventPolyfill()
   setupLocalStorageMock()
 }

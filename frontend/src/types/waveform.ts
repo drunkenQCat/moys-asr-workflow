@@ -21,4 +21,5 @@ export interface WaveformCallbacks {
   onSegmentChange?: (index: number, start: number, end: number) => void
   onSelectionChange?: (indexes: number[]) => void
   onTimeUpdate?: (timeMs: number) => void
+  onSettingsChange?: (patch: Partial<WaveformSettings>) => void
 }
