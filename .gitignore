@@ -20,3 +20,5 @@ __pycache__/
 *.m4a
 *.flac
 *.srt
+frontend/dist
+frontend/node_modules

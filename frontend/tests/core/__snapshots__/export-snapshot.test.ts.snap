@@ -1,0 +1,124 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`FFconcat snapshot > matches ffconcat snapshot 1`] = `
+"ffconcat version 1.0
+file '/path/to/video.mp4'
+inpoint 0.000
+outpoint 5.000
+file '/path/to/video.mp4'
+inpoint 6.000
+outpoint 10.000
+"
+`;
+
+exports[`Gap-removed SRT snapshot > matches gap-removed SRT snapshot 1`] = `
+"1
+00:00:00,000 --> 00:00:02,000
+你好世界
+
+2
+00:00:02,000 --> 00:00:04,500
+今天天气真好
+"
+`;
+
+exports[`JSON serialization snapshot > matches JSON project snapshot 1`] = `
+"{
+  "segments": [
+    {
+      "start": 1000,
+      "end": 3000,
+      "text": "你好世界",
+      "items": [
+        {
+          "text": "你好",
+          "start": 1000,
+          "end": 2000
+        },
+        {
+          "text": "世界",
+          "start": 2000,
+          "end": 3000
+        }
+      ],
+      "sticker": null,
+      "sticker_ref": null,
+      "color": null,
+      "color_ref": null
+    },
+    {
+      "start": 3500,
+      "end": 6000,
+      "text": "今天天气真好",
+      "items": [],
+      "sticker": null,
+      "sticker_ref": null,
+      "color": null,
+      "color_ref": null
+    },
+    {
+      "start": 7000,
+      "end": 9000,
+      "text": "我们去公园",
+      "disabled": true,
+      "items": [],
+      "sticker": null,
+      "sticker_ref": null,
+      "color": null,
+      "color_ref": null
+    }
+  ],
+  "media": "D:/videos/test.mp4",
+  "language": "Chinese",
+  "gap_remove": {
+    "schema": "moy.asr.gap_remove.v1",
+    "gaps": [
+      {
+        "start": 3000,
+        "end": 3500,
+        "removed": true
+      },
+      {
+        "start": 6000,
+        "end": 7000,
+        "removed": true
+      }
+    ],
+    "detector": "audio_gate",
+    "minimum_ms": 200,
+    "threshold_db": -24,
+    "hysteresis_db": 6,
+    "lead_in_ms": 50,
+    "lead_out_ms": 50,
+    "skip_playback": false,
+    "manual_corrections": false,
+    "operation_mode": "none"
+  }
+}"
+`;
+
+exports[`SRT export snapshot > matches SRT snapshot 1`] = `
+"1
+00:00:00,000 --> 00:00:02,000
+你好世界
+
+2
+00:00:02,500 --> 00:00:05,000
+今天天气真好
+"
+`;
+
+exports[`SRT export snapshot > matches SRT with disabled placeholder 1`] = `
+"1
+00:00:00,000 --> 00:00:02,000
+你好世界
+
+2
+00:00:02,500 --> 00:00:05,000
+今天天气真好
+
+3
+00:00:06,000 --> 00:00:08,000
+
+"
+`;
