@@ -1,71 +1,12 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useUiStore } from '../stores/ui.js'
-import { useProjectStore } from '../stores/project.js'
-import { useSelectionStore } from '../stores/selection.js'
+import { useContextMenuActions } from '../composables/useContextMenuActions.js'
 
 const ui = useUiStore()
-const project = useProjectStore()
-const selection = useSelectionStore()
+const { handleAction } = useContextMenuActions()
 
 const menuRef = ref<HTMLElement | null>(null)
-
-function handleAction(action: string) {
-  const COLOR_MAP: Record<string, string> = {
-    'color-red': '#e74c3c',
-    'color-yellow': '#f1c40f',
-    'color-blue': '#168cff',
-    'color-green': '#2ecc71',
-    'color-purple': '#9b59b6',
-  }
-  switch (action) {
-    case 'split': {
-      const idx = selection.lastActive
-      if (idx >= 0) {
-        const seg = project.segments[idx]
-        const offset = Math.floor(seg.text.length / 2)
-        project.splitSegment(idx, offset)
-      }
-      break
-    }
-    case 'sticker': {
-      // Emit event to open sticker modal — handled by parent
-      break
-    }
-    case 'merge': {
-      const indexes = [...selection.selectedIdxs].sort((a, b) => a - b)
-      if (indexes.length >= 2) {
-        project.mergeSegments(indexes)
-      }
-      break
-    }
-    case 'color-clear': {
-      const indexes = [...selection.selectedIdxs]
-      indexes.forEach((i) => {
-        project.updateSegment(i, { color: null, color_ref: null })
-      })
-      break
-    }
-    case 'toggle-disabled': {
-      const indexes = [...selection.selectedIdxs]
-      indexes.forEach((i) => {
-        project.updateSegment(i, { disabled: !project.segments[i].disabled })
-      })
-      break
-    }
-    default: {
-      // Handle color assignments
-      const color = COLOR_MAP[action]
-      if (color) {
-        const indexes = [...selection.selectedIdxs]
-        indexes.forEach((i) => {
-          project.updateSegment(i, { color: { name: action.replace('color-', '') as any, value: color, start: project.segments[i].start, end: project.segments[i].end }, color_ref: null })
-        })
-      }
-    }
-  }
-  ui.hideContextMenu()
-}
 
 // Close on click outside
 watch(() => ui.contextMenuVisible, (visible) => {

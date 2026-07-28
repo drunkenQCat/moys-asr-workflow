@@ -1,5 +1,12 @@
 import { ref, computed, watch } from 'vue'
-import { decodePayload, sampleInterpolatedPeak, roundMs } from '../core/waveform/pure.js'
+import { decodePayload, roundMs } from '../core/waveform/pure.js'
+import {
+  getRowGeometry,
+  rowAtY,
+  timeAtPoint,
+  msToPx,
+  renderWaveform,
+} from '../core/waveform/render.js'
 import type { Segment } from '../types/project.js'
 import type { WaveformSettings, WaveformCallbacks } from '../types/waveform.js'
 
@@ -50,14 +57,6 @@ export function useWaveformRenderer(options: UseWaveformRendererOptions) {
     const s = options.settings()
     return s.waveformScale || 1
   })
-
-  function msToPx(ms: number, rowWidth: number): number {
-    return (ms / Math.max(1, visibleMs.value)) * Math.max(1, rowWidth)
-  }
-
-  function pxToMs(px: number, rowWidth: number, rowStartMs: number): number {
-    return (px / Math.max(1, rowWidth)) * Math.max(1, visibleMs.value) + rowStartMs
-  }
 
   function createCanvas() {
     const root = options.containerRef.value
@@ -127,78 +126,65 @@ export function useWaveformRenderer(options: UseWaveformRendererOptions) {
     canvas.removeEventListener('wheel', onWheel as EventListener)
   }
 
-  function getRowGeometry() {
+  function getCanvasPoint(e: MouseEvent): { x: number; y: number } | null {
     if (!canvas) return null
-    const dpr = window.devicePixelRatio || 1
-    const width = Math.max(1, canvas.width / dpr)
-    const height = Math.max(1, canvas.height / dpr)
-    const rowHeight = Math.max(1, (secondsPerRow.value / Math.max(1, visibleMs.value / 1000)) * height)
-    const totalRows = Math.max(1, Math.ceil(durationMs.value / Math.max(1, secondsPerRow.value * 1000)))
-    return { width, height, rowHeight, totalRows }
-  }
-
-  function rowAtY(y: number): { rowIndex: number; rowStartMs: number } | null {
-    const geom = getRowGeometry()
-    if (!geom) return null
-    const rowIndex = Math.floor(y / geom.rowHeight)
-    if (rowIndex < 0 || rowIndex >= geom.totalRows) return null
-    return { rowIndex, rowStartMs: rowIndex * secondsPerRow.value * 1000 }
-  }
-
-  function timeAtPoint(x: number, y: number): number | null {
-    const row = rowAtY(y)
-    if (!row) return null
-    const geom = getRowGeometry()
-    if (!geom) return null
-    return pxToMs(x, geom.width, row.rowStartMs)
-  }
-
-  function onPointerDown(e: MouseEvent) {
-    if (!canvas) return
     const rect = canvas.getBoundingClientRect()
     const clientX = (e as any).clientX ?? 0
     const clientY = (e as any).clientY ?? 0
-    const x = clientX - rect.left
-    const y = clientY - rect.top
-    const timeMs = timeAtPoint(x, y)
-    if (timeMs === null) return
+    return { x: clientX - rect.left, y: clientY - rect.top }
+  }
 
+  function resolveCueDrag(x: number, y: number, timeMs: number): typeof drag {
+    if (!canvas) return null
     const segments = options.segments()
     for (let i = segments.length - 1; i >= 0; i--) {
       const seg = segments[i]
       if (timeMs < seg.start || timeMs > seg.end) continue
-      const row = rowAtY(y)
+      const row = rowAtY(y, canvas, visibleMs.value / 1000, secondsPerRow.value, durationMs.value)
       if (!row) continue
-      const geom = getRowGeometry()
+      const geom = getRowGeometry(canvas, visibleMs.value / 1000, secondsPerRow.value, durationMs.value)
       if (!geom) continue
-      const segStartX = msToPx(seg.start - row.rowStartMs, geom.width)
-      const segEndX = msToPx(seg.end - row.rowStartMs, geom.width)
+      const segStartX = msToPx(seg.start - row.rowStartMs, geom.width, visibleMs.value)
+      const segEndX = msToPx(seg.end - row.rowStartMs, geom.width, visibleMs.value)
       if (x < segStartX || x > segEndX) continue
       const edgePx = 8
       if (x - segStartX <= edgePx) {
-        drag = { type: 'cue-resize-start', index: i, startX: x, startTime: timeMs, cueStart: seg.start, cueEnd: seg.end }
+        return { type: 'cue-resize-start', index: i, startX: x, startTime: timeMs, cueStart: seg.start, cueEnd: seg.end }
       } else if (segEndX - x <= edgePx) {
-        drag = { type: 'cue-resize-end', index: i, startX: x, startTime: timeMs, cueStart: seg.start, cueEnd: seg.end }
+        return { type: 'cue-resize-end', index: i, startX: x, startTime: timeMs, cueStart: seg.start, cueEnd: seg.end }
       } else {
-        drag = { type: 'cue-move', index: i, startX: x, startTime: timeMs, cueStart: seg.start, cueEnd: seg.end }
+        return { type: 'cue-move', index: i, startX: x, startTime: timeMs, cueStart: seg.start, cueEnd: seg.end }
       }
+    }
+    return null
+  }
+
+  function onPointerDown(e: MouseEvent) {
+    if (!canvas) return
+    const point = getCanvasPoint(e)
+    if (!point) return
+    const timeMs = timeAtPoint(point.x, point.y, canvas, visibleMs.value / 1000, secondsPerRow.value, durationMs.value)
+    if (timeMs === null) return
+
+    const cueDrag = resolveCueDrag(point.x, point.y, timeMs)
+    if (cueDrag) {
+      drag = cueDrag
       return
     }
 
-    drag = { type: 'seek', index: -1, startX: x, startTime: timeMs, cueStart: 0, cueEnd: 0 }
+    drag = { type: 'seek', index: -1, startX: point.x, startTime: timeMs, cueStart: 0, cueEnd: 0 }
     options.callbacks?.onSeek?.(timeMs)
   }
 
   function onPointerMove(e: MouseEvent) {
     if (!drag || !canvas) return
-    const rect = canvas.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
-    const timeMs = timeAtPoint(x, y)
+    const point = getCanvasPoint(e)
+    if (!point) return
+    const timeMs = timeAtPoint(point.x, point.y, canvas, visibleMs.value / 1000, secondsPerRow.value, durationMs.value)
     if (timeMs === null) return
 
     if (drag.type === 'seek') {
-      drag.startX = x
+      drag.startX = point.x
       options.callbacks?.onSeek?.(timeMs)
       render()
     } else if (drag.type === 'cue-move') {
@@ -228,155 +214,22 @@ export function useWaveformRenderer(options: UseWaveformRendererOptions) {
     }
   }
 
-  function drawWaveformRow(
-    ctx: CanvasRenderingContext2D,
-    width: number,
-    rowHeight: number,
-    rowStartMs: number,
-  ) {
-    if (!peaks.value) return
-    const p = options.payload()!
-    const peaksPerSecond = p.peaks_per_second
-    const startMs = rowStartMs
-    const endMs = startMs + visibleMs.value
-    const startPeak = Math.max(0, Math.floor((startMs / 1000) * peaksPerSecond))
-    const endPeak = Math.min(Math.floor(peaks.value.length / 2), Math.ceil((endMs / 1000) * peaksPerSecond))
-    const peakCount = endPeak - startPeak
-    if (peakCount <= 0) return
-
-    const amplitude = rowHeight * 0.36 * waveformScale.value
-    const midY = rowHeight / 2
-
-    ctx.beginPath()
-    for (let i = 0; i < width; i++) {
-      const peakPos = startPeak + (i / width) * peakCount
-      const [low] = sampleInterpolatedPeak(peaks.value as any, peakPos, peakCount)
-      const top = midY - (Math.abs(low) / 127) * amplitude
-      if (i === 0) ctx.moveTo(i, top)
-      else ctx.lineTo(i, top)
-    }
-    for (let i = width - 1; i >= 0; i--) {
-      const peakPos = startPeak + (i / width) * peakCount
-      const [, high] = sampleInterpolatedPeak(peaks.value as any, peakPos, peakCount)
-      const bottom = midY + (Math.abs(high) / 127) * amplitude
-      ctx.lineTo(i, bottom)
-    }
-    ctx.closePath()
-    ctx.fillStyle = 'rgba(108, 99, 255, 0.5)'
-    ctx.fill()
-  }
-
-  function drawCueBlocksRow(
-    ctx: CanvasRenderingContext2D,
-    width: number,
-    rowHeight: number,
-    rowStartMs: number,
-  ) {
-    const segments = options.segments()
-    const activeIndex = options.activeIndex()
-    const endMs = rowStartMs + visibleMs.value
-    for (let i = 0; i < segments.length; i++) {
-      const seg = segments[i]
-      if (seg.start >= endMs || seg.end <= rowStartMs) continue
-      const x = msToPx(Math.max(0, seg.start - rowStartMs), width)
-      const segW = Math.max(2, msToPx(seg.end - rowStartMs, width) - x)
-      const isActive = i === activeIndex
-      const isDisabled = seg.disabled
-
-      ctx.fillStyle = isDisabled
-        ? 'rgba(100, 100, 100, 0.3)'
-        : isActive
-          ? 'rgba(108, 99, 255, 0.35)'
-          : 'rgba(108, 99, 255, 0.15)'
-      ctx.fillRect(x, 0, segW, rowHeight)
-
-      if (isActive) {
-        ctx.strokeStyle = '#6c63ff'
-        ctx.lineWidth = 2
-        ctx.strokeRect(x, 0, segW, rowHeight)
-      }
-
-      if (seg.text) {
-        ctx.fillStyle = isDisabled ? '#888' : '#e0e0e0'
-        ctx.font = '11px sans-serif'
-        const text = seg.text.length > 40 ? seg.text.slice(0, 40) + '…' : seg.text
-        const textX = Math.max(x + 4, 4)
-        const maxWidth = Math.max(0, segW - 8)
-        ctx.fillText(text, textX, rowHeight / 2 + 4, maxWidth)
-      }
-    }
-  }
-
-  function drawPlayheadRow(
-    ctx: CanvasRenderingContext2D,
-    width: number,
-    rowHeight: number,
-    rowStartMs: number,
-  ) {
-    const currentTime = options.currentTimeMs()
-    if (currentTime < rowStartMs || currentTime > rowStartMs + visibleMs.value) return
-    const x = msToPx(currentTime - rowStartMs, width)
-    ctx.strokeStyle = '#fff'
-    ctx.lineWidth = 1
-    ctx.beginPath()
-    ctx.moveTo(x, 0)
-    ctx.lineTo(x, rowHeight)
-    ctx.stroke()
-  }
-
   function render() {
     if (!ctx || !canvas) return
-    const geom = getRowGeometry()
-    if (!geom) return
-    const { width, height, rowHeight, totalRows } = geom
-    const dpr = window.devicePixelRatio || 1
-
-    ctx.save()
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    ctx.scale(1 / dpr, 1 / dpr)
-
-    if (!peaks.value) {
-      ctx.fillStyle = '#333'
-      ctx.font = '14px sans-serif'
-      ctx.textAlign = 'center'
-      ctx.fillText('加载媒体后显示波形', width / 2, height / 2)
-      ctx.restore()
-      return
-    }
-
-    for (let row = 0; row < totalRows; row++) {
-      const rowStartMs = row * secondsPerRow.value * 1000
-      const y = row * rowHeight
-      ctx.save()
-      ctx.translate(0, y)
-      ctx.beginPath()
-      ctx.rect(0, 0, width, rowHeight)
-      ctx.clip()
-
-      ctx.fillStyle = row % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'rgba(255,255,255,0.03)'
-      ctx.fillRect(0, 0, width, rowHeight)
-
-      const timeLabel = formatCompact(rowStartMs)
-      ctx.fillStyle = '#666'
-      ctx.font = '10px sans-serif'
-      ctx.textAlign = 'left'
-      ctx.fillText(timeLabel, 4, 12)
-
-      drawWaveformRow(ctx, width, rowHeight, rowStartMs)
-      drawCueBlocksRow(ctx, width, rowHeight, rowStartMs)
-      drawPlayheadRow(ctx, width, rowHeight, rowStartMs)
-
-      ctx.strokeStyle = '#333'
-      ctx.lineWidth = 1
-      ctx.beginPath()
-      ctx.moveTo(0, rowHeight)
-      ctx.lineTo(width, rowHeight)
-      ctx.stroke()
-
-      ctx.restore()
-    }
-
-    ctx.restore()
+    renderWaveform({
+      ctx,
+      canvas,
+      peaks: peaks.value,
+      payload: options.payload(),
+      segments: options.segments(),
+      activeIndex: options.activeIndex(),
+      currentTimeMs: options.currentTimeMs(),
+      settings: {
+        visibleSeconds: visibleMs.value / 1000,
+        secondsPerRow: secondsPerRow.value,
+        waveformScale: waveformScale.value,
+      },
+    })
   }
 
   function init() {
@@ -431,14 +284,4 @@ export function useWaveformRenderer(options: UseWaveformRendererOptions) {
     destroy,
     bindEvents,
   }
-}
-
-function formatCompact(ms: number): string {
-  const safe = Math.max(0, Math.round(ms))
-  const hours = Math.floor(safe / 3600000)
-  const minutes = Math.floor((safe % 3600000) / 60000)
-  const seconds = Math.floor((safe % 60000) / 1000)
-  const millis = safe % 1000
-  const hh = hours ? `${String(hours).padStart(2, '0')}:` : ''
-  return `${hh}${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(millis).padStart(3, '0')}`
 }

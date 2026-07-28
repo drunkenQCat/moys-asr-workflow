@@ -92,6 +92,22 @@ export function cueMetrics(text: string, start: number, end: number): CueMetrics
   return { totalLength, charsPerSecond }
 }
 
+export function formatCueTime(ms: number): string {
+  const s = Math.floor(ms / 1000)
+  const m = Math.floor(s / 60)
+  const h = Math.floor(m / 60)
+  return `${String(h).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}.${String(ms % 1000).padStart(3, '0')}`
+}
+
+export function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
 export function formatHumanDuration(durationMs: number): string {
   const totalSeconds = Math.max(0, Math.floor(Number(durationMs) / 1000) || 0)
   const seconds = totalSeconds % 60

@@ -1,24 +1,22 @@
 <script setup lang="ts">
-import { useProjectStore } from '../stores/project.js'
-import { useUiStore } from '../stores/ui.js'
+import { useSubtitleToolbar } from '../composables/useSubtitleToolbar.js'
 
-const project = useProjectStore()
-const ui = useUiStore()
+const { searchQuery, filterOverOnly, count } = useSubtitleToolbar()
 </script>
 
 <template>
   <div class="toolbar-subtitle">
     <input
-      v-model="ui.searchQuery"
+      v-model="searchQuery"
       type="text"
       class="search-input"
       placeholder="搜索字幕..."
     />
     <label class="filter-label">
-      <input type="checkbox" v-model="ui.filterOverOnly" />
+      <input type="checkbox" v-model="filterOverOnly" />
       仅超长
     </label>
-    <span class="count">{{ project.segments.length }} 条</span>
+    <span class="count">{{ count }} 条</span>
   </div>
 </template>
 

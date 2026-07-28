@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useEditorSettingsStore } from '../stores/editor-settings.js'
+import { useEditorSettingsPanel } from '../composables/useEditorSettingsPanel.js'
 
-const settings = useEditorSettingsStore()
 const show = defineModel<boolean>('show', { default: false })
+
+const { settings, sections, updateCheckbox, updateSelect, updateNumber, reset } = useEditorSettingsPanel()
 </script>
 
 <template>
@@ -15,44 +15,43 @@ const show = defineModel<boolean>('show', { default: false })
           <button @click="show = false" class="close-btn">✕</button>
         </div>
 
-        <div class="section">
-          <h4>字幕列表显示</h4>
-          <label class="toggle"><input type="checkbox" :checked="settings.settings.cueListShowIndex" @change="settings.updateSetting('cueListShowIndex', ($event.target as HTMLInputElement).checked)" /> 序号</label>
-          <label class="toggle"><input type="checkbox" :checked="settings.settings.cueListShowTime" @change="settings.updateSetting('cueListShowTime', ($event.target as HTMLInputElement).checked)" /> 时间</label>
-          <label class="toggle"><input type="checkbox" :checked="settings.settings.cueListShowSticker" @change="settings.updateSetting('cueListShowSticker', ($event.target as HTMLInputElement).checked)" /> 表情包</label>
-          <label class="toggle"><input type="checkbox" :checked="settings.settings.cueListShowCharcount" @change="settings.updateSetting('cueListShowCharcount', ($event.target as HTMLInputElement).checked)" /> 字数</label>
-        </div>
-
-        <div class="section">
-          <h4>字幕编辑器</h4>
-          <label class="toggle"><input type="checkbox" :checked="settings.settings.cueEditorShowNavigation" @change="settings.updateSetting('cueEditorShowNavigation', ($event.target as HTMLInputElement).checked)" /> 导航按钮</label>
-          <label class="toggle"><input type="checkbox" :checked="settings.settings.cueEditorShowSticker" @change="settings.updateSetting('cueEditorShowSticker', ($event.target as HTMLInputElement).checked)" /> 表情包</label>
-        </div>
-
-        <div class="section">
-          <h4>编辑</h4>
-          <label class="field-label">拆分键</label>
-          <select :value="settings.settings.splitKey" @change="settings.updateSetting('splitKey', ($event.target as HTMLSelectElement).value as 'ctrl-enter' | 'enter')" class="select">
-            <option value="ctrl-enter">Ctrl+Enter</option>
-            <option value="enter">Enter</option>
-          </select>
-          <label class="toggle"><input type="checkbox" :checked="settings.settings.hideDisabled" @change="settings.updateSetting('hideDisabled', ($event.target as HTMLInputElement).checked)" /> 隐藏禁用字幕</label>
-        </div>
-
-        <div class="section">
-          <h4>播放</h4>
-          <label class="toggle"><input type="checkbox" :checked="settings.settings.overlayEnabled" @change="settings.updateSetting('overlayEnabled', ($event.target as HTMLInputElement).checked)" /> 字幕叠加预览</label>
-        </div>
-
-        <div class="section">
-          <h4>导出</h4>
-          <label class="toggle"><input type="checkbox" :checked="settings.settings.exportStartAtZero" @change="settings.updateSetting('exportStartAtZero', ($event.target as HTMLInputElement).checked)" /> 时间从零开始</label>
-          <label class="field-label">字数阈值</label>
-          <input type="number" :value="settings.settings.charcountThreshold" @change="settings.updateSetting('charcountThreshold', Number(($event.target as HTMLInputElement).value))" class="number-input" min="5" max="50" />
+        <div class="section" v-for="section in sections" :key="section.title">
+          <h4>{{ section.title }}</h4>
+          <template v-for="item in section.items" :key="item.key">
+            <label v-if="item.type === 'checkbox'" class="toggle">
+              <input
+                type="checkbox"
+                :checked="settings[item.key]"
+                @change="updateCheckbox(item.key, ($event.target as HTMLInputElement).checked)"
+              />
+              {{ item.label }}
+            </label>
+            <template v-else-if="item.type === 'select'">
+              <label class="field-label">{{ item.label }}</label>
+              <select
+                :value="settings[item.key]"
+                @change="updateSelect(item.key, ($event.target as HTMLSelectElement).value)"
+                class="select"
+              >
+                <option v-for="opt in item.options" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+              </select>
+            </template>
+            <template v-else-if="item.type === 'number'">
+              <label class="field-label">{{ item.label }}</label>
+              <input
+                type="number"
+                :value="settings[item.key]"
+                @change="updateNumber(item.key, Number(($event.target as HTMLInputElement).value))"
+                class="number-input"
+                :min="item.min"
+                :max="item.max"
+              />
+            </template>
+          </template>
         </div>
 
         <div class="actions">
-          <button @click="settings.resetToDefaults()" class="btn-reset">重置默认</button>
+          <button @click="reset" class="btn-reset">重置默认</button>
         </div>
       </div>
     </div>

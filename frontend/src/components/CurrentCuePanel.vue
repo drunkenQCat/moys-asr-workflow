@@ -1,38 +1,24 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useProjectStore } from '../stores/project.js'
-import { useSelectionStore } from '../stores/selection.js'
-import { cueMetrics } from '../core/editor-utils.js'
+import { useCurrentCue } from '../composables/useCurrentCue.js'
 
-const project = useProjectStore()
-const selection = useSelectionStore()
-
-const currentCue = computed(() => {
-  const idx = selection.lastActive
-  return idx >= 0 && idx < project.segments.length ? project.segments[idx] : null
-})
-
-const metrics = computed(() => {
-  if (!currentCue.value) return null
-  return cueMetrics(currentCue.value.text, currentCue.value.start, currentCue.value.end)
-})
-
-function goPrev() {
-  if (selection.lastActive > 0) selection.setActive(selection.lastActive - 1)
-}
-
-function goNext() {
-  if (selection.lastActive < project.segments.length - 1) selection.setActive(selection.lastActive + 1)
-}
+const {
+  currentCue,
+  metrics,
+  goPrev,
+  goNext,
+  updateStart,
+  updateDuration,
+  updateText,
+} = useCurrentCue()
 </script>
 
 <template>
   <div class="current-cue-panel" v-if="currentCue">
     <div class="panel-header">
-      <span class="panel-title">字幕 #{{ selection.lastActive + 1 }}</span>
+      <span class="panel-title">字幕 #{{ currentCue.index + 1 }}</span>
       <div class="panel-nav">
-        <button @click="goPrev" :disabled="selection.lastActive <= 0">◀</button>
-        <button @click="goNext" :disabled="selection.lastActive >= project.segments.length - 1">▶</button>
+        <button @click="goPrev" :disabled="currentCue.index <= 0">◀</button>
+        <button @click="goNext" :disabled="currentCue.index >= currentCue.total - 1">▶</button>
       </div>
     </div>
     <div class="panel-body">
@@ -41,7 +27,7 @@ function goNext() {
         <input
           type="text"
           :value="(currentCue.start / 1000).toFixed(3)"
-          @change="(e) => currentCue && project.updateSegment(selection.lastActive, { start: Math.round(Number((e.target as HTMLInputElement).value) * 1000) })"
+          @change="(e) => updateStart(Number((e.target as HTMLInputElement).value))"
           class="field-input"
         />
       </div>
@@ -50,7 +36,7 @@ function goNext() {
         <input
           type="text"
           :value="((currentCue.end - currentCue.start) / 1000).toFixed(2)"
-          @change="(e) => currentCue && project.updateSegment(selection.lastActive, { end: currentCue.start + Number((e.target as HTMLInputElement).value) * 1000 })"
+          @change="(e) => updateDuration(Number((e.target as HTMLInputElement).value))"
           class="field-input"
         />
       </div>
@@ -58,7 +44,7 @@ function goNext() {
         <label>文本</label>
         <textarea
           :value="currentCue.text"
-          @input="(e) => { const text = (e.target as HTMLTextAreaElement).value; project.updateSegment(selection.lastActive, { text }); }"
+          @input="(e) => updateText((e.target as HTMLTextAreaElement).value)"
           class="field-textarea"
           rows="3"
         />

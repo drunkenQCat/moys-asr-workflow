@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useProjectStore } from '../stores/project.js'
 import { useSelectionStore } from '../stores/selection.js'
 import { useEditorSettingsStore } from '../stores/editor-settings.js'
 import { useUiStore } from '../stores/ui.js'
+import { useCueList } from '../composables/useCueList.js'
 import CueItem from './CueItem.vue'
 
 const project = useProjectStore()
@@ -11,14 +11,9 @@ const selection = useSelectionStore()
 const settings = useEditorSettingsStore()
 const ui = useUiStore()
 
-const filteredSegments = computed(() => {
-  const query = ui.searchQuery.trim().toLowerCase()
-  if (!query) return project.segments.map((seg, i) => ({ segment: seg, index: i }))
-  return project.segments
-    .map((seg, i) => ({ segment: seg, index: i }))
-    .filter(({ segment }) => segment.text.toLowerCase().includes(query)
-      || String(segment.start).includes(query)
-      || String(segment.end).includes(query))
+const { filteredSegments } = useCueList({
+  segments: () => project.segments,
+  searchQuery: () => ui.searchQuery,
 })
 
 function onCueClick(index: number, event: MouseEvent) {
@@ -34,7 +29,6 @@ function onCueClick(index: number, event: MouseEvent) {
   } else {
     selection.select(index)
   }
-  // TODO: seek player to segment start
 }
 
 function onCueDblclick(index: number) {
@@ -42,7 +36,6 @@ function onCueDblclick(index: number) {
 }
 
 function onCueContextmenu(index: number, event: MouseEvent) {
-  // Ensure this index is selected
   if (!selection.selectedIdxs.has(index)) {
     selection.select(index)
   }
@@ -58,7 +51,7 @@ function onCueContextmenu(index: number, event: MouseEvent) {
   ui.showContextMenu(event.clientX, event.clientY, [
     { label: '拆分', action: 'split' },
     { label: '分配表情包', action: 'sticker' },
-    { label: '合并字幕', action: 'merge' },
+    ...(isSingle ? [] : [{ label: '合并字幕', action: 'merge' }]),
     ...colorItems,
     { label: '禁用', action: 'toggle-disabled' },
   ])

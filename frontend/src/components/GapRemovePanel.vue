@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useProjectStore } from '../stores/project.js'
-import { useWaveformStore } from '../stores/waveform.js'
-import { detectAudioGapRemoveGaps, applyGapRemoveRange, getRemovedGapRanges, formatGapRemoveDuration, buildGapRemovedIntervals } from '../core/editor-utils.js'
-import type { GapRemoveGap, GapRemoveData } from '../types/project.js'
+import { useGapRemove } from '../composables/useGapRemove.js'
+import { formatGapRemoveDuration } from '../core/editor-utils.js'
 
 const project = useProjectStore()
-const waveform = useWaveformStore()
-
 const show = defineModel<boolean>('show', { default: false })
+
+const {
+  scanning,
+  removedGaps,
+  removedDuration,
+  scan,
+  restoreGap,
+  restoreAll,
+} = useGapRemove()
 
 const minimumMs = ref(200)
 const thresholdDb = ref(-24)
@@ -16,69 +22,17 @@ const hysteresisDb = ref(6)
 const leadInMs = ref(50)
 const leadOutMs = ref(50)
 const advancedOpen = ref(false)
-const scanning = ref(false)
 
-const removedGaps = computed(() => getRemovedGapRanges(project.gapRemove?.gaps || []))
-const removedDuration = computed(() => removedGaps.value.reduce((sum, g) => sum + (g.end - g.start), 0))
+const scanParams = computed(() => ({
+  minimumMs: minimumMs.value,
+  thresholdDb: thresholdDb.value,
+  hysteresisDb: hysteresisDb.value,
+  leadInMs: leadInMs.value,
+  leadOutMs: leadOutMs.value,
+}))
 
-async function scan() {
-  scanning.value = true
-  try {
-    // 从波形 payload 获取检测数据（如果有）
-    const payload = waveform.payload
-    if (payload) {
-      const gaps = detectAudioGapRemoveGaps(payload as any, {
-        minimumMs: minimumMs.value,
-        thresholdDb: thresholdDb.value,
-        hysteresisDb: hysteresisDb.value,
-        leadInMs: leadInMs.value,
-        leadOutMs: leadOutMs.value,
-      })
-      project.setGapRemove({
-        schema: 'moy.asr.gap_remove.v1',
-        detector: 'audio_gate',
-        minimum_ms: minimumMs.value,
-        threshold_db: thresholdDb.value,
-        hysteresis_db: hysteresisDb.value,
-        lead_in_ms: leadInMs.value,
-        lead_out_ms: leadOutMs.value,
-        skip_playback: false,
-        manual_corrections: false,
-        operation_mode: 'none',
-        gaps,
-      })
-    } else {
-      // 无波形数据时创建占位
-      project.setGapRemove({
-        schema: 'moy.asr.gap_remove.v1',
-        detector: 'audio_gate',
-        minimum_ms: minimumMs.value,
-        threshold_db: thresholdDb.value,
-        hysteresis_db: hysteresisDb.value,
-        lead_in_ms: leadInMs.value,
-        lead_out_ms: leadOutMs.value,
-        skip_playback: false,
-        manual_corrections: false,
-        operation_mode: 'none',
-        gaps: [],
-      })
-    }
-  } finally {
-    scanning.value = false
-  }
-}
-
-function restoreGap(index: number) {
-  if (!project.gapRemove) return
-  const gap = project.gapRemove.gaps[index]
-  if (!gap) return
-  const next = applyGapRemoveRange(project.gapRemove.gaps, gap.start, gap.end, false)
-  project.setGapRemove({ ...project.gapRemove, gaps: next })
-}
-
-function restoreAll() {
-  if (!project.gapRemove) return
-  project.setGapRemove({ ...project.gapRemove, gaps: [] })
+async function onScan() {
+  await scan(scanParams.value)
 }
 </script>
 
@@ -119,7 +73,7 @@ function restoreAll() {
             </div>
           </template>
 
-          <button @click="scan" :disabled="scanning" class="btn-scan">
+          <button @click="onScan" :disabled="scanning" class="btn-scan">
             {{ scanning ? '扫描中...' : '扫描空隙' }}
           </button>
         </div>

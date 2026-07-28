@@ -1,24 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useProjectStore } from '../stores/project.js'
-import { useEditorSettingsStore } from '../stores/editor-settings.js'
-import { useSelectionStore } from '../stores/selection.js'
+import { useOverlayPreview } from '../composables/useOverlayPreview.js'
 
-const project = useProjectStore()
-const settings = useEditorSettingsStore()
-const selection = useSelectionStore()
-
-const activeCue = computed(() => {
-  const idx = selection.lastActive
-  if (idx < 0 || idx >= project.segments.length) return null
-  const seg = project.segments[idx]
-  if (seg.disabled) return null
-  return seg.text
-})
+const { enabled, activeCue } = useOverlayPreview()
 </script>
 
 <template>
-  <div v-if="settings.settings.overlayEnabled && activeCue" class="overlay">
+  <div v-if="enabled && activeCue" class="overlay">
     <div class="overlay-text">{{ activeCue }}</div>
   </div>
 </template>

@@ -29,38 +29,46 @@ export function useFileDrop() {
     const files = Array.from(e.dataTransfer?.files || [])
     if (!files.length) return
 
+    await handleFiles(files)
+  }
+
+  async function handleFiles(files: File[]) {
     const jsonFile = files.find((f) => f.name.endsWith('.json'))
     const mediaFile = files.find((f) => !f.name.endsWith('.json'))
 
     if (jsonFile) {
-      const text = await readFileAsText(jsonFile)
-      if (project.loadProject(text)) {
-        project.projectName = jsonFile.name.replace(/\.json$/i, '')
-        ui.addRecentProject(project.projectName, text)
-      }
+      await loadJsonProject(jsonFile)
     }
 
     if (mediaFile) {
-      // 同一文件不重复加载
-      if (project.mediaFile &&
-          project.mediaFile.name === mediaFile.name &&
-          project.mediaFile.size === mediaFile.size &&
-          project.mediaFile.lastModified === mediaFile.lastModified) {
-        return
-      }
-      project.loadMedia(mediaFile)
-      // 尝试从 localStorage 恢复识别结果
-      if (project.restoreFromStorage(mediaFile)) {
-        ui.flash(`已恢复工程: ${project.projectName}`)
-      }
-      // 提取波形数据（即使恢复了工程也要重新提取，波形不存 localStorage）
-      try {
-        const wfPayload = await extractWaveform(mediaFile)
-        waveform.setPayload(wfPayload)
-      } catch {
-        // 波形提取失败不阻塞流程
-      }
+      await loadMediaFile(mediaFile)
     }
+  }
+
+  async function loadJsonProject(file: File) {
+    const text = await readFileAsText(file)
+    if (project.loadProject(text)) {
+      project.projectName = file.name.replace(/\.json$/i, '')
+      ui.addRecentProject(project.projectName, text)
+    }
+  }
+
+  async function loadMediaFile(file: File) {
+    if (isSameFile(project.mediaFile, file)) return
+    project.loadMedia(file)
+    if (project.restoreFromStorage(file)) {
+      ui.flash(`已恢复工程: ${project.projectName}`)
+    }
+    try {
+      const wfPayload = await extractWaveform(file)
+      waveform.setPayload(wfPayload)
+    } catch {
+      // 波形提取失败不阻塞流程
+    }
+  }
+
+  function isSameFile(a: File | null, b: File): boolean {
+    return !!a && a.name === b.name && a.size === b.size && a.lastModified === b.lastModified
   }
 
   function readFileAsText(file: File): Promise<string> {

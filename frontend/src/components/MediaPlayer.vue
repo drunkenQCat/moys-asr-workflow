@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import { useProjectStore } from '../stores/project.js'
+import { useWaveformStore } from '../stores/waveform.js'
+import { useMediaPlayer } from '../composables/useMediaPlayer.js'
 import OverlayPreview from './OverlayPreview.vue'
 
 const emit = defineEmits<{
@@ -8,39 +9,19 @@ const emit = defineEmits<{
 }>()
 
 const project = useProjectStore()
-const videoRef = ref<HTMLVideoElement | HTMLAudioElement | null>(null)
-const isPlaying = ref(false)
-const currentTime = ref(0)
-const playbackRate = ref(1)
+const waveform = useWaveformStore()
 
-function onTimeUpdate(e: Event) {
-  const target = e.target as HTMLVideoElement | HTMLAudioElement
-  const ms = Math.round(target.currentTime * 1000)
-  currentTime.value = ms
-  emit('timeupdate', ms)
-}
-
-function togglePlayback() {
-  if (!videoRef.value) return
-  if (videoRef.value.paused) {
-    videoRef.value.play()
-    isPlaying.value = true
-  } else {
-    videoRef.value.pause()
-    isPlaying.value = false
-  }
-}
-
-function seekTo(timeMs: number) {
-  if (!videoRef.value) return
-  videoRef.value.currentTime = timeMs / 1000
-}
-
-function setRate(rate: number) {
-  if (!videoRef.value) return
-  videoRef.value.playbackRate = rate
-  playbackRate.value = rate
-}
+const {
+  videoRef,
+  isPlaying,
+  onTimeUpdate,
+  togglePlayback,
+  seekTo,
+  setRate,
+} = useMediaPlayer({
+  onTimeUpdate: (ms) => emit('timeupdate', ms),
+  onCurrentTimeChange: (ms) => waveform.setEditorInstance({ currentTime: ms }),
+})
 
 defineExpose({ togglePlayback, seekTo, setRate })
 </script>

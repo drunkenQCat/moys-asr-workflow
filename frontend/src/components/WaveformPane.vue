@@ -1,33 +1,50 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { useWaveformEditor } from '../composables/useWaveformEditor.js'
+import { ref, computed, watch } from 'vue'
+import { useWaveformRenderer } from '../composables/useWaveformRenderer.js'
 import { useWaveformStore } from '../stores/waveform.js'
 import { useProjectStore } from '../stores/project.js'
+import { useSelectionStore } from '../stores/selection.js'
 
 const containerRef = ref<HTMLElement | null>(null)
-const { isReady, init, setPayload, setSegments, destroy } = useWaveformEditor(containerRef)
-
 const waveform = useWaveformStore()
 const project = useProjectStore()
+const selection = useSelectionStore()
 
-// 挂载后初始化
-import { onMounted, onUnmounted } from 'vue'
-onMounted(() => {
-  init()
+const currentTimeMs = ref(0)
+
+const activeIndex = computed(() => selection.lastActive)
+
+function onSeek(timeMs: number) {
+  waveform.setEditorInstance?.({ currentTime: timeMs })
+}
+
+function onSegmentChange(index: number, start: number, end: number) {
+  project.updateSegment(index, { start, end })
+}
+
+function onSettingsChange(patch: Partial<typeof waveform.settings>) {
+  waveform.updateSettings(patch)
+}
+
+const { isReady } = useWaveformRenderer({
+  containerRef,
+  settings: () => waveform.settings,
+  payload: () => waveform.payload,
+  segments: () => project.segments,
+  currentTimeMs: () => currentTimeMs.value,
+  activeIndex: () => activeIndex.value,
+  callbacks: {
+    onSeek,
+    onSegmentChange,
+    onSettingsChange,
+  },
 })
-onUnmounted(() => {
-  destroy()
-})
 
-// 波形数据变化 → 更新 canvas
-watch(() => waveform.payload, (payload) => {
-  if (payload) setPayload(payload)
-}, { immediate: true })
-
-// 字幕段变化 → 更新 canvas
-watch(() => project.segments, (segments) => {
-  setSegments(segments as any)
-}, { deep: true, immediate: true })
+watch(() => waveform.editorInstance, (inst) => {
+  if (inst?.currentTime !== undefined) {
+    currentTimeMs.value = inst.currentTime
+  }
+}, { deep: true })
 </script>
 
 <template>

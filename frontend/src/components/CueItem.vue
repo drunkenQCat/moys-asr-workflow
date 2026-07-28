@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, nextTick } from 'vue'
+import { computed } from 'vue'
 import type { Segment } from '../types/project.js'
-import { cueMetrics, configuredEnterAction } from '../core/editor-utils.js'
-import { useEditorSettingsStore } from '../stores/editor-settings.js'
+import { cueMetrics, formatCueTime, escapeHtml } from '../core/editor-utils.js'
+import { useCueItemEdit } from '../composables/useCueItemEdit.js'
 
 const props = defineProps<{
   segment: Segment
@@ -27,66 +27,24 @@ const emit = defineEmits<{
   'edit-split': [index: number, charOffset: number]
 }>()
 
-const settings = useEditorSettingsStore()
-const editText = ref('')
-const editTextarea = ref<HTMLTextAreaElement | null>(null)
-
 const metrics = computed(() => cueMetrics(props.segment.text, props.segment.start, props.segment.end))
 const isOverThreshold = computed(() => metrics.value.totalLength > props.charcountThreshold)
 
-const timeStr = computed(() => {
-  const fmt = (ms: number) => {
-    const s = Math.floor(ms / 1000)
-    const m = Math.floor(s / 60)
-    const h = Math.floor(m / 60)
-    return `${String(h).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}.${String(ms % 1000).padStart(3, '0')}`
-  }
-  return `${fmt(props.segment.start)} → ${fmt(props.segment.end)}`
+const timeStr = computed(() =>
+  `${formatCueTime(props.segment.start)} → ${formatCueTime(props.segment.end)}`,
+)
+
+const { editText, editTextarea, startEdit, saveEdit, cancelEdit, onKeydown } = useCueItemEdit({
+  initialText: () => props.segment.text,
+  onStart: () => emit('dblclick', props.index, new MouseEvent('dblclick')),
+  onSave: (text) => emit('edit-save', props.index, text),
+  onCancel: () => emit('edit-cancel', props.index),
+  onSplit: (charOffset) => emit('edit-split', props.index, charOffset),
 })
 
-function startEdit() {
-  editText.value = props.segment.text
-  emit('dblclick', props.index, new MouseEvent('dblclick'))
-  nextTick(() => {
-    editTextarea.value?.focus()
-    editTextarea.value?.select()
-  })
-}
-
-function saveEdit() {
-  emit('edit-save', props.index, editText.value)
-}
-
-function cancelEdit() {
-  emit('edit-cancel', props.index)
-}
-
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
-}
-
-function onKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') {
-    cancelEdit()
-    return
-  }
-  const action = configuredEnterAction(e, settings.settings.splitKey)
-  if (action === 'save') {
-    e.preventDefault()
-    saveEdit()
-  } else if (action === 'split') {
-    e.preventDefault()
-    const textarea = e.target as HTMLTextAreaElement
-    const cursorPos = textarea.selectionStart
-    emit('edit-split', props.index, cursorPos)
-  } else if (action === 'newline') {
-    // Shift+Enter: insert newline, let default behavior handle it
-  }
+function highlightedText(text: string, query: string): string {
+  const escapedQuery = escapeHtml(query).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return escapeHtml(text).replace(new RegExp(escapedQuery, 'gi'), (m) => `<mark>${m}</mark>`)
 }
 
 function onClick(e: MouseEvent) {
@@ -122,7 +80,7 @@ function onContextmenu(e: MouseEvent) {
       <template v-if="!isEditing">
         <span
           v-if="searchQuery"
-          v-html="escapeHtml(segment.text).replace(new RegExp(escapeHtml(searchQuery).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), (m) => `<mark>${m}</mark>`)"
+          v-html="highlightedText(segment.text, searchQuery)"
         />
         <template v-else>{{ segment.text }}</template>
       </template>

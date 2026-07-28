@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
 import ToolbarActions from './components/ToolbarActions.vue'
 import ToolbarSubtitle from './components/ToolbarSubtitle.vue'
 import MediaPlayer from './components/MediaPlayer.vue'
@@ -15,40 +14,16 @@ import GapRemovePanel from './components/GapRemovePanel.vue'
 import StickerModal from './components/StickerModal.vue'
 import ToolbarWaveform from './components/ToolbarWaveform.vue'
 import LayoutResizers from './components/LayoutResizers.vue'
-import { useKeyboard } from './composables/useKeyboard.js'
-import { useFileDrop } from './composables/useFileDrop.js'
-import { useProjectStore } from './stores/project.js'
-import { useSelectionStore } from './stores/selection.js'
+import { useApp } from './composables/useApp.js'
 
-const project = useProjectStore()
-const selection = useSelectionStore()
-const setupWizardRef = ref<InstanceType<typeof SetupWizard> | null>(null)
-const mediaPlayerRef = ref<InstanceType<typeof MediaPlayer> | null>(null)
-const showSettings = ref(false)
-const showGapRemove = ref(false)
-const showSticker = ref(false)
-
-// 播放同步：根据当前时间找到活跃字幕
-function onPlayerTimeUpdate(timeMs: number) {
-  const idx = project.segments.findIndex((seg) =>
-    !seg.disabled && timeMs >= seg.start && timeMs < seg.end
-  )
-  if (idx >= 0 && idx !== selection.lastActive) {
-    selection.setActive(idx)
-  }
-}
-
-onMounted(() => {
-  if (mediaPlayerRef.value) {
-    const kb = useKeyboard({
-      togglePlayback: () => mediaPlayerRef.value!.togglePlayback(),
-      setRate: (rate: number) => mediaPlayerRef.value!.setRate(rate),
-    })
-    kb.init()
-  }
-  const fileDrop = useFileDrop()
-  fileDrop.init()
-})
+const {
+  setupWizardRef,
+  mediaPlayerRef,
+  showSettings,
+  showGapRemove,
+  showSticker,
+  onPlayerTimeUpdate,
+} = useApp()
 </script>
 
 <template>

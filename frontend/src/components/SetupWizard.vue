@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { loadAsrConfig, saveAsrConfig, hasApiKey } from '../core/asr-config.js'
-import { computeBaseUrl } from '../core/asr.js'
+import { useAsrConnectionTest } from '../composables/useAsrConnectionTest.js'
 
 const props = withDefaults(defineProps<{
   /** 设置模式：first-time 自动弹出，settings 由按钮触发 */
@@ -18,9 +18,9 @@ const apiKey = ref('')
 const workspaceId = ref('')
 const language = ref('zh')
 const model = ref('qwen3-asr-flash-filetrans')
-const testing = ref(false)
-const testResult = ref('')
 const show = ref(false)
+
+const { testing, testResult, testConnection } = useAsrConnectionTest()
 
 onMounted(() => {
   if (props.mode !== 'manual' && !hasApiKey()) {
@@ -35,42 +35,6 @@ function open() {
   language.value = config.language || 'zh'
   model.value = config.model || 'qwen3-asr-flash-filetrans'
   show.value = true
-}
-
-async function testConnection() {
-  testing.value = true
-  testResult.value = ''
-  try {
-    const baseUrl = computeBaseUrl(workspaceId.value)
-    // 用 transcription 端点测试连接，upload 端点可能不存在于 workspace 域名
-    const resp = await fetch(`${baseUrl}/api/v1/services/audio/asr/transcription`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey.value}`,
-        'Content-Type': 'application/json',
-        'X-DashScope-Async': 'enable',
-      },
-      body: JSON.stringify({
-        model: 'qwen3-asr-flash-filetrans',
-        input: { file_url: 'oss://placeholder/test.wav' },
-        parameters: { channel_id: [0] },
-      }),
-    })
-    if (resp.ok || resp.status === 400) {
-      // 200 或 400（参数错误）说明 API key 有效
-      testResult.value = '✅ 连接成功'
-    } else if (resp.status === 401) {
-      testResult.value = '❌ API Key 无效'
-    } else if (resp.status === 403) {
-      testResult.value = '❌ 鉴权失败，请检查工作空间 ID 和 API Key'
-    } else {
-      testResult.value = `❌ HTTP ${resp.status}: ${resp.statusText}`
-    }
-  } catch (err: unknown) {
-    testResult.value = `❌ 网络错误: ${err instanceof Error ? err.message : String(err)}`
-  } finally {
-    testing.value = false
-  }
 }
 
 function save() {
@@ -157,7 +121,7 @@ defineExpose({ open })
           <button
             class="btn btn-test"
             :disabled="!apiKey || testing"
-            @click="testConnection"
+            @click="testConnection(apiKey, workspaceId)"
           >
             {{ testing ? '测试中...' : '测试连接' }}
           </button>

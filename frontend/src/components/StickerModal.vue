@@ -1,34 +1,14 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import { useProjectStore } from '../stores/project.js'
 import { useSelectionStore } from '../stores/selection.js'
+import { useStickerDirectory } from '../composables/useStickerDirectory.js'
 import type { StickerHead } from '../types/project.js'
 
 const show = defineModel<boolean>('show', { default: false })
 
 const project = useProjectStore()
 const selection = useSelectionStore()
-
-const stickers = ref<{ name: string; url: string }[]>([])
-const stickerRoot = ref('')
-
-function selectDirectory() {
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.webkitdirectory = true
-  input.onchange = () => {
-    const files = Array.from(input.files || [])
-    const imageFiles = files.filter((f) => f.type.startsWith('image/'))
-    stickers.value = imageFiles.map((f) => ({
-      name: f.name.replace(/\.[^.]+$/, ''),
-      url: URL.createObjectURL(f),
-    }))
-    if (imageFiles.length > 0) {
-      stickerRoot.value = imageFiles[0].webkitRelativePath.split('/')[0]
-    }
-  }
-  input.click()
-}
+const { stickers, stickerRoot, selectDirectory } = useStickerDirectory()
 
 function assignSticker(name: string) {
   const idx = selection.lastActive
