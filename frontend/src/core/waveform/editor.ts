@@ -233,20 +233,25 @@ export class WaveformEditor {
     const amplitude = h * 0.36 * (this.settings.waveformScale || 1)
     const midY = h / 2
 
-    ctx.strokeStyle = '#6c63ff'
-    ctx.lineWidth = 1
+    // 顶边：左→右
     ctx.beginPath()
-
     for (let i = 0; i < w; i++) {
       const peakPos = startPeak + (i / w) * peakCount
-      const [low, high] = sampleInterpolatedPeak(peaks as any, peakPos, peakCount)
+      const [low] = sampleInterpolatedPeak(peaks as any, peakPos, peakCount)
       const top = midY - (Math.abs(low) / 127) * amplitude
-      const bottom = midY + (Math.abs(high) / 127) * amplitude
       if (i === 0) ctx.moveTo(i, top)
       else ctx.lineTo(i, top)
+    }
+    // 底边：右→左
+    for (let i = w - 1; i >= 0; i--) {
+      const peakPos = startPeak + (i / w) * peakCount
+      const [, high] = sampleInterpolatedPeak(peaks as any, peakPos, peakCount)
+      const bottom = midY + (Math.abs(high) / 127) * amplitude
       ctx.lineTo(i, bottom)
     }
-    ctx.stroke()
+    ctx.closePath()
+    ctx.fillStyle = 'rgba(108, 99, 255, 0.5)'
+    ctx.fill()
   }
 
   private drawCueBlocks(ctx: CanvasRenderingContext2D, w: number, h: number): void {

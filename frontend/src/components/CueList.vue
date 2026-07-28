@@ -104,7 +104,8 @@ function onEditSave(index: number, text: string) {
 .cue-list {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 .cue-list-header {

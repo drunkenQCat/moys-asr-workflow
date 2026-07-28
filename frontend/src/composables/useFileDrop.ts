@@ -52,9 +52,8 @@ export function useFileDrop() {
       // 尝试从 localStorage 恢复识别结果
       if (project.restoreFromStorage(mediaFile)) {
         ui.flash(`已恢复工程: ${project.projectName}`)
-        return
       }
-      // 提取波形数据
+      // 提取波形数据（即使恢复了工程也要重新提取，波形不存 localStorage）
       try {
         const wfPayload = await extractWaveform(mediaFile)
         waveform.setPayload(wfPayload)

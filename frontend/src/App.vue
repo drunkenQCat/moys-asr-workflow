@@ -65,10 +65,10 @@ onMounted(() => {
       <div class="workspace-left">
         <MediaPlayer ref="mediaPlayerRef" @timeupdate="onPlayerTimeUpdate" />
         <CurrentCuePanel />
+        <CueList />
       </div>
       <div class="workspace-center">
         <WaveformPane />
-        <CueList />
       </div>
       <LayoutResizers />
     </div>
@@ -114,7 +114,11 @@ body {
   display: flex;
   flex-direction: column;
   border-right: 1px solid #333;
+  overflow: hidden;
 }
+.workspace-left > :nth-child(1) { flex: 2; min-height: 0; }
+.workspace-left > :nth-child(2) { flex: 1; min-height: 0; }
+.workspace-left > :nth-child(3) { flex: 2; min-height: 0; }
 .workspace-center {
   flex: 1;
   display: flex;
