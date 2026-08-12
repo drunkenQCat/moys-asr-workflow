@@ -182,8 +182,8 @@ class PackagingContractTests(unittest.TestCase):
         self.assertNotIn("ffplay.exe", workflow)
         self.assertIn("MAWxFF-Windows-x64-${{ github.ref_name }}.zip", workflow)
         self.assertIn("actions/upload-artifact@v4", workflow)
-        self.assertIn("softprops/action-gh-release@v2", workflow)
-        self.assertIn("target_commitish: ${{ github.sha }}", workflow)
+        self.assertIn("gh release upload", workflow)
+        self.assertIn("--target '${{ github.sha }}'", workflow)
         self.assertIn("GITHUB_TOKEN: ${{ github.token }}", workflow)
         self.assertNotIn(".zip.sha256", workflow)
 
