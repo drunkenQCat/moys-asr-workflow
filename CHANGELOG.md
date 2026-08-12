@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- 新增 Linux AppImage 构建与发布工具：`scripts/build-appimage.sh` 负责打包（PyInstaller → AppDir 组装 → appimagetool，打包后自动生成缩略图缓存）；`.github/workflows/release-linux.yml` 在打 `v*` 标签时自动构建并上传 `MAW-x86_64-*.AppImage` 到 GitHub Release（暂未发布任何 Linux 版本）。系统缺少 `libappimage` 时可用 `scripts/make-appimage-thumbnail.py` 为文件管理器生成图标缓存。
+
 ### Fixed
 
 - 修复 Linux 上打包（PyInstaller / AppImage）后 Launcher 页面资源路径解析错误的问题：冻结环境改用 `sys._MEIPASS` 定位 `web/` 等资源，源码运行行为不变。
