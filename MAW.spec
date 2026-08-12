@@ -28,6 +28,16 @@ if sys.platform == "linux":
             # 必须放在 Qt 的 LibrariesPath（_internal/PyQt6/Qt6/lib）：QLibrary
             # 搜索 xcb-cursor 时走 Qt 库目录，不走 LD_LIBRARY_PATH。
             binaries.append((libxcb_cursor, "PyQt6/Qt6/lib"))
+            # Qt 用 QLibrary("xcb-cursor") 找无版本 libxcb-cursor.so；
+            # ubuntu 等发行版只提供 .so.0，需复制一份无版本名。
+            unversioned = Path(libxcb_cursor).with_name("libxcb-cursor.so")
+            if not unversioned.exists():
+                import shutil
+                import tempfile
+
+                unversioned = Path(tempfile.mkdtemp(prefix="maw-spec-")) / "libxcb-cursor.so"
+                shutil.copy2(libxcb_cursor, unversioned)
+            binaries.append((str(unversioned), "PyQt6/Qt6/lib"))
     except Exception:  # noqa: BLE001 - 收集失败时回退 ldd 默认行为
         pass
 
