@@ -25,7 +25,9 @@ if sys.platform == "linux":
 
         libxcb_cursor = _ld_so_path("libxcb-cursor.so.0")
         if libxcb_cursor:
-            binaries.append((libxcb_cursor, "."))
+            # 必须放在 Qt 的 LibrariesPath（_internal/PyQt6/Qt6/lib）：QLibrary
+            # 搜索 xcb-cursor 时走 Qt 库目录，不走 LD_LIBRARY_PATH。
+            binaries.append((libxcb_cursor, "PyQt6/Qt6/lib"))
     except Exception:  # noqa: BLE001 - 收集失败时回退 ldd 默认行为
         pass
 

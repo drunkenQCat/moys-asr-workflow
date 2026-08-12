@@ -54,12 +54,13 @@ class GuiConfigTests(unittest.TestCase):
     def test_default_env_path_frozen_linux_honors_xdg_config_home(self) -> None:
         """Given 冻结 Linux 且设置 XDG_CONFIG_HOME, When 解析, Then 优先使用该目录。"""
         with mock.patch.object(gui_config.sys, "platform", "linux"), mock.patch.object(gui_config.sys, "frozen", True, create=True):
-            with mock.patch.dict(os.environ, {"XDG_CONFIG_HOME": "/custom/config"}, clear=True):
-                with mock.patch.object(gui_config.Path, "mkdir"):
-                    self.assertEqual(
-                        gui_config.default_env_path(),
-                        Path("/custom/config/Moy/MAW/.env"),
-                    )
+            with mock.patch.object(gui_config.Path, "home", return_value=Path("/home/test-user")):
+                with mock.patch.dict(os.environ, {"XDG_CONFIG_HOME": "/custom/config"}, clear=True):
+                    with mock.patch.object(gui_config.Path, "mkdir"):
+                        self.assertEqual(
+                            gui_config.default_env_path(),
+                            Path("/custom/config/Moy/MAW/.env"),
+                        )
 
     def test_default_env_path_keeps_windows_at_repo_root(self) -> None:
         """Given Windows, When resolving, Then it stays at the repository root (unchanged)."""
