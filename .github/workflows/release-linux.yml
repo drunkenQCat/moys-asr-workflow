@@ -80,6 +80,17 @@ jobs:
           test -x "$AppImage"
           file "$AppImage" | grep -q 'ELF 64-bit'
 
+      - name: Diagnose AppImage libraries
+        if: always()
+        run: |
+          cd build-appimage
+          ./MAW-x86_64.AppImage --appimage-extract >/dev/null 2>&1 || true
+          echo "=== Qt6/lib 里 xcb-cursor 相关:"
+          ls squashfs-root/_internal/PyQt6/Qt6/lib/ 2>/dev/null | grep -i xcb || echo "(无)"
+          echo "=== libqxcb.so 缺失依赖:"
+          ldd squashfs-root/_internal/PyQt6/Qt6/plugins/platforms/libqxcb.so 2>&1 | grep "not found" || echo "(依赖完整)"
+          rm -r squashfs-root
+
       - name: Smoke AppImage (headless)
         run: |
           set -euo pipefail
