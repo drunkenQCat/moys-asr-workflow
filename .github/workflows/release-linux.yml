@@ -149,14 +149,19 @@ jobs:
           open("release-notes.md", "w", encoding="utf-8").write(body)
           PYEOF
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+      - name: Create or update GitHub Release
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        with:
-          target_commitish: ${{ github.sha }}
-          prerelease: ${{ contains(github.ref_name, '-') }}
-          update_existing_release: true
-          body_path: release-notes.md
-          files: |
-            build-appimage/MAW-x86_64-${{ github.ref_name }}.AppImage
+        run: |
+          set -euo pipefail
+          Tag="${{ github.ref_name }}"
+          case "$Tag" in *-*) Prerelease=true;; *) Prerelease=false;; esac
+          # 并发安全：已存在则跳过创建；create 撞 already_exists 时继续上传
+          if ! gh release view "$Tag" >/dev/null 2>&1; then
+            gh release create "$Tag" \
+              --title "$Tag" \
+              --notes-file release-notes.md \
+              --prerelease="$Prerelease" \
+              --target "${{ github.sha }}" || true
+          fi
+          gh release upload "$Tag" "build-appimage/MAW-x86_64-$Tag.AppImage" --clobber
