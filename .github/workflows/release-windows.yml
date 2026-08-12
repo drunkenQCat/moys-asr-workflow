@@ -207,6 +207,7 @@ jobs:
         with:
           target_commitish: ${{ github.sha }}
           prerelease: ${{ contains(github.ref_name, '-') }}
+          update_existing_release: true
           body_path: release-notes.md
           files: |
             MAW-Windows-x64-${{ github.ref_name }}.zip

@@ -107,11 +107,17 @@ jobs:
             exit 1
           fi
 
+      - name: Rename AppImage with version
+        run: |
+          set -euo pipefail
+          mv "build-appimage/MAW-x86_64.AppImage" "build-appimage/MAW-x86_64-${{ github.ref_name }}.AppImage"
+          test -f "build-appimage/MAW-x86_64-${{ github.ref_name }}.AppImage"
+
       - name: Upload AppImage artifact
         uses: actions/upload-artifact@v4
         with:
           name: MAW-x86_64-${{ github.ref_name }}
-          path: build-appimage/MAW-x86_64.AppImage
+          path: build-appimage/MAW-x86_64-${{ github.ref_name }}.AppImage
           if-no-files-found: error
 
       - name: Prepare release notes from CHANGELOG
@@ -150,6 +156,7 @@ jobs:
         with:
           target_commitish: ${{ github.sha }}
           prerelease: ${{ contains(github.ref_name, '-') }}
+          update_existing_release: true
           body_path: release-notes.md
           files: |
-            build-appimage/MAW-x86_64.AppImage
+            build-appimage/MAW-x86_64-${{ github.ref_name }}.AppImage
