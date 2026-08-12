@@ -28,8 +28,9 @@ jobs:
           sudo apt-get install -y \
             ffmpeg squashfs-tools \
             libnss3 libasound2 libxcomposite1 libxdamage1 libxrandr2 \
-            libxtst6 libxkbcommon0 libpci3 libgl1 libegl1 libopengl0 \
-            libxcb-cursor0 xvfb
+            libxtst6 libxkbcommon0 libxkbcommon-x11-0 libpci3 libgl1 libegl1 \
+            libopengl0 libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 libxcb-xkb1 \
+            xvfb
           sudo apt-get clean
 
       - name: Set up Python
