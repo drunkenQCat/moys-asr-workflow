@@ -10,11 +10,33 @@ BUILD_DIR="$REPO_ROOT/build-appimage"
 APP_DIR="$BUILD_DIR/MAW.AppDir"
 APPIMAGE_TOOL="$BUILD_DIR/appimagetool-x86_64.AppImage"
 APPIMAGE_URL="https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"
+mkdir -p "$BUILD_DIR"
 
-echo "==> 1/5 PyInstaller 构建 dist/MAW"
+echo "==> 1/6 PyInstaller 构建 dist/MAW"
 uv run --group build pyinstaller --noconfirm --clean MAW.spec
 
-echo "==> 2/5 组装 AppDir"
+echo "==> 2/6 准备静态 ffmpeg（johnvansickle）"
+FFMPEG_TARBALL="$BUILD_DIR/ffmpeg-release-amd64-static.tar.xz"
+FFMPEG_URL="https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz"
+FFMPEG_DIR="$BUILD_DIR/ffmpeg-static"
+# 静态版自包含 libstdc++ 依赖，不受 PyInstaller 的 _internal 旧库污染；
+# 动态版 ffmpeg 若打进包内，AppRun 污染环境下照样会 GLIBCXX 报错。
+if [ ! -x "$FFMPEG_DIR/ffmpeg" ]; then
+    if [ ! -f "$FFMPEG_TARBALL" ]; then
+        echo "    下载静态 ffmpeg..."
+        curl -sL --retry 3 --retry-delay 2 -o "$FFMPEG_TARBALL" "$FFMPEG_URL"
+    fi
+    mkdir -p "$FFMPEG_DIR"
+    tar -xf "$FFMPEG_TARBALL" -C "$FFMPEG_DIR" --strip-components=1
+    chmod +x "$FFMPEG_DIR/ffmpeg" "$FFMPEG_DIR/ffprobe"
+fi
+# 放入 PyInstaller onedir 产物：frozen 时 _bundled_ffmpeg_directory() 查
+# sys.executable.parent / ffmpeg / bin（即 dist/MAW/ffmpeg/bin）
+mkdir -p "dist/MAW/ffmpeg/bin"
+cp "$FFMPEG_DIR/ffmpeg" "$FFMPEG_DIR/ffprobe" "dist/MAW/ffmpeg/bin/"
+echo "    静态 ffmpeg: $("$FFMPEG_DIR/ffmpeg" -version 2>&1 | head -n 1)"
+
+echo "==> 3/6 组装 AppDir"
 if [ -d "$APP_DIR" ]; then
     rm -r "$APP_DIR"
 fi
@@ -55,7 +77,7 @@ ffmpeg -y -loglevel error -i assets/show.webp -vf "scale=512:512:flags=lanczos" 
 mkdir -p "$APP_DIR/usr/share/applications"
 cp "$APP_DIR/MAW.desktop" "$APP_DIR/usr/share/applications/MAW.desktop"
 
-echo "==> 3/5 准备 appimagetool"
+echo "==> 4/6 准备 appimagetool"
 if [ ! -x "$APPIMAGE_TOOL" ]; then
     curl -sL --retry 3 --retry-delay 2 -o "$APPIMAGE_TOOL" "$APPIMAGE_URL"
     chmod +x "$APPIMAGE_TOOL"
@@ -67,10 +89,10 @@ if [ ! -x "$APPIMAGE_TOOL" ]; then
     fi
 fi
 
-echo "==> 4/5 打包 AppImage"
+echo "==> 5/6 打包 AppImage"
 "$APPIMAGE_TOOL" --appimage-extract-and-run "$APP_DIR" "$BUILD_DIR/MAW-x86_64.AppImage"
 
-echo "==> 5/5 生成缩略图缓存（缺 libappimage 的系统上让文件管理器显示图标）"
+echo "==> 6/6 生成缩略图缓存（缺 libappimage 的系统上让文件管理器显示图标）"
 if uv run python "$REPO_ROOT/scripts/make-appimage-thumbnail.py" "$BUILD_DIR/MAW-x86_64.AppImage"; then
     echo "    缩略图缓存已生成"
 else

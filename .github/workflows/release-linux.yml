@@ -92,6 +92,23 @@ jobs:
           ldd squashfs-root/_internal/PyQt6/Qt6/plugins/platforms/libqxcb.so 2>&1 | grep "not found" || echo "(依赖完整)"
           rm -r squashfs-root
 
+      - name: Verify bundled static ffmpeg under polluted environment
+        run: |
+          set -euo pipefail
+          cd build-appimage
+          ./MAW-x86_64.AppImage --appimage-extract >/dev/null 2>&1
+          BIN="squashfs-root/ffmpeg/bin"
+          test -x "$BIN/ffmpeg"
+          test -x "$BIN/ffprobe"
+          # 模拟 PyInstaller bootloader：LD_LIBRARY_PATH 指向 _internal（含旧 libstdc++）。
+          # 静态 ffmpeg 必须自包含，在此污染环境下仍能正常运行；动态版会
+          # 在这里报 GLIBCXX_3.4.32 not found。
+          export LD_LIBRARY_PATH="$PWD/squashfs-root/_internal"
+          "$BIN/ffmpeg" -version >/dev/null
+          "$BIN/ffprobe" -version >/dev/null
+          echo "OK: 静态 ffmpeg 在污染 LD_LIBRARY_PATH 下正常运行"
+          rm -r squashfs-root
+
       - name: Smoke AppImage (headless)
         run: |
           set -euo pipefail
@@ -114,10 +131,20 @@ jobs:
           mv "build-appimage/MAW-x86_64.AppImage" "build-appimage/MAW-x86_64-${{ github.ref_name }}.AppImage"
           test -f "build-appimage/MAW-x86_64-${{ github.ref_name }}.AppImage"
 
+      - name: Compute artifact name
+        id: artifact-name
+        shell: bash
+        run: |
+          RefName="${GITHUB_REF_NAME:-dev}"
+          # upload-artifact 禁止 / \ * ? " < > | : 等字符；dispatch 触发时
+          # ref_name 是分支名（含 /），统一清洗成合法 artifact 名。
+          CleanName="${RefName//[^a-zA-Z0-9._-]/-}"
+          echo "name=MAW-x86_64-${CleanName}" >> "$GITHUB_OUTPUT"
+
       - name: Upload AppImage artifact
         uses: actions/upload-artifact@v4
         with:
-          name: MAW-x86_64-${{ github.ref_name || 'dev' }}
+          name: ${{ steps.artifact-name.outputs.name }}
           path: build-appimage/MAW-x86_64*.AppImage
           if-no-files-found: error
 
