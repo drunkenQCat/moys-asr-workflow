@@ -53,7 +53,7 @@ LLVM 栈要求更新的 C++ ABI 符号。于是：
 
 ## 3. 为什么 CI 没抓到
 
-`release-linux.yml` 的 smoke 测试跑在 ubuntu-22.04 上，其系统 libstdc++
+`release.yml` 的 smoke 测试跑在 ubuntu-22.04 上，其系统 libstdc++
 恰好与包内同一个版本（都是 GCC 11），系统驱动也不需要新符号——问题只在
 "系统 libstdc++ 比包内新"的真机（SteamOS / Arch 等）爆发。CI 需要加
 "包内不得内置 libstdc++/libgcc_s/libgbm" 的回归断言，而不是继续依赖 xvfb
@@ -86,7 +86,7 @@ rm -f "$APP_DIR/_internal/libstdc++.so.6" "$APP_DIR/_internal/libgcc_s.so.1" \
       "$APP_DIR/_internal/libgbm.so.1"
 ```
 
-### 4.2 `.github/workflows/release-linux.yml`
+### 4.2 `.github/workflows/release.yml`
 
 在 "Build AppImage" 与 "Verify AppImage output" 之间（或紧跟其后）新增一步
 回归断言，名称固定为 `Verify no bundled C++ runtime in AppImage`：
@@ -116,7 +116,7 @@ rm -f "$APP_DIR/_internal/libstdc++.so.6" "$APP_DIR/_internal/libgcc_s.so.1" \
 def test_appimage_build_drops_bundled_cpp_runtime(self) -> None:
     """Given the AppImage build script and workflow, When the AppDir is assembled, Then bundled libstdc++/libgcc_s/libgbm are removed and CI forbids them."""
     script = read_text("scripts/build-appimage.sh")
-    workflow = read_text(".github/workflows/release-linux.yml")
+    workflow = read_text(".github/workflows/release.yml")
 
     self.assertIn('rm -f "$APP_DIR/_internal/libstdc++.so.6" "$APP_DIR/_internal/libgcc_s.so.1"', script)
     self.assertIn('"$APP_DIR/_internal/libgbm.so.1"', script)
@@ -159,7 +159,7 @@ echo "status=$?   （124=事件循环存活，正常）"
 
 ### 5.2 CI 验证
 
-push `feat/linux-compat` 后先跑一遍 `release-linux.yml`（workflow_dispatch），
+push `feat/linux-compat` 后先跑一遍 `release.yml`（workflow_dispatch），
 确认新增步骤与既有 smoke 全绿。
 
 ### 5.3 自动化测试
@@ -197,6 +197,6 @@ git diff --check
 ## 7. 结论速记
 
 改 2 个文件 + 1 个测试：`scripts/build-appimage.sh`（rm libstdc++/libgcc_s/
-libgbm 三把库）、`release-linux.yml`（新增断言步骤，含 libgbm）、
+libgbm 三把库）、`release.yml`（新增断言步骤，含 libgbm）、
 `tests/test_packaging_contract.py`（契约测试），另加 `CHANGELOG.md`。验证：
 CI 产出包 + 真机冒烟 + 单测。
