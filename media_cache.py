@@ -86,7 +86,7 @@ def embed_media_caches(
         except (OSError, ValueError, IndexError, struct.error) as error:
             print(f"[reapeaks] 警告: 无法读取已生成缓存: {error}")
     else:
-        print("[reapeaks] 已跳过 ReaPeaks 缓存生成（缺少 ffmpeg 或 numpy）")
+        print("[reapeaks] 已跳过频谱缓存生成（原因见上方 [reapeaks] 日志）")
     return MediaCacheResult(
         project=project,
         waveform_error=waveform_result.error,
