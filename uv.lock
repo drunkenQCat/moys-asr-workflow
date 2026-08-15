@@ -1285,13 +1285,14 @@ wheels = [
 
 [[package]]
 name = "moys-asr-workflow"
-version = "1.4.0b7"
+version = "1.4.0b8"
 source = { virtual = "." }
 dependencies = [
     { name = "jieba" },
     { name = "numpy" },
     { name = "pywebview" },
     { name = "pywebview", extra = ["qt"], marker = "sys_platform == 'linux'" },
+    { name = "reapeaks-rust" },
     { name = "requests" },
 ]
 
@@ -1330,6 +1331,7 @@ requires-dist = [
     { name = "pywebview", extras = ["qt"], marker = "sys_platform == 'linux'", specifier = ">=6.2.1" },
     { name = "qwen-asr", marker = "extra == 'local'", specifier = ">=0.0.6" },
     { name = "rapidocr", marker = "extra == 'ocr'", specifier = ">=3.9.0" },
+    { name = "reapeaks-rust", git = "https://github.com/drunkenQCat/reapeaks-rs.git?rev=main" },
     { name = "requests", specifier = ">=2.28" },
     { name = "torch", marker = "sys_platform == 'win32' and extra == 'local'", specifier = ">=2.13.0", index = "https://download.pytorch.org/whl/cu130" },
     { name = "torch", marker = "sys_platform != 'win32' and extra == 'local'", specifier = ">=2.13.0" },
@@ -2847,6 +2849,11 @@ dependencies = [
 wheels = [
     { url = "https://files.pythonhosted.org/packages/55/ed/0ee9b9281986974be9d2406ae0134c8d7c91d2fc613f16ffda9701eeda6f/rapidocr-3.9.2-py3-none-any.whl", hash = "sha256:04d6b8d151f823d930bd91910555f57bea897c0c44fa6794267b94cf9c1ef9a0", size = 27275208, upload-time = "2026-07-21T10:59:01.599Z" },
 ]
+
+[[package]]
+name = "reapeaks-rust"
+version = "0.1.0"
+source = { git = "https://github.com/drunkenQCat/reapeaks-rs.git?rev=main#81005d2011e8dd0e1b01a4942e5370f3d26ec852" }
 
 [[package]]
 name = "regex"
