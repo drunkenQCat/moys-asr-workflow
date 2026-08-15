@@ -228,6 +228,8 @@ class PackagingContractTests(unittest.TestCase):
         self.assertIn("scripts/prepare_release_notes.py", workflow)
         self.assertIn("gh release edit", workflow)
         self.assertIn("--notes-file release-notes.md", workflow)
+        # publish 必须同时满足 tag 触发 + Windows 构建成功，否则 dispatch 会误发 Release
+        self.assertIn("startsWith(github.ref, 'refs/tags/v') && !cancelled() && needs.build-windows.result == 'success'", workflow)
         # macOS-specific assertions
         macos_workflow = read_text(".github/workflows/release.yml")
         self.assertNotIn("tauri.macos.conf.json", macos_workflow)

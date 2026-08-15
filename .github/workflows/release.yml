@@ -504,7 +504,7 @@ jobs:
 
   publish:
     name: Publish GitHub Release
-    if: ${{ !cancelled() && needs.build-windows.result == 'success' }}
+    if: ${{ startsWith(github.ref, 'refs/tags/v') && !cancelled() && needs.build-windows.result == 'success' }}
     needs: [build-windows, build-aux]
     runs-on: ubuntu-latest
     permissions:
