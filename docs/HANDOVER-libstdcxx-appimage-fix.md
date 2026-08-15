@@ -56,7 +56,8 @@ LLVM 栈要求更新的 C++ ABI 符号。于是：
 `release-linux.yml` 的 smoke 测试跑在 ubuntu-22.04 上，其系统 libstdc++
 恰好与包内同一个版本（都是 GCC 11），系统驱动也不需要新符号——问题只在
 "系统 libstdc++ 比包内新"的真机（SteamOS / Arch 等）爆发。CI 需要加
-"包内不得内置 libstdc++/libgcc_s" 的回归断言，而不是继续依赖 xvfb smoke。
+"包内不得内置 libstdc++/libgcc_s/libgbm" 的回归断言，而不是继续依赖 xvfb
+smoke。
 
 ## 4. 修改方案
 
@@ -136,7 +137,7 @@ def test_appimage_build_drops_bundled_cpp_runtime(self) -> None:
 ```bash
 cd /tmp && rm -rf mawverify && mkdir mawverify && cd mawverify
 APPIMAGE_EXTRACT_AND_RUN=1 /home/deck/Applications/MAW-x86_64-v1.4.0-beta.7.AppImage --appimage-extract >/dev/null 2>&1
-rm -f squashfs-root/_internal/libstdc++.so.6 squashfs-root/_internal/libgcc_s.so.1
+rm -f squashfs-root/_internal/libstdc++.so.6 squashfs-root/_internal/libgcc_s.so.1 squashfs-root/_internal/libgbm.so.1
 /home/deck/MyCode/moys-asr-workflow/build-appimage/appimagetool-x86_64.AppImage \
   --appimage-extract-and-run squashfs-root MAW-fixed.AppImage
 timeout 25 ./MAW-fixed.AppImage > /tmp/maw-fixed.log 2>&1
@@ -172,7 +173,7 @@ git diff --check
 
 - **系统库过老的发行版**：若某发行版 system libstdc++ 比剔掉的还旧且
   Qt 需要更高符号，会反过来缺符号。届时方案是 AppRun 里按需加载：
-  把两把库挪到 `_internal/compat/`，AppRun 检测
+  把三把库（libstdc++/libgcc_s/libgbm）挪到 `_internal/compat/`，AppRun 检测
   `strings /usr/lib/libstdc++.so.6 | grep -q '^GLIBCXX_3.4.32$'` 失败时再把它
   们加入 `LD_LIBRARY_PATH`。当前 MAW 目标环境（SteamOS / Arch / Ubuntu 22.04+）
   均不需要，先不引入。
