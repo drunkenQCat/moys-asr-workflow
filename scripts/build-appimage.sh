@@ -43,6 +43,15 @@ fi
 mkdir -p "$APP_DIR"
 cp -a dist/MAW/. "$APP_DIR/"
 
+# PyInstaller 会把构建机（ubuntu-22.04，GCC 11）的 libstdc++/libgcc_s 收进
+# _internal。在系统 libstdc++ 更新的发行版（如 SteamOS 的 GCC 14）上，这两把
+# 旧库会抢先于系统库被加载，导致系统 Mesa 驱动链（radeonsi → libLLVM →
+# libstdc++）与 libSPIRV-Tools 因缺 GLIBCXX_3.4.32 加载失败，QtWebEngine
+# 无可用渲染后端而 abort。libstdc++ ABI 向后兼容，直接剔除、使用系统版本；
+# 后续如需支持系统库过老的发行版，再引入 compat 目录按需加载。
+# 详见 docs/HANDOVER-libstdcxx-appimage-fix.md。
+rm -f "$APP_DIR/_internal/libstdc++.so.6" "$APP_DIR/_internal/libgcc_s.so.1"
+
 # AppRun：QtWebEngine 在 AppImage（squashfs 只读、无 SUID sandbox helper）环境
 # 必须禁用 Chromium 沙箱，否则 Launcher 页面无法渲染。
 cat > "$APP_DIR/AppRun" <<'EOF'

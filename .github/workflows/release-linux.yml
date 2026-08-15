@@ -81,6 +81,18 @@ jobs:
           test -x "$AppImage"
           file "$AppImage" | grep -q 'ELF 64-bit'
 
+      - name: Verify no bundled C++ runtime in AppImage
+        run: |
+          set -euo pipefail
+          cd build-appimage
+          ./MAW-x86_64.AppImage --appimage-extract >/dev/null 2>&1
+          if [ -e squashfs-root/_internal/libstdc++.so.6 ] || [ -e squashfs-root/_internal/libgcc_s.so.1 ]; then
+            echo "FAIL: AppImage 内置了 libstdc++/libgcc_s，会污染系统 Mesa 驱动加载（见 docs/HANDOVER-libstdcxx-appimage-fix.md）"
+            exit 1
+          fi
+          echo "OK: 未内置 libstdc++/libgcc_s"
+          rm -r squashfs-root
+
       - name: Diagnose AppImage libraries
         if: always()
         run: |

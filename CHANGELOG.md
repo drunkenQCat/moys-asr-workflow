@@ -4,6 +4,10 @@
 
 ## [Unreleased]
 
+### 🐛 问题修复
+
+- 修复 Linux AppImage 在系统 libstdc++ 较新的发行版（如 SteamOS 的 GCC 14）上启动即崩溃的问题：打包时剔除 PyInstaller 收集的旧版 `libstdc++.so.6` / `libgcc_s.so.1`（构建机 GCC 11，缺 `GLIBCXX_3.4.32`），避免其抢先于系统库被加载、导致系统 Mesa 驱动链（EGL / Vulkan / VA-API）初始化失败使 QtWebEngine 无渲染后端而 abort；`release-linux.yml` 增加包内不得内置这两把库的回归断言。
+
 ## [1.4.0-beta.7] - 2026-08-14
 
 ### 🚀 全新特性
