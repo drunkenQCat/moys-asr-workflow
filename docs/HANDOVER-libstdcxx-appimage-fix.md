@@ -77,7 +77,12 @@ LLVM 栈要求更新的 C++ ABI 符号。于是：
 # libstdc++）与 libSPIRV-Tools 因缺 GLIBCXX_3.4.32 加载失败，QtWebEngine
 # 无可用渲染后端而 abort。libstdc++ ABI 向后兼容，直接剔除、使用系统版本；
 # 后续如需支持系统库过老的发行版，再引入 compat 目录按需加载（见 §6）。
-rm -f "$APP_DIR/_internal/libstdc++.so.6" "$APP_DIR/_internal/libgcc_s.so.1"
+# 同理剔除 libgbm.so.1：libQt6WebEngineCore（Chromium GPU 进程）直接链接它，
+# 包内的是构建机 Mesa 22 旧版，会抢先于系统 gbm（SteamOS Mesa 24+）被加载；
+# 系统 libgbm 导出符号是旧版的超集（Chromium 所需 20 个 gbm_* 符号全覆盖），
+# 剔除后由系统版本接管，行为正确。
+rm -f "$APP_DIR/_internal/libstdc++.so.6" "$APP_DIR/_internal/libgcc_s.so.1" \
+      "$APP_DIR/_internal/libgbm.so.1"
 ```
 
 ### 4.2 `.github/workflows/release-linux.yml`
@@ -91,11 +96,11 @@ rm -f "$APP_DIR/_internal/libstdc++.so.6" "$APP_DIR/_internal/libgcc_s.so.1"
           set -euo pipefail
           cd build-appimage
           ./MAW-x86_64.AppImage --appimage-extract >/dev/null 2>&1
-          if [ -e squashfs-root/_internal/libstdc++.so.6 ] || [ -e squashfs-root/_internal/libgcc_s.so.1 ]; then
-            echo "FAIL: AppImage 内置了 libstdc++/libgcc_s，会污染系统 Mesa 驱动加载（见 docs/HANDOVER-libstdcxx-appimage-fix.md）"
+          if [ -e squashfs-root/_internal/libstdc++.so.6 ] || [ -e squashfs-root/_internal/libgcc_s.so.1 ] || [ -e squashfs-root/_internal/libgbm.so.1 ]; then
+            echo "FAIL: AppImage 内置了 libstdc++/libgcc_s/libgbm，会污染系统 Mesa 驱动加载（见 docs/HANDOVER-libstdcxx-appimage-fix.md）"
             exit 1
           fi
-          echo "OK: 未内置 libstdc++/libgcc_s"
+          echo "OK: 未内置 libstdc++/libgcc_s/libgbm"
           rm -r squashfs-root
 ```
 
@@ -108,12 +113,14 @@ rm -f "$APP_DIR/_internal/libstdc++.so.6" "$APP_DIR/_internal/libgcc_s.so.1"
 
 ```python
 def test_appimage_build_drops_bundled_cpp_runtime(self) -> None:
-    """Given the AppImage build script and workflow, When the AppDir is assembled, Then bundled libstdc++/libgcc_s are removed and CI forbids them."""
+    """Given the AppImage build script and workflow, When the AppDir is assembled, Then bundled libstdc++/libgcc_s/libgbm are removed and CI forbids them."""
     script = read_text("scripts/build-appimage.sh")
     workflow = read_text(".github/workflows/release-linux.yml")
 
     self.assertIn('rm -f "$APP_DIR/_internal/libstdc++.so.6" "$APP_DIR/_internal/libgcc_s.so.1"', script)
+    self.assertIn('"$APP_DIR/_internal/libgbm.so.1"', script)
     self.assertIn("Verify no bundled C++ runtime in AppImage", workflow)
+    self.assertIn("_internal/libgbm.so.1", workflow)
 ```
 
 ### 4.4 `CHANGELOG.md`
@@ -176,9 +183,19 @@ git diff --check
      仅消除 libva 硬解尝试日志，不影响崩溃。
 - 修复后 libva 硬解仍可能不可用（AppImage 不打包 libva 驱动栈），Chromium 会
   自动回退软件解码，无害，不用处理。
+- **libgbm（已同步剔除）**：审计 CI 产物 `_internal/` 全部 498 个 .so 后确认，
+  `libgbm.so.1`（构建机 Mesa 22）是除 libstdc++/libgcc_s 外唯一与系统组件
+  撞名的库——`libQt6WebEngineCore.so.6` 直接 NEEDED 它，Chromium GPU 进程会
+  抢先加载旧版。符号验证：Chromium 仅用 20 个 `gbm_*` 符号，SteamOS 系统
+  libgbm（Mesa 24+）导出 38 个且全覆盖 → 与 libstdc++ 同构，剔除安全。
+  其余打包库（glib/z/ssl/xcb/xkbcommon 等）只被 Qt/Python 使用、系统驱动链
+  不按这些名字加载，且符号版本化向后兼容，无同类风险。GLIBC 基线
+  `GLIBC_2.35`（cairo/libpython），CI 构建机 ubuntu-22.04 保证，目标发行版均
+  满足；Qt 全套最大需 `GLIBCXX_3.4.29`，系统 GCC 14 提供到 `3.4.34`。
 
 ## 7. 结论速记
 
-改 2 个文件 + 1 个测试：`scripts/build-appimage.sh`（rm 两把库）、
-`release-linux.yml`（新增断言步骤）、`tests/test_packaging_contract.py`
-（契约测试），另加 `CHANGELOG.md`。验证：CI 产出包 + 真机冒烟 + 单测。
+改 2 个文件 + 1 个测试：`scripts/build-appimage.sh`（rm libstdc++/libgcc_s/
+libgbm 三把库）、`release-linux.yml`（新增断言步骤，含 libgbm）、
+`tests/test_packaging_contract.py`（契约测试），另加 `CHANGELOG.md`。验证：
+CI 产出包 + 真机冒烟 + 单测。

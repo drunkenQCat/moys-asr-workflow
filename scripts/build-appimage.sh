@@ -49,8 +49,13 @@ cp -a dist/MAW/. "$APP_DIR/"
 # libstdc++）与 libSPIRV-Tools 因缺 GLIBCXX_3.4.32 加载失败，QtWebEngine
 # 无可用渲染后端而 abort。libstdc++ ABI 向后兼容，直接剔除、使用系统版本；
 # 后续如需支持系统库过老的发行版，再引入 compat 目录按需加载。
+# 同理剔除 libgbm.so.1：libQt6WebEngineCore（Chromium GPU 进程）直接链接它，
+# 包内的是构建机 Mesa 22 旧版，会抢先于系统 gbm（SteamOS Mesa 24+）被加载；
+# 系统 libgbm 导出符号是旧版的超集（Chromium 所需 20 个 gbm_* 符号全覆盖），
+# 剔除后由系统版本接管，行为正确。
 # 详见 docs/HANDOVER-libstdcxx-appimage-fix.md。
-rm -f "$APP_DIR/_internal/libstdc++.so.6" "$APP_DIR/_internal/libgcc_s.so.1"
+rm -f "$APP_DIR/_internal/libstdc++.so.6" "$APP_DIR/_internal/libgcc_s.so.1" \
+      "$APP_DIR/_internal/libgbm.so.1"
 
 # AppRun：QtWebEngine 在 AppImage（squashfs 只读、无 SUID sandbox helper）环境
 # 必须禁用 Chromium 沙箱，否则 Launcher 页面无法渲染。
