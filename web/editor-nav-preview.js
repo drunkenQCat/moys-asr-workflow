@@ -90,7 +90,7 @@
             + `.multi-extension-cue[data-ext-idx="${request.idx}"]`,
         )
         : MaweCoreState.container.querySelector(`.cue[data-idx="${request.idx}"]`);
-      const segment = isExtension ? track?.segments?.[request.idx] : DATA.segments[request.idx];
+      const segment = isExtension ? track?.segments?.[request.idx] : MaweBoot.DATA.segments[request.idx];
       const textEl = cue?.querySelector('.text');
       const text = String(segment?.text || '');
       if (!cue || !segment || !textEl || text.length < 2 || segment.end - segment.start < 200) {
@@ -162,7 +162,7 @@
     if (!mainIndices.length && !extensionIndices.length) {
       const extension = context.track === 'extension' && MaweMultiSubtitleCore.multiSubtitleVisible();
       const track = extension ? MaweMultiSubtitleCore.getExtensionTrack(context.trackId) : null;
-      const segments = extension ? track?.segments : DATA.segments;
+      const segments = extension ? track?.segments : MaweBoot.DATA.segments;
       const index = findWaveformCueAtTime(context.timeMs, segments);
       if (index < 0 || !segments?.[index]) return null;
       return {
@@ -194,7 +194,7 @@
     if (extensionIndices.length !== 1 || extensionIndices[0] !== panelTarget.index) return null;
     const binding = MaweMultiSubtitleCore.bindingForExtensionIndex(panelTarget.index, panelTarget.track);
     const boundMainIndices = (binding?.main_segment_ids || [])
-      .map((id) => DATA.segments.findIndex((segment) => segment?.id === id))
+      .map((id) => MaweBoot.DATA.segments.findIndex((segment) => segment?.id === id))
       .filter((index) => index >= 0);
     const mainMatchesBinding = mainIndices.length === 0
       || (boundMainIndices.length === 1

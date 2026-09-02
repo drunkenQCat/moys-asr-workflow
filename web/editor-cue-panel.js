@@ -21,20 +21,20 @@
     if (dockHandle) MaweCoreState.container.appendChild(dockHandle);
     if (cueListToolbar) MaweCoreState.container.appendChild(cueListToolbar);
     if (emptyState) {
-      emptyState.classList.toggle('hidden', DATA.segments.length > 0);
+      emptyState.classList.toggle('hidden', MaweBoot.DATA.segments.length > 0);
       MaweCoreState.container.appendChild(emptyState);
     }
     const cueFragment = document.createDocumentFragment();
     const multiVisible = MaweMultiSubtitleCore.multiSubtitleVisible();
     const displayMode = MaweMultiSubtitleCore.getMultiSubtitleState().display_mode || 'both';
     if (!multiVisible || displayMode === 'main') {
-      DATA.segments.forEach((seg, i) => cueFragment.appendChild(MaweCueElements.buildCueEl(seg, i)));
+      MaweBoot.DATA.segments.forEach((seg, i) => cueFragment.appendChild(MaweCueElements.buildCueEl(seg, i)));
     } else if (displayMode === 'extension') {
       const track = MaweMultiSubtitleCore.getActiveExtensionTrack();
       track.segments.forEach((seg, i) => cueFragment.appendChild(MaweCueElements.buildExtensionCueEl(seg, i, track)));
     } else {
       const track = MaweMultiSubtitleCore.getActiveExtensionTrack();
-      const rows = window.AsrEditorUtils.buildMultiDisplayRows(DATA.segments, track.segments, MaweMultiSubtitleCore.getMultiSubtitleState().bindings);
+      const rows = window.AsrEditorUtils.buildMultiDisplayRows(MaweBoot.DATA.segments, track.segments, MaweMultiSubtitleCore.getMultiSubtitleState().bindings);
       rows.forEach((row) => cueFragment.appendChild(MaweCueElements.buildDualCueEl(row.mainIndex, row.extensionIndex, track)));
     }
     MaweCoreState.container.appendChild(cueFragment);
@@ -42,7 +42,7 @@
     MaweColorFilter.refreshColorFilterUi();
     MaweDom.totalCountEl.textContent = multiVisible && displayMode === 'extension'
       ? MaweMultiSubtitleCore.getActiveExtensionTrack()?.segments.length || 0
-      : DATA.segments.length;
+      : MaweBoot.DATA.segments.length;
     // buildCueEl/buildMultiCueColumn 已经按当前搜索词生成了文本；这里仅
     // 计算隐藏状态和数量，避免长工程 renderAll() 再逐行重建一遍文本节点。
     MaweSearch.applySearch(MaweDom.searchEl.value, { refreshText: false, preserveCueListScroll: false });
@@ -115,7 +115,7 @@
         ? { kind: 'extension', index, trackId: track.id, track, segment }
         : null;
     }
-    const segment = DATA.segments[index];
+    const segment = MaweBoot.DATA.segments[index];
     return segment ? { kind: 'main', index, trackId: null, track: null, segment } : null;
   }
 
@@ -149,7 +149,7 @@
       } else {
         nextTrackId = track.id;
       }
-    } else if (!DATA.segments[nextIndex]) {
+    } else if (!MaweBoot.DATA.segments[nextIndex]) {
       nextIndex = -1;
     }
     if (
@@ -198,7 +198,7 @@
     const target = getCurrentCuePanelTarget();
     const seg = target?.segment;
     if (!target || !seg) { MaweCuePanelState.resetCuePanelEditState(); return false; }
-    const segments = target.kind === 'extension' ? target.track.segments : DATA.segments;
+    const segments = target.kind === 'extension' ? target.track.segments : MaweBoot.DATA.segments;
     const idx = target.index;
     const nextText = MaweDom.cuePanelText.value.replace(/\r\n?/g, '\n');
     const oldStart = seg.start;
@@ -265,7 +265,7 @@
     }
     MaweMultiSubtitleCore.syncBindingOffsets();
     MaweMultiSubtitleCore.markMultiSubtitleDirty();
-    scheduleAutoSaveFlush();
+    MaweServerSave.scheduleAutoSaveFlush();
     MaweCuePanelState.resetCuePanelEditState();
     renderAll();
     MawePlaybackLoop.updateWithoutCueListAutoScroll();
@@ -333,7 +333,7 @@
       MaweDom.cuePanelSticker.textContent = window.MAWE_I18N?.translateText?.('暂无表情包') || '暂无表情包';
       MaweDom.cuePanelSticker.title = window.MAWE_I18N?.translateText?.('点击添加表情包') || '点击添加表情包';
     }
-    const segments = target.kind === 'extension' ? target.track.segments : DATA.segments;
+    const segments = target.kind === 'extension' ? target.track.segments : MaweBoot.DATA.segments;
     const previous = window.AsrEditorUtils.findAdjacentCueIndex(segments, idx, -1, MaweDom.hideDisabled);
     const next = window.AsrEditorUtils.findAdjacentCueIndex(segments, idx, 1, MaweDom.hideDisabled);
     MaweDom.cuePanelPrev.disabled = previous < 0;
@@ -468,13 +468,13 @@
     if (!target) return;
     commitCuePanelEdit();
     const next = window.AsrEditorUtils.findAdjacentCueIndex(
-      target.kind === 'extension' ? target.track.segments : DATA.segments,
+      target.kind === 'extension' ? target.track.segments : MaweBoot.DATA.segments,
       target.index,
       direction,
       MaweDom.hideDisabled,
     );
     if (next < 0) return;
-    const segments = target.kind === 'extension' ? target.track.segments : DATA.segments;
+    const segments = target.kind === 'extension' ? target.track.segments : MaweBoot.DATA.segments;
     if (target.kind === 'extension') {
       MaweSelection.selectOnlyExtension(next);
       MaweSelection.lastClickedExtensionIdx = next;

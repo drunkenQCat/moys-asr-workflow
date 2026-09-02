@@ -42,7 +42,7 @@
   function findActive(tMs) {
     // 相邻字幕共用边界时，右侧字幕的 start 优先；处于时间间隙时保留
     // 前一条字幕作为当前项，和原有列表高亮语义一致。
-    return findActiveSegmentIndex(DATA.segments, tMs);
+    return findActiveSegmentIndex(MaweBoot.DATA.segments, tMs);
   }
 
 
@@ -133,7 +133,7 @@
 
   function refreshSubtitlePreview(tMs = MaweCoreState.player.currentTime * 1000, idx = findActive(tMs)) {
     // 编辑字幕文本时只刷新播放器预览，避免每输入一个字都触发字幕列表的自动滚动。
-    const seg = idx >= 0 ? DATA.segments[idx] : null;
+    const seg = idx >= 0 ? MaweBoot.DATA.segments[idx] : null;
     const mainVisible = !!MaweDom.overlayToggle.checked && isSubtitlePreviewActive(seg, tMs);
     const extension = extensionSegmentAtTime(tMs, idx);
     const extensionVisible = !!MaweDom.extensionOverlayToggle?.checked && !!extension;
@@ -153,10 +153,10 @@
     }
     // 预览字幕颜色：读取当前字幕的颜色快照（head/color_ref）给预览文字加下划线。
     // dataset 记录上次应用的颜色，避免播放刷新每帧都写内联样式。
-    const colorUnderlineEnabled = DATA.preview?.subtitle?.color_underline !== false;
+    const colorUnderlineEnabled = MaweBoot.DATA.preview?.subtitle?.color_underline !== false;
     let colorUnderline = '';
     if (mainVisible && colorUnderlineEnabled && seg) {
-      const colorName = window.AsrEditorUtils.effectiveColorName(seg, DATA.segments);
+      const colorName = window.AsrEditorUtils.effectiveColorName(seg, MaweBoot.DATA.segments);
       colorUnderline = colorName ? MaweColors.COLOR_BY_NAME[colorName]?.value || '' : '';
     }
     if (MaweDom.overlayTextEl.dataset.colorUnderline !== colorUnderline) {

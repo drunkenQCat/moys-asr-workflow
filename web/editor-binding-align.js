@@ -9,7 +9,7 @@
   // 返回与 idx 同属一个表情包/颜色分组的全部字幕下标（含 idx 自身）。
   // head 持有 sticker/color，成员持 sticker_ref/color_ref 指向 head。
   function groupMemberIdxs(idx) {
-    const seg = DATA.segments[idx];
+    const seg = MaweBoot.DATA.segments[idx];
     if (!seg) return [idx];
     const heads = new Set();
     if (seg.sticker) heads.add(idx);
@@ -18,7 +18,7 @@
     else if (seg.color_ref) heads.add(seg.color_ref.headIdx);
     if (!heads.size) return [idx];
     const members = [];
-    DATA.segments.forEach((s, i) => {
+    MaweBoot.DATA.segments.forEach((s, i) => {
       const sHead = s.sticker ? i : (s.sticker_ref ? s.sticker_ref.headIdx : null);
       const cHead = s.color ? i : (s.color_ref ? s.color_ref.headIdx : null);
       if ((sHead !== null && heads.has(sHead)) || (cHead !== null && heads.has(cHead))) {
@@ -75,7 +75,7 @@
     const start = Number(extension?.start);
     const end = Number(extension?.end);
     if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return [];
-    return DATA.segments.map((main, mainIndex) => ({ main, mainIndex }))
+    return MaweBoot.DATA.segments.map((main, mainIndex) => ({ main, mainIndex }))
       .filter(({ main }) => Number(main?.start) < end && Number(main?.end) > start)
       .map(({ mainIndex }) => mainIndex);
   }
@@ -90,7 +90,7 @@
     if (unbound.length) {
       // 有多个候选时仍优先选择时间最早且尚未绑定的主字幕，避免每次绑定都要手动点选。
       const mainIndex = unbound.slice().sort((left, right) => (
-        Number(DATA.segments[left]?.start) - Number(DATA.segments[right]?.start) || left - right
+        Number(MaweBoot.DATA.segments[left]?.start) - Number(MaweBoot.DATA.segments[right]?.start) || left - right
       ))[0];
       MaweSelection.selectOnly(mainIndex);
       MaweSelection.selectOnlyExtension(index, track, true, true);
@@ -121,7 +121,7 @@
     const mainIndex = [...MaweSelection.selectedIdxs][0];
     const extensionIndex = [...MaweSelection.selectedExtensionIdxs][0];
     const track = MaweMultiSubtitleCore.getActiveExtensionTrack();
-    const main = DATA.segments[mainIndex];
+    const main = MaweBoot.DATA.segments[mainIndex];
     const extension = track?.segments?.[extensionIndex];
     if (!main || !extension) return;
     const replacedBinding = MaweMultiSubtitleCore.bindingForMainIndex(mainIndex);
@@ -147,7 +147,7 @@
   function unbindSelectedSubtitlePair() {
     const multi = MaweMultiSubtitleCore.getMultiSubtitleState();
     const ids = new Set();
-    MaweSelection.selectedIdxs.forEach((index) => { if (DATA.segments[index]?.id) ids.add(DATA.segments[index].id); });
+    MaweSelection.selectedIdxs.forEach((index) => { if (MaweBoot.DATA.segments[index]?.id) ids.add(MaweBoot.DATA.segments[index].id); });
     const track = MaweMultiSubtitleCore.getActiveExtensionTrack();
     MaweSelection.selectedExtensionIdxs.forEach((index) => { if (track?.segments[index]?.id) ids.add(track.segments[index].id); });
     if (!ids.size) return;

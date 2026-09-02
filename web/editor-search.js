@@ -24,7 +24,7 @@
           ? Number(el.dataset.mainIdx)
           : (el.dataset.idx != null ? Number(el.dataset.idx) : -1);
         const extIdx = el.dataset.extIdx != null ? Number(el.dataset.extIdx) : -1;
-        const mainSeg = Number.isInteger(mainIdx) && mainIdx >= 0 ? DATA.segments[mainIdx] : null;
+        const mainSeg = Number.isInteger(mainIdx) && mainIdx >= 0 ? MaweBoot.DATA.segments[mainIdx] : null;
         const extensionSeg = Number.isInteger(extIdx) && extIdx >= 0 && extensionTrack
           ? extensionTrack.segments[extIdx] : null;
         const searchableText = [mainSeg?.text, extensionSeg?.text].filter(Boolean).join('\n');

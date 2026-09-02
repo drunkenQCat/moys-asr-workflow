@@ -23,7 +23,7 @@
         payload.gaps,
       );
     }
-    DATA.gap_remove = MaweGapRemoveData.normalizedGapRemoveData(payload);
+    MaweBoot.DATA.gap_remove = MaweGapRemoveData.normalizedGapRemoveData(payload);
     MaweCuePanelState.gapPreviewRange = null;
     if (dirty) MaweHistory.gapRemoveDirty = true;
     updateGapRemoveUi();
@@ -58,7 +58,7 @@
   function gapRemoveMediaDurationMs() {
     const candidates = [
       MaweCoreState.waveformEditor?.durationMs,
-      DATA.waveform?.duration_ms,
+      MaweBoot.DATA.waveform?.duration_ms,
       Number(MaweCoreState.player?.duration) * 1000,
     ];
     const duration = candidates.find((value) => Number.isFinite(Number(value)) && Number(value) > 0);
@@ -114,14 +114,14 @@
   function updateGapRemoveDisableHint() {
     if (!MaweDom.gapRemoveDisableHint) return;
     const matches = window.AsrEditorUtils.findGapRemoveDisableMatches(
-      DATA.segments,
+      MaweBoot.DATA.segments,
       MaweGapRemoveData.getGapRemoveGaps(),
       {
         coveragePercent: MaweGapRemoveData.clampGapRemoveDisableCoverage(MaweDom.gapRemoveDisableCoverage?.value),
         remainingMs: MaweGapRemoveData.clampGapRemoveDisableRemaining(MaweDom.gapRemoveDisableRemaining?.value),
       },
     );
-    const count = matches.filter(({ index }) => !DATA.segments[index]?.disabled).length;
+    const count = matches.filter(({ index }) => !MaweBoot.DATA.segments[index]?.disabled).length;
     MaweDom.gapRemoveDisableHint.textContent = `禁用位于空隙范围内的字幕（当前有 ${count} 条未禁用）`;
   }
 
@@ -299,13 +299,13 @@
   function disableSubtitlesInRemovedGaps() {
     const settings = commitGapRemoveDisableSettings();
     const matches = window.AsrEditorUtils.findGapRemoveDisableMatches(
-      DATA.segments,
+      MaweBoot.DATA.segments,
       MaweGapRemoveData.getGapRemoveGaps(),
       settings,
     );
     const targetIndexes = matches
       .map((match) => match.index)
-      .filter((index) => !DATA.segments[index]?.disabled);
+      .filter((index) => !MaweBoot.DATA.segments[index]?.disabled);
     if (!targetIndexes.length) {
       const message = matches.length ? '符合条件的字幕已全部禁用' : '没有符合条件的字幕';
       MaweHint.flashHint(

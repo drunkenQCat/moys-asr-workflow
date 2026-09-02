@@ -19,6 +19,7 @@ class EditorAssetContractTests(unittest.TestCase):
         self.assertEqual(
             edit.read_editor_script_manifest(),
             (
+                "editor-boot.js",
                 "editor-runtime.js",
                 "gap-remove-core.js",
                 "editor-utils.js",
@@ -64,6 +65,16 @@ class EditorAssetContractTests(unittest.TestCase):
                 "editor-sticker-overlay.js",
                 "editor-export-srt.js",
                 "editor-export-timeline.js",
+                "editor-server-save.js",
+                "editor-workspaces.js",
+                "editor-project-save.js",
+                "editor-dynamic-exports.js",
+                "editor-export-menus.js",
+                "editor-project-media-inputs.js",
+                "editor-project-load.js",
+                "editor-loading-progress.js",
+                "editor-multi-import.js",
+                "editor-media-load.js",
                 "editor.js",
                 "editor-onboarding.js",
             ),
@@ -118,8 +129,17 @@ class EditorAssetContractTests(unittest.TestCase):
             "(function initMaweStickerOverlay(global) {",
             "(function initMaweExportSrt(global) {",
             "(function initMaweExportTimeline(global) {",
-            "let FILENAME_BASE = __FILENAME_BASE_JSON__;",
-            "const helpOnboardingButton = document.getElementById('help-onboarding');",
+            "(function initMaweServerSave(global) {",
+            "(function initMaweWorkspaces(global) {",
+            "(function initMaweProjectSave(global) {",
+            "(function initMaweDynamicExports(global) {",
+            "(function initMaweExportMenus(global) {",
+            "(function initMaweProjectMediaInputs(global) {",
+            "(function initMaweProjectLoad(global) {",
+            "(function initMaweLoadingProgress(global) {",
+            "(function initMaweMultiImport(global) {",
+            "(function initMaweMediaLoad(global) {",
+            "if (!window.AsrEditorUtils) {",
         )
         for asset_name, marker in zip(edit.read_editor_script_manifest(), markers):
             current_index = payload.index(marker)
@@ -212,7 +232,7 @@ class EditorAssetContractTests(unittest.TestCase):
         self.assertLess(template.index('id="new-project"'), template.index('id="open-project"'))
 
     def test_editor_sources_expose_checkpointed_import_contract(self) -> None:
-        script = edit.read_web_asset("editor.js")
+        script = edit.build_editor_scripts()
         for seam in (
             "function buildBlankProject()",
             "function suggestedProjectName(",
@@ -236,7 +256,7 @@ class EditorAssetContractTests(unittest.TestCase):
         self.assertIn('id="sticker-root-read"', template)
         self.assertIn('id="sticker-root-status"', template)
         self.assertIn("SERVER_CONFIG.stickerRootUrl", script)
-        self.assertIn("STICKERS.splice(0, STICKERS.length, ...result.stickers)", script)
+        self.assertIn("MaweBoot.STICKERS.splice(0, MaweBoot.STICKERS.length, ...result.stickers)", script)
         self.assertIn("let stickerRootHintCard = null", script)
         self.assertIn("stickerRootHintCard?.remove()", script)
         self.assertIn("function setStickerRootModalOpen(open)", script)

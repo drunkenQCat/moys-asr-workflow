@@ -89,7 +89,7 @@
         segment.text = nextText;
         segment._dirty = true;
         MaweMultiSubtitleCore.markMultiSubtitleDirty();
-        scheduleAutoSaveFlush();
+        MaweServerSave.scheduleAutoSaveFlush();
       }
     }
     if (segment) {
@@ -190,7 +190,7 @@
     MaweNavPreview.hideCueSplitPreview();
     const textEl = el.querySelector('.text');
     if (!textEl) return;
-    const seg = DATA.segments[idx];
+    const seg = MaweBoot.DATA.segments[idx];
     let caretCharOffset = null;
     if (typeof clickX === 'number' && typeof clickY === 'number') {
       caretCharOffset = caretCharFromPoint(textEl, clickX, clickY);
@@ -289,16 +289,16 @@
       const newText = textEl.innerText.replace(/\r\n?/g, '\n').trimEnd();
       if (newText !== original) {
         MaweHistory.pushUndo('编辑文本');
-        DATA.segments[idx].text = newText;
-        DATA.segments[idx]._dirty = true;
+        MaweBoot.DATA.segments[idx].text = newText;
+        MaweBoot.DATA.segments[idx]._dirty = true;
         el.classList.add('dirty');
-        scheduleAutoSaveFlush();
+        MaweServerSave.scheduleAutoSaveFlush();
       }
     }
-    MaweCueElements.setTextHtml(textEl, DATA.segments[idx].text, MaweDom.searchEl.value);
+    MaweCueElements.setTextHtml(textEl, MaweBoot.DATA.segments[idx].text, MaweDom.searchEl.value);
     const cntEl = el.querySelector('.charcount');
     if (cntEl) MaweCueElements.applyCharCount(
-      cntEl, DATA.segments[idx].text, MaweMultiSubtitleCore.getMainSubtitleSplitMode(DATA.segments[idx]),
+      cntEl, MaweBoot.DATA.segments[idx].text, MaweMultiSubtitleCore.getMainSubtitleSplitMode(MaweBoot.DATA.segments[idx]),
     );
     MaweCoreState.waveformEditor?.refreshCueLabel(idx);
     syncCuePanelAfterInlineEdit('main', idx);

@@ -12,12 +12,12 @@
   function stickerUrl(sticker) {
     if (!sticker) return '';
     if (sticker.rel) {
-      if (STICKER_URL_PREFIX) {
-        const url = `${STICKER_URL_PREFIX.replace(/\/$/, '')}/${sticker.rel.split('/').map(encodeURIComponent).join('/')}`;
+      if (MaweBoot.STICKER_URL_PREFIX) {
+        const url = `${MaweBoot.STICKER_URL_PREFIX.replace(/\/$/, '')}/${sticker.rel.split('/').map(encodeURIComponent).join('/')}`;
         return stickerAssetRevision ? `${url}?root=${stickerAssetRevision}` : url;
       }
-      if (!STICKER_ROOT) return sticker.rel;
-      let root = STICKER_ROOT;
+      if (!MaweBoot.STICKER_ROOT) return sticker.rel;
+      let root = MaweBoot.STICKER_ROOT;
       if (root.startsWith('file://')) return root.replace(/\/+$/, '') + '/' + sticker.rel;
       let prefix = root.startsWith('/') ? 'file://' : 'file:///';
       return prefix + root.replace(/\/+$/, '') + '/' + sticker.rel;
@@ -31,11 +31,11 @@
   // 合成表情包文件的操作系统绝对路径（用于导出表情包 OTIO）。
   function stickerAbsPath(sticker) {
     if (!sticker) return '';
-    if (sticker.rel && STICKER_ROOT) {
+    if (sticker.rel && MaweBoot.STICKER_ROOT) {
       // 去掉可能的 file:// 前缀，保留纯 OS 路径
-      let root = STICKER_ROOT.replace(/^file:\/+/, '');
+      let root = MaweBoot.STICKER_ROOT.replace(/^file:\/+/, '');
       // POSIX: 重新加上前导 /
-      if (STICKER_ROOT.startsWith('file:///') && !root.startsWith('/') && !/^[A-Za-z]:/.test(root)) {
+      if (MaweBoot.STICKER_ROOT.startsWith('file:///') && !root.startsWith('/') && !/^[A-Za-z]:/.test(root)) {
         root = '/' + root;
       }
       return root.replace(/\/+$/, '') + '/' + sticker.rel;
@@ -69,7 +69,7 @@
   function isHiddenDisabled(idx, track = 'main') {
     const segments = track === 'extension'
       ? (MaweMultiSubtitleCore.getActiveExtensionTrack()?.segments || [])
-      : (track?.segments || DATA.segments);
+      : (track?.segments || MaweBoot.DATA.segments);
     return MaweDom.hideDisabled && !!(segments[idx] && segments[idx].disabled);
   }
 
@@ -132,7 +132,7 @@
 
 
   function addMainIndexToSelection(index) {
-    if (!Number.isInteger(index) || !DATA.segments[index] || isHiddenDisabled(index)) return;
+    if (!Number.isInteger(index) || !MaweBoot.DATA.segments[index] || isHiddenDisabled(index)) return;
     selectedIdxs.add(index);
     const el = MaweCoreState.container.querySelector(`.cue[data-idx="${index}"]`);
     if (el) el.classList.add('selected');
@@ -164,7 +164,7 @@
     const binding = MaweMultiSubtitleCore.bindingForExtensionIndex(index, track);
     if (!binding) return;
     (binding.main_segment_ids || []).forEach((id) => {
-      const mainIndex = DATA.segments.findIndex((segment) => segment?.id === id);
+      const mainIndex = MaweBoot.DATA.segments.findIndex((segment) => segment?.id === id);
       if (mainIndex >= 0) addMainIndexToSelection(mainIndex);
     });
   }
@@ -336,7 +336,7 @@
   function selectAll() {
     MaweCuePanel.commitCuePanelEdit();
     clearSelection({ silent: true });
-    DATA.segments.forEach((_, idx) => {
+    MaweBoot.DATA.segments.forEach((_, idx) => {
       if (isHiddenDisabled(idx)) return;
       selectedIdxs.add(idx);
       syncBoundSelection('main', idx);
@@ -352,7 +352,7 @@
     updateMultiSelectionClasses();
     MaweDom.selCountEl.textContent = String(selectedIdxs.size + selectedExtensionIdxs.size);
     if (MaweCoreState.waveformEditor) MaweCoreState.waveformEditor.updateSelection();
-    const last = DATA.segments.length - 1;
+    const last = MaweBoot.DATA.segments.length - 1;
     if (last >= 0 && selectedIdxs.has(last)) {
       MaweCuePanel.setCurrentCuePanelIndex(last);
       return;

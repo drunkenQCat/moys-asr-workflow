@@ -2,6 +2,7 @@
 # Keep runtime/bootstrap modules before the modules that consume their exports.
 # editor-jkl.js owns JKL playback state; editor.js initializes its UI at load and
 # consumes it through the window.MaweJklPlayback facade.
+editor-boot.js
 editor-runtime.js
 gap-remove-core.js
 editor-utils.js
@@ -47,5 +48,15 @@ editor-playback-loop.js
 editor-sticker-overlay.js
 editor-export-srt.js
 editor-export-timeline.js
+editor-server-save.js
+editor-workspaces.js
+editor-project-save.js
+editor-dynamic-exports.js
+editor-export-menus.js
+editor-project-media-inputs.js
+editor-project-load.js
+editor-loading-progress.js
+editor-multi-import.js
+editor-media-load.js
 editor.js
 editor-onboarding.js

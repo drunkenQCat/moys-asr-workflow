@@ -222,7 +222,7 @@
 
 
   function buildDualCueEl(mainIndex, extensionIndex, track) {
-    const main = mainIndex == null ? null : DATA.segments[mainIndex];
+    const main = mainIndex == null ? null : MaweBoot.DATA.segments[mainIndex];
     const extension = extensionIndex == null ? null : track.segments[extensionIndex];
     const el = document.createElement('div');
     el.className = 'cue multi-cue multi-dual-cue';
@@ -374,7 +374,7 @@
       : (element.dataset.idx != null ? Number(element.dataset.idx) : -1);
     const extensionIndex = element.dataset.extIdx != null ? Number(element.dataset.extIdx) : -1;
     if (Number.isInteger(mainIndex) && mainIndex >= 0) {
-      const key = splitCueVisibilityKey('main', DATA.segments[mainIndex]);
+      const key = splitCueVisibilityKey('main', MaweBoot.DATA.segments[mainIndex]);
       if (key) keys.push(key);
     }
     const extensionTrack = MaweMultiSubtitleCore.getActiveExtensionTrack();
@@ -425,7 +425,7 @@
     if (!MaweSelection.temporaryVisibleSplitCueKeys.size) return;
     const segments = kind === 'extension'
       ? (track?.segments || MaweMultiSubtitleCore.getActiveExtensionTrack()?.segments || [])
-      : DATA.segments;
+      : MaweBoot.DATA.segments;
     const segment = segments[index];
     const key = splitCueVisibilityKey(kind, segment, kind === 'extension' ? track?.id : null);
     if (key && MaweSelection.temporaryVisibleSplitCueKeys.has(key)) return;
@@ -443,7 +443,7 @@
       const cntEl = el.querySelector('.charcount');
       const segment = Number.isInteger(extensionIdx) && extensionTrack
         ? extensionTrack.segments[extensionIdx]
-        : (Number.isInteger(idx) ? DATA.segments[idx] : null);
+        : (Number.isInteger(idx) ? MaweBoot.DATA.segments[idx] : null);
       const mode = Number.isInteger(extensionIdx) && extensionTrack
         ? MaweMultiSubtitleCore.getExtensionSubtitleSplitMode(extensionTrack, segment)
         : MaweMultiSubtitleCore.getMainSubtitleSplitMode(segment);

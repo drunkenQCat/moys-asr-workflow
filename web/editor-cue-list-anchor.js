@@ -72,7 +72,7 @@
     const mainIndex = cueEl.dataset.mainIdx ?? cueEl.dataset.idx;
     if (mainIndex !== undefined) {
       const index = Number(mainIndex);
-      const segment = Number.isInteger(index) ? DATA.segments[index] : null;
+      const segment = Number.isInteger(index) ? MaweBoot.DATA.segments[index] : null;
       return {
         ...visual,
         scrollTop: MaweCoreState.container.scrollTop,
@@ -109,7 +109,7 @@
     }
 
     const index = anchor.segmentId
-      ? DATA.segments.findIndex((segment) => segment?.id === anchor.segmentId)
+      ? MaweBoot.DATA.segments.findIndex((segment) => segment?.id === anchor.segmentId)
       : anchor.index;
     if (!Number.isInteger(index) || index < 0) return null;
     return MaweCoreState.container.querySelector(`:scope > .cue[data-idx="${index}"]`);

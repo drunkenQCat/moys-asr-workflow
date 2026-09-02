@@ -31,7 +31,7 @@
 
   function effectiveCueColorKey(mainSeg) {
     if (!mainSeg) return COLOR_FILTER_DEFAULT_KEY;
-    return window.AsrEditorUtils.effectiveColorName(mainSeg, DATA.segments) || COLOR_FILTER_DEFAULT_KEY;
+    return window.AsrEditorUtils.effectiveColorName(mainSeg, MaweBoot.DATA.segments) || COLOR_FILTER_DEFAULT_KEY;
   }
 
 
@@ -47,7 +47,7 @@
 
   function collectProjectColorUsage() {
     const counts = new Map();
-    DATA.segments.forEach((seg) => {
+    MaweBoot.DATA.segments.forEach((seg) => {
       const key = effectiveCueColorKey(seg);
       counts.set(key, (counts.get(key) || 0) + 1);
     });
@@ -129,7 +129,7 @@
     }
     MaweCuePanel.commitCuePanelEdit();
     MaweSelection.clearSelection({ silent: true });
-    DATA.segments.forEach((seg, idx) => {
+    MaweBoot.DATA.segments.forEach((seg, idx) => {
       if (MaweSelection.isHiddenDisabled(idx)) return;
       if (!colorFilterSelection.has(effectiveCueColorKey(seg))) return;
       MaweSelection.selectedIdxs.add(idx);
@@ -206,7 +206,7 @@
         ? Number(el.dataset.idx)
         : (el.dataset.mainIdx != null ? Number(el.dataset.mainIdx) : -1);
       const segment = Number.isInteger(mainIndex) && mainIndex >= 0
-        ? DATA.segments[mainIndex]
+        ? MaweBoot.DATA.segments[mainIndex]
         : null;
       if (segment) MaweCueElements.updateCueColorPresentation(el, colorBar, segment);
     });
@@ -223,7 +223,7 @@
       const index = Number(isExtension ? el.dataset.extIdx : (el.dataset.idx ?? el.dataset.mainIdx));
       const segment = isExtension
         ? (Number.isInteger(index) ? extensionTrack?.segments?.[index] : null)
-        : (Number.isInteger(index) && index >= 0 ? DATA.segments[index] : null);
+        : (Number.isInteger(index) && index >= 0 ? MaweBoot.DATA.segments[index] : null);
       if (segment) {
         MaweCueElements.updateCueStickerPresentation(el, slotEl, segment, index, {
           extensionTrack: isExtension ? extensionTrack : null,
@@ -238,7 +238,7 @@
     // 表情包分配只改变行内槽位和预览素材，不改变字幕行的数量、顺序或时间；
     // 原地更新可以避免 renderAll() 替换列表节点后产生滚动闪烁。
     refreshCueStickerRows();
-    const projectHasStickers = DATA.segments.some((segment) => segment.sticker || segment.sticker_ref);
+    const projectHasStickers = MaweBoot.DATA.segments.some((segment) => segment.sticker || segment.sticker_ref);
     MaweCoreState.container.classList.toggle('hide-cue-sticker',
       !MaweSettings.EDITOR_SETTINGS.cueListShowSticker || !projectHasStickers,
     );

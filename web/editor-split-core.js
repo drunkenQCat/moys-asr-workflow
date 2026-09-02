@@ -372,7 +372,7 @@
 
 
    function linkedSplitState(mainIndex, initial = {}) {
-    const main = DATA.segments[mainIndex];
+    const main = MaweBoot.DATA.segments[mainIndex];
     const binding = MaweMultiSubtitleCore.bindingForMainIndex(mainIndex);
     const track = binding ? MaweMultiSubtitleCore.getExtensionTrack(binding.track_id) : null;
     const extension = binding ? MaweMultiSubtitleCore.extensionSegmentById(binding.extension_segment_ids?.[0], track) : null;
@@ -443,7 +443,7 @@
 
 
   function mainWaveformSplitState(mainIndex, initial = {}) {
-    const main = DATA.segments[mainIndex];
+    const main = MaweBoot.DATA.segments[mainIndex];
     if (!main) return null;
     const mainMode = MaweMultiSubtitleCore.getMainSubtitleSplitMode(main);
     const hasMainWordTimestamps = window.AsrEditorUtils.hasUsableSplitTimestamps(main);
@@ -543,7 +543,7 @@
 
 
   function splitLaneSegment(state, lane) {
-    if (lane === 'main') return state?.mainIndex >= 0 ? DATA.segments[state.mainIndex] : null;
+    if (lane === 'main') return state?.mainIndex >= 0 ? MaweBoot.DATA.segments[state.mainIndex] : null;
     return MaweMultiSubtitleCore.extensionSegmentById(state?.extensionId, MaweMultiSubtitleCore.getExtensionTrack(state?.trackId));
   }
 
@@ -799,7 +799,7 @@
   function renderSplitLane(state, lane) {
     const { laneEl, textEl } = splitLaneElements(lane);
     if (!laneEl || !textEl) return;
-    const main = DATA.segments[state?.mainIndex];
+    const main = MaweBoot.DATA.segments[state?.mainIndex];
     const track = MaweMultiSubtitleCore.getExtensionTrack(state?.trackId);
     const extension = MaweMultiSubtitleCore.extensionSegmentById(state?.extensionId, track);
     const isMain = lane === 'main';
@@ -1077,7 +1077,7 @@
     const state = pendingLinkedSplit;
     if (!state) return false;
     const track = MaweMultiSubtitleCore.getExtensionTrack(state.trackId);
-    const main = state.mainIndex >= 0 ? DATA.segments[state.mainIndex] : null;
+    const main = state.mainIndex >= 0 ? MaweBoot.DATA.segments[state.mainIndex] : null;
     const extension = MaweMultiSubtitleCore.extensionSegmentById(state.extensionId, track);
     const mainOnly = state.kind === 'main';
     const extensionOnly = state.kind === 'extension';
@@ -1247,7 +1247,7 @@
     // 再为“拆分”建立快照，确保一次撤销能回到拆分前的完整字幕状态。
     MaweCuePanel.commitCuePanelEdit();
     const mainIndex = state.mainIndex;
-    const main = DATA.segments[mainIndex];
+    const main = MaweBoot.DATA.segments[mainIndex];
     if (!main) return false;
     const splitMs = force
       ? forceSplitCutForSegments([main], state.cutMs)
@@ -1273,9 +1273,9 @@
     MaweHistory.pushUndo('拆分字幕', { captureView: true });
     MaweSelection.clearSelection({ commitCuePanel: false });
     MaweMultiSubtitleCore.removeBindingsForSegmentIds([oldMainId], []);
-    DATA.segments.splice(mainIndex, 1, pair.left, pair.right);
-    for (let index = mainIndex + 2; index < DATA.segments.length; index++) {
-      const segment = DATA.segments[index];
+    MaweBoot.DATA.segments.splice(mainIndex, 1, pair.left, pair.right);
+    for (let index = mainIndex + 2; index < MaweBoot.DATA.segments.length; index++) {
+      const segment = MaweBoot.DATA.segments[index];
       if (segment.sticker_ref?.headIdx > mainIndex) segment.sticker_ref.headIdx += 1;
       if (segment.color_ref?.headIdx > mainIndex) segment.color_ref.headIdx += 1;
     }
@@ -1306,7 +1306,7 @@
 
   // 降级路径：副轨无法形成合法拆分时，只拆主轨并解除与副字幕的绑定。
   function commitLinkedSplitMainOnly(state) {
-    const main = DATA.segments[state.mainIndex];
+    const main = MaweBoot.DATA.segments[state.mainIndex];
     if (!main) return false;
     let force = false;
     if (!state.mainTimingValid) {
@@ -1438,7 +1438,7 @@
     const track = MaweMultiSubtitleCore.getExtensionTrack(state.trackId);
     const mainIndex = state.mainIndex;
     const extensionIndex = track?.segments?.findIndex((segment) => segment.id === state.extensionId) ?? -1;
-    const main = DATA.segments[mainIndex];
+    const main = MaweBoot.DATA.segments[mainIndex];
     const extension = track?.segments?.[extensionIndex];
     const sharedCutMs = Number(state.cutMs);
     if (!Number.isFinite(sharedCutMs)
@@ -1474,11 +1474,11 @@
     const oldExtensionId = extension.id;
     MaweHistory.pushUndo('联动拆分字幕', { captureView: true });
     MaweMultiSubtitleCore.removeBindingsForSegmentIds([oldMainId], [oldExtensionId]);
-    DATA.segments.splice(mainIndex, 1, mainPair.left, mainPair.right);
+    MaweBoot.DATA.segments.splice(mainIndex, 1, mainPair.left, mainPair.right);
     if (track) track.segments.splice(extensionIndex, 1, extensionPair.left, extensionPair.right);
     // 主轨数组增加了一项，沿用原有表情包/颜色 headIdx 维护规则。
-    for (let index = mainIndex + 2; index < DATA.segments.length; index++) {
-      const segment = DATA.segments[index];
+    for (let index = mainIndex + 2; index < MaweBoot.DATA.segments.length; index++) {
+      const segment = MaweBoot.DATA.segments[index];
       if (segment.sticker_ref?.headIdx > mainIndex) segment.sticker_ref.headIdx += 1;
       if (segment.color_ref?.headIdx > mainIndex) segment.color_ref.headIdx += 1;
     }
@@ -1545,7 +1545,7 @@
     const ninjaFeedbackPoint = feedbackPoint || MaweNinja.ninjaSplitPointFromRange(
       range, textEl, cursorOffset, fullText.length,
     );
-    const seg = DATA.segments[idx];
+    const seg = MaweBoot.DATA.segments[idx];
 
     if (MaweMultiSubtitleCore.multiSubtitleVisible() && MaweMultiSubtitleCore.bindingForMainIndex(idx)) {
       MaweInlineEdit.finishEdit(false);
@@ -1700,14 +1700,14 @@
     // 关闭多字幕模式时，绑定关系仍保存在工程中；拆分主轨后旧 ID 不再存在，
     // 只移除这条关系，保留隐藏的副字幕供用户重新绑定。
     MaweMultiSubtitleCore.removeBindingsForSegmentIds([seg.id], []);
-    DATA.segments.splice(idx, 1, leftSeg, rightSeg);
+    MaweBoot.DATA.segments.splice(idx, 1, leftSeg, rightSeg);
 
     // 修正所有 *_ref.headIdx：在 idx 之后的引用都右移 1
     // 但 leftSeg 在 idx 位置仍是 head（如果它有 sticker/color），rightSeg 的 ref.headIdx=idx 正好对应 leftSeg
-    for (let i = idx + 2; i < DATA.segments.length; i++) {
-      const sref = DATA.segments[i].sticker_ref;
+    for (let i = idx + 2; i < MaweBoot.DATA.segments.length; i++) {
+      const sref = MaweBoot.DATA.segments[i].sticker_ref;
       if (sref && sref.headIdx > idx) sref.headIdx += 1;
-      const cref = DATA.segments[i].color_ref;
+      const cref = MaweBoot.DATA.segments[i].color_ref;
       if (cref && cref.headIdx > idx) cref.headIdx += 1;
     }
 

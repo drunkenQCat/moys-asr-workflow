@@ -12,11 +12,11 @@
     const appearance = replaceAppearance
       ? MaweAppearance.getSubtitleAppearance(geo)
       : { ...MaweAppearance.getSubtitleAppearance(), ...MaweAppearance.getSubtitleAppearance(geo) };
-    if (!DATA.preview || typeof DATA.preview !== 'object') DATA.preview = {};
-    DATA.preview.subtitle = { ...clamped, ...appearance };
+    if (!MaweBoot.DATA.preview || typeof MaweBoot.DATA.preview !== 'object') MaweBoot.DATA.preview = {};
+    MaweBoot.DATA.preview.subtitle = { ...clamped, ...appearance };
     if (markDirty) MaweAppearance.previewGeometryDirty = true;
     applyPreviewGeometryToDom(clamped);
-    MaweAppearance.applySubtitleAppearance(DATA.preview.subtitle);
+    MaweAppearance.applySubtitleAppearance(MaweBoot.DATA.preview.subtitle);
     return clamped;
   }
 
@@ -35,7 +35,7 @@
   // === 表情包预览几何（preview.sticker）===
   // 与字幕预览同一套归一化/钳制逻辑，仅默认值不同（右上角小图）。
   function getStickerGeometry() {
-    return MaweAppearance.GEO_UTILS.normalizePreviewGeometry(DATA.preview?.sticker, MaweAppearance.GEO_UTILS.DEFAULT_STICKER_GEOMETRY);
+    return MaweAppearance.GEO_UTILS.normalizePreviewGeometry(MaweBoot.DATA.preview?.sticker, MaweAppearance.GEO_UTILS.DEFAULT_STICKER_GEOMETRY);
   }
 
 
@@ -44,8 +44,8 @@
     const clamped = MaweAppearance.GEO_UTILS.clampPreviewGeometry(
       MaweAppearance.GEO_UTILS.normalizePreviewGeometry(geo, MaweAppearance.GEO_UTILS.DEFAULT_STICKER_GEOMETRY),
     );
-    if (!DATA.preview || typeof DATA.preview !== 'object') DATA.preview = {};
-    DATA.preview.sticker = clamped;
+    if (!MaweBoot.DATA.preview || typeof MaweBoot.DATA.preview !== 'object') MaweBoot.DATA.preview = {};
+    MaweBoot.DATA.preview.sticker = clamped;
     if (markDirty) MaweAppearance.previewGeometryDirty = true;
     applyStickerGeometryToDom(clamped);
     return clamped;

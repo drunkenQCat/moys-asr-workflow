@@ -14,10 +14,10 @@
 
 
   function normalizeMultiSubtitleState() {
-    if (normalizedMultiSubtitleReference === DATA.multi_subtitle) return DATA.multi_subtitle;
-    MULTI_SUBTITLE_UTILS.normalizeMultiSubtitleProject(DATA);
-    normalizedMultiSubtitleReference = DATA.multi_subtitle;
-    return DATA.multi_subtitle;
+    if (normalizedMultiSubtitleReference === MaweBoot.DATA.multi_subtitle) return MaweBoot.DATA.multi_subtitle;
+    MULTI_SUBTITLE_UTILS.normalizeMultiSubtitleProject(MaweBoot.DATA);
+    normalizedMultiSubtitleReference = MaweBoot.DATA.multi_subtitle;
+    return MaweBoot.DATA.multi_subtitle;
   }
 
 
@@ -63,7 +63,7 @@
     if (multi.enabled === true && isConfiguredSubtitleSplitMode(multi.main_split_mode)) {
       return multi.main_split_mode;
     }
-    const text = segment?.text ?? DATA.segments.map((item) => item?.text || '').join('\n');
+    const text = segment?.text ?? MaweBoot.DATA.segments.map((item) => item?.text || '').join('\n');
     return MULTI_SUBTITLE_UTILS.detectSubtitleSplitMode(text);
   }
 
@@ -108,7 +108,7 @@
 
   function mainSegmentById(id) {
     const target = String(id || '');
-    return DATA.segments.find((segment) => segment?.id === target) || null;
+    return MaweBoot.DATA.segments.find((segment) => segment?.id === target) || null;
   }
 
 
@@ -121,7 +121,7 @@
 
 
   function bindingForMainIndex(index) {
-    const segment = DATA.segments[index];
+    const segment = MaweBoot.DATA.segments[index];
     return segment ? MULTI_SUBTITLE_UTILS.bindingForSegment(getMultiSubtitleState(), segment.id, 'main') : null;
   }
 
@@ -142,7 +142,7 @@
     const addBindingTargets = (binding) => {
       if (!binding) return;
       (binding.main_segment_ids || []).forEach((id) => {
-        const index = DATA.segments.findIndex((segment) => segment?.id === id);
+        const index = MaweBoot.DATA.segments.findIndex((segment) => segment?.id === id);
         if (index >= 0) main.add(index);
       });
       const bindingTrack = getExtensionTrack(binding.track_id) || track;
@@ -170,7 +170,7 @@
     if (!segment) return -1;
     const binding = MULTI_SUBTITLE_UTILS.bindingForSegment(getMultiSubtitleState(), segment.id, 'extension', track.id);
     const mainId = binding?.main_segment_ids?.[0];
-    return DATA.segments.findIndex((candidate) => candidate.id === mainId);
+    return MaweBoot.DATA.segments.findIndex((candidate) => candidate.id === mainId);
   }
 
 
@@ -183,7 +183,7 @@
       binding.main_segment_ids?.some((id) => mainSet.has(id))
         || binding.extension_segment_ids?.some((id) => extensionSet.has(id))
     ));
-    MULTI_SUBTITLE_UTILS.rebuildBindingOffsets(multi, DATA.segments);
+    MULTI_SUBTITLE_UTILS.rebuildBindingOffsets(multi, MaweBoot.DATA.segments);
   }
 
 
@@ -195,7 +195,7 @@
     const binding = MULTI_SUBTITLE_UTILS.buildSubtitleBinding(mainSegment, extensionSegment, track.id);
     multi.bindings.push(binding);
     multi.enabled = true;
-    MULTI_SUBTITLE_UTILS.rebuildBindingOffsets(multi, DATA.segments);
+    MULTI_SUBTITLE_UTILS.rebuildBindingOffsets(multi, MaweBoot.DATA.segments);
     return binding;
   }
 
@@ -218,7 +218,7 @@
 
 
 
-  function markMainSegmentsDirty(segments = DATA.segments) {
+  function markMainSegmentsDirty(segments = MaweBoot.DATA.segments) {
     (Array.isArray(segments) ? segments : []).forEach((segment) => {
       if (segment) segment._dirty = true;
     });
@@ -227,7 +227,7 @@
 
 
   function syncBindingOffsets() {
-    MULTI_SUBTITLE_UTILS.rebuildBindingOffsets(getMultiSubtitleState(), DATA.segments);
+    MULTI_SUBTITLE_UTILS.rebuildBindingOffsets(getMultiSubtitleState(), MaweBoot.DATA.segments);
   }
 
 
