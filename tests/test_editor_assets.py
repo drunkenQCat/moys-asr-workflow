@@ -24,6 +24,7 @@ class EditorAssetContractTests(unittest.TestCase):
                 "editor-utils.js",
                 "editor-i18n.js",
                 "waveform.js",
+                "editor-jkl.js",
                 "editor.js",
                 "editor-onboarding.js",
             ),
@@ -38,6 +39,7 @@ class EditorAssetContractTests(unittest.TestCase):
             "// Pure editor helpers kept separate",
             "(function initMaweI18n(global) {",
             "// Framework-neutral waveform runtime.",
+            "(function initMaweJklPlayback(global) {",
             "const EDITOR_SETTINGS_KEY = 'moy.asr.editor.settings.v1';",
             "const helpOnboardingButton = document.getElementById('help-onboarding');",
         )
