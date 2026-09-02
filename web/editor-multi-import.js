@@ -267,7 +267,6 @@
       MaweProjectLoad.applyCanonicalProject(data, file.name);
       // 工程可能携带新 sticker_root；刷新表情包导出按钮的互斥灰显状态
       MaweExportTimeline.updateStickerExportButtons();
-      projectLoadedFromSrt = false;
       const expectedName = window.AsrEditorUtils.fileBasename(MaweBoot.DATA.media);
       // 服务器版：浏览器拿不到工程真实路径，但工程记录的媒体是绝对路径。
       // 先让服务器按它定位同目录同名工程并接管（自动加载媒体、允许 Ctrl(Cmd)+S 保存）；

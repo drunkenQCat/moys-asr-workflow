@@ -46,12 +46,12 @@ async function waitEditorReady(page) {
 
 async function paintFirstSegmentRed(page) {
   await page.evaluate((segmentEndMs) => {
-    const segment = DATA.segments[0];
+    const segment = MaweBoot.DATA.segments[0];
     segment.color = {
       name: 'red', value: '#e74c3c', start: segment.start,
       end: Math.max(segment.end, segment.start) || segmentEndMs,
     };
-    renderAll({ waveform: 'none' });
+    MaweCuePanel.renderAll({ waveform: 'none' });
   }, FIRST_SEGMENT_END_MS);
 }
 
@@ -65,7 +65,7 @@ test('color filter button appears only for projects with colored subtitles', asy
 test('clicking a row shows only that color; checkboxes multi-select; clear restores all', async ({ page }) => {
   await waitEditorReady(page);
   await paintFirstSegmentRed(page);
-  const total = await page.evaluate(() => DATA.segments.length);
+  const total = await page.evaluate(() => MaweBoot.DATA.segments.length);
 
   await page.locator('#color-filter-btn').click();
   const rows = page.locator('#color-filter-menu .color-filter-item');
@@ -107,11 +107,11 @@ test('assigning a color keeps the subtitle list at its current scroll position',
       text: `Cue ${index + 1}`,
       items: [],
     }));
-    DATA.segments.splice(0, DATA.segments.length, ...segments);
+    MaweBoot.DATA.segments.splice(0, MaweBoot.DATA.segments.length, ...segments);
     const clickBehavior = document.getElementById('click-behavior');
     clickBehavior.value = 'select-only';
     clickBehavior.dispatchEvent(new Event('change', { bubbles: true }));
-    renderAll({ waveform: 'none' });
+    MaweCuePanel.renderAll({ waveform: 'none' });
   });
 
   const target = page.locator('.cue[data-idx="30"]');
@@ -134,7 +134,7 @@ test('assigning a color keeps the subtitle list at its current scroll position',
     element.querySelector('.cue[data-idx="30"]')?.getBoundingClientRect().top
   ))).toBe(before.targetTop);
   await expect(target).toHaveClass(/has-color/);
-  await expect.poll(() => page.evaluate(() => DATA.segments[30].color?.name)).toBe('red');
+  await expect.poll(() => page.evaluate(() => MaweBoot.DATA.segments[30].color?.name)).toBe('red');
 
   await page.keyboard.press('0');
   await expect(target).toHaveAttribute('data-color-update-sentinel', 'preserve');
@@ -142,7 +142,7 @@ test('assigning a color keeps the subtitle list at its current scroll position',
     element.querySelector('.cue[data-idx="30"]')?.getBoundingClientRect().top
   ))).toBe(before.targetTop);
   await expect(target).not.toHaveClass(/has-color/);
-  await expect.poll(() => page.evaluate(() => DATA.segments[30].color)).toBe(null);
+  await expect.poll(() => page.evaluate(() => MaweBoot.DATA.segments[30].color)).toBe(null);
 });
 
 test('assigning and clearing a sticker keeps the subtitle row in place', async ({ page }) => {
@@ -154,17 +154,17 @@ test('assigning and clearing a sticker keeps the subtitle row in place', async (
       text: `Cue ${index + 1}`,
       items: [],
     }));
-    EDITOR_SETTINGS.cueListShowSticker = true;
-    EDITOR_SETTINGS.cueEditorShowSticker = true;
+    MaweSettings.EDITOR_SETTINGS.cueListShowSticker = true;
+    MaweSettings.EDITOR_SETTINGS.cueEditorShowSticker = true;
     segments[0].sticker = {
       name: 'existing', filename: 'existing.png',
       start: segments[0].start, end: segments[0].end,
     };
-    DATA.segments.splice(0, DATA.segments.length, ...segments);
+    MaweBoot.DATA.segments.splice(0, MaweBoot.DATA.segments.length, ...segments);
     const clickBehavior = document.getElementById('click-behavior');
     clickBehavior.value = 'select-only';
     clickBehavior.dispatchEvent(new Event('change', { bubbles: true }));
-    renderAll({ waveform: 'none' });
+    MaweCuePanel.renderAll({ waveform: 'none' });
   });
 
   const target = page.locator('.cue[data-idx="30"]');
@@ -178,9 +178,9 @@ test('assigning and clearing a sticker keeps the subtitle row in place', async (
   });
 
   await page.evaluate(() => {
-    stickerTargetMode = 'single';
-    stickerTargetIdxs = [30];
-    assignSticker({ name: 'reaction', filename: 'reaction.png' });
+    MaweStickerPicker.stickerTargetMode = 'single';
+    MaweStickerPicker.stickerTargetIdxs = [30];
+    MaweStickerPicker.assignSticker({ name: 'reaction', filename: 'reaction.png' });
   });
 
   await expect(target).toHaveAttribute('data-sticker-update-sentinel', 'preserve');
@@ -189,8 +189,8 @@ test('assigning and clearing a sticker keeps the subtitle row in place', async (
     .toBe(beforeTop);
 
   await page.evaluate(() => {
-    stickerTargetIdxs = [30];
-    clearStickerOnTargets();
+    MaweStickerPicker.stickerTargetIdxs = [30];
+    MaweStickerPicker.clearStickerOnTargets();
   });
   await expect(target).toHaveAttribute('data-sticker-update-sentinel', 'preserve');
   await expect(target.locator('.sticker-slot')).toBeEmpty();
@@ -207,12 +207,12 @@ test('search filtering keeps the selected subtitle in the same visual position',
       text: index % 2 === 0 ? `Keep ${index + 1}` : `Other ${index + 1}`,
       items: [],
     }));
-    DATA.segments.splice(0, DATA.segments.length, ...segments);
+    MaweBoot.DATA.segments.splice(0, MaweBoot.DATA.segments.length, ...segments);
     const clickBehavior = document.getElementById('click-behavior');
     clickBehavior.value = 'select-only';
     clickBehavior.dispatchEvent(new Event('change', { bubbles: true }));
-    EDITOR_SETTINGS.cueListAutoScrollOnClick = false;
-    renderAll({ waveform: 'none' });
+    MaweSettings.EDITOR_SETTINGS.cueListAutoScrollOnClick = false;
+    MaweCuePanel.renderAll({ waveform: 'none' });
   });
 
   const target = page.locator('.cue[data-idx="20"]');
@@ -222,8 +222,8 @@ test('search filtering keeps the selected subtitle in the same visual position',
   const beforeTop = await target.evaluate((element) => element.getBoundingClientRect().top);
 
   await page.evaluate(() => {
-    searchEl.value = 'Keep';
-    applySearch('Keep');
+    MaweDom.searchEl.value = 'Keep';
+    MaweSearch.applySearch('Keep');
   });
   await expect(page.locator('#visible-count')).toHaveText('20');
   await expect(target).not.toHaveClass(/hidden/);
@@ -241,12 +241,12 @@ test('search filtering does not jump to the top when the selected subtitle is hi
       text: index % 2 === 0 ? `Keep ${index + 1}` : `Other ${index + 1}`,
       items: [],
     }));
-    DATA.segments.splice(0, DATA.segments.length, ...segments);
+    MaweBoot.DATA.segments.splice(0, MaweBoot.DATA.segments.length, ...segments);
     const clickBehavior = document.getElementById('click-behavior');
     clickBehavior.value = 'select-only';
     clickBehavior.dispatchEvent(new Event('change', { bubbles: true }));
-    EDITOR_SETTINGS.cueListAutoScrollOnClick = false;
-    renderAll({ waveform: 'none' });
+    MaweSettings.EDITOR_SETTINGS.cueListAutoScrollOnClick = false;
+    MaweCuePanel.renderAll({ waveform: 'none' });
   });
 
   const target = page.locator('.cue[data-idx="21"]');
@@ -255,8 +255,8 @@ test('search filtering does not jump to the top when the selected subtitle is hi
   await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
 
   await page.evaluate(() => {
-    searchEl.value = 'Keep';
-    applySearch('Keep');
+    MaweDom.searchEl.value = 'Keep';
+    MaweSearch.applySearch('Keep');
   });
   await expect(target).toHaveClass(/hidden/);
   await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
@@ -349,7 +349,7 @@ test('merge join hint shows detected main type; clicking pins and syncs the mult
   await expect(hintText).toHaveText('当前为「字符型」（适用于中文、日文等）');
   await expect(switchButton).toHaveText('切换为单词型');
   await expect(multiSelect).toHaveValue('continuous');
-  expect(await page.evaluate(() => DATA.multi_subtitle.main_split_mode)).toBe('continuous');
+  expect(await page.evaluate(() => MaweBoot.DATA.multi_subtitle.main_split_mode)).toBe('continuous');
 
   // 再点一次切回单词型。
   await switchButton.click();

@@ -38,19 +38,19 @@ async function loadAttachedCues(page, autoSnapAdjacentCues) {
   }
   await page.goto(server.url);
   await page.evaluate(() => {
-    DATA.segments.splice(
+    MaweBoot.DATA.segments.splice(
       0,
-      DATA.segments.length,
+      MaweBoot.DATA.segments.length,
       { start: 5000, end: 10000, text: 'First', items: [{ start: 5000, end: 10000, text: 'First' }] },
       { start: 10000, end: 18000, text: 'Second', items: [{ start: 10000, end: 18000, text: 'Second' }] },
       { start: 25000, end: 30000, text: 'Third', items: [{ start: 25000, end: 30000, text: 'Third' }] },
     );
-    renderAll();
+    MaweCuePanel.renderAll();
   });
 }
 
 function readTimings(page) {
-  return page.evaluate(() => DATA.segments.map(({ start, end }) => ({ start, end })));
+  return page.evaluate(() => MaweBoot.DATA.segments.map(({ start, end }) => ({ start, end })));
 }
 
 async function selectedCueIndex(page) {
@@ -93,49 +93,49 @@ async function moveWaveformPointerToTime(page, blockLocator, timeMs) {
 test('WASD during playback follows the playhead instead of the last selected cue', async ({ page }) => {
   await loadAttachedCues(page);
   await page.evaluate(() => {
-    DATA.segments[2].start = 100000;
-    DATA.segments[2].end = 110000;
-    DATA.segments[2].items = [{ start: 100000, end: 110000, text: 'Third' }];
-    renderAll();
+    MaweBoot.DATA.segments[2].start = 100000;
+    MaweBoot.DATA.segments[2].end = 110000;
+    MaweBoot.DATA.segments[2].items = [{ start: 100000, end: 110000, text: 'Third' }];
+    MaweCuePanel.renderAll();
   });
   await page.locator('.cue[data-idx="0"]').click();
-  await page.evaluate(() => { player.currentTime = 101; });
+  await page.evaluate(() => { MaweCoreState.player.currentTime = 101; });
   await page.locator('#media-play-toggle').click();
   await expect(page.locator('#media-play-toggle')).toHaveText('⏸');
 
   await page.keyboard.press('a');
   await expect.poll(() => selectedCueIndex(page)).toBe('1');
-  await expect.poll(() => page.evaluate(() => player.currentTime)).toBeLessThan(11);
+  await expect.poll(() => page.evaluate(() => MaweCoreState.player.currentTime)).toBeLessThan(11);
 
   await page.locator('#media-play-toggle').click();
   await page.locator('.cue[data-idx="0"]').click();
-  await page.evaluate(() => { player.currentTime = 20; });
+  await page.evaluate(() => { MaweCoreState.player.currentTime = 20; });
   await page.locator('#media-play-toggle').click();
   await expect(page.locator('#media-play-toggle')).toHaveText('⏸');
 
   await page.keyboard.press('d');
   await expect.poll(() => selectedCueIndex(page)).toBe('2');
-  await expect.poll(() => page.evaluate(() => player.currentTime)).toBeGreaterThan(24);
+  await expect.poll(() => page.evaluate(() => MaweCoreState.player.currentTime)).toBeGreaterThan(24);
 });
 
 test('A/D at the outer cue boundaries still seeks the boundary cue', async ({ page }) => {
   await loadAttachedCues(page);
 
   await page.locator('.cue[data-idx="0"]').click();
-  await page.evaluate(() => { player.currentTime = 20; });
+  await page.evaluate(() => { MaweCoreState.player.currentTime = 20; });
   await page.keyboard.press('a');
-  await expect.poll(() => page.evaluate(() => player.currentTime)).toBeLessThan(6);
+  await expect.poll(() => page.evaluate(() => MaweCoreState.player.currentTime)).toBeLessThan(6);
 
   await page.locator('.cue[data-idx="2"]').click();
-  await page.evaluate(() => { player.currentTime = 1; });
+  await page.evaluate(() => { MaweCoreState.player.currentTime = 1; });
   await page.keyboard.press('d');
-  await expect.poll(() => page.evaluate(() => player.currentTime)).toBeGreaterThan(24);
+  await expect.poll(() => page.evaluate(() => MaweCoreState.player.currentTime)).toBeGreaterThan(24);
 });
 
 test('F seeks and plays a selected extension cue', async ({ page }) => {
   await loadAttachedCues(page);
   await page.evaluate(() => {
-    DATA.multi_subtitle = {
+    MaweBoot.DATA.multi_subtitle = {
       schema: 'moy.asr.multi_subtitle.v1',
       enabled: true,
       display_mode: 'both',
@@ -149,13 +149,13 @@ test('F seeks and plays a selected extension cue', async ({ page }) => {
       }],
       bindings: [],
     };
-    renderAll({ waveform: 'full' });
+    MaweCuePanel.renderAll({ waveform: 'full' });
   });
 
   const extensionBlock = page.locator('.waveform-cue-block[data-track="extension"]').first();
   await expect(extensionBlock).toBeVisible();
   await extensionBlock.click();
-  await page.evaluate(() => { player.currentTime = 1; });
+  await page.evaluate(() => { MaweCoreState.player.currentTime = 1; });
   await page.keyboard.press('f');
   await page.waitForFunction(() => {
     const media = document.getElementById('player');
@@ -263,9 +263,9 @@ test('automatic adjacent snapping links shared-boundary dragging by default and 
   ]);
 
   await page.evaluate(() => {
-    DATA.segments[0].end = 10000;
-    DATA.segments[1].start = 10000;
-    renderAll();
+    MaweBoot.DATA.segments[0].end = 10000;
+    MaweBoot.DATA.segments[1].start = 10000;
+    MaweCuePanel.renderAll();
   });
   // Alt 临时反转：只移动当前字幕的边界，相邻字幕保持不动。
   await dragSharedBoundary(true);
@@ -295,11 +295,11 @@ test('an independent shared-boundary drag can reverse before release', async ({ 
   await page.mouse.down();
   await expect(page.locator('#waveform-pane')).toHaveClass(/cue-drag-active/);
   await page.mouse.move(startX + deltaX, y, { steps: 5 });
-  await expect.poll(() => page.evaluate(() => DATA.segments[0].end)).toBe(9500);
+  await expect.poll(() => page.evaluate(() => MaweBoot.DATA.segments[0].end)).toBe(9500);
 
   // 回到按下时的共享边界；旧逻辑会把 9500 当成单向上限，无法回到 10000。
   await page.mouse.move(startX, y, { steps: 5 });
-  await expect.poll(() => page.evaluate(() => DATA.segments[0].end)).toBe(10000);
+  await expect.poll(() => page.evaluate(() => MaweBoot.DATA.segments[0].end)).toBe(10000);
   await page.mouse.up();
   await expect.poll(() => readTimings(page)).toEqual([
     { start: 5000, end: 10000 },
@@ -324,9 +324,9 @@ test('explicit Shift snapping remains available when automatic adjacent snapping
   // Shift 贴合是显式命令；这里显式关闭自动吸附，验证其不受开关影响。
   await loadAttachedCues(page, false);
   await page.evaluate(() => {
-    DATA.segments[0].end = 9000;
-    DATA.segments[1].start = 10000;
-    renderAll();
+    MaweBoot.DATA.segments[0].end = 9000;
+    MaweBoot.DATA.segments[1].start = 10000;
+    MaweCuePanel.renderAll();
   });
   await page.locator('.cue[data-idx="1"]').click();
   await page.keyboard.press('Shift+ArrowLeft');
@@ -340,11 +340,11 @@ test('explicit Shift snapping remains available when automatic adjacent snapping
 test('Shift+arrow keys snap selected subtitle boundaries to neighbors', async ({ page }) => {
   await loadAttachedCues(page);
   await page.evaluate(() => {
-    DATA.segments[0].end = 9000;
-    DATA.segments[1].start = 10000;
-    DATA.segments[1].end = 18000;
-    DATA.segments[2].start = 20000;
-    renderAll();
+    MaweBoot.DATA.segments[0].end = 9000;
+    MaweBoot.DATA.segments[1].start = 10000;
+    MaweBoot.DATA.segments[1].end = 18000;
+    MaweBoot.DATA.segments[2].start = 20000;
+    MaweCuePanel.renderAll();
   });
   await page.locator('.cue[data-idx="1"]').click();
 
@@ -426,11 +426,11 @@ test('A also compresses an attached preceding cue', async ({ page }) => {
 test('Shift+A/D on a held subtitle snaps its outer boundaries to neighbors', async ({ page }) => {
   await loadAttachedCues(page);
   await page.evaluate(() => {
-    DATA.segments[0].end = 9000;
-    DATA.segments[1].start = 10000;
-    DATA.segments[1].end = 18000;
-    DATA.segments[2].start = 20000;
-    renderAll();
+    MaweBoot.DATA.segments[0].end = 9000;
+    MaweBoot.DATA.segments[1].start = 10000;
+    MaweBoot.DATA.segments[1].end = 18000;
+    MaweBoot.DATA.segments[2].start = 20000;
+    MaweCuePanel.renderAll();
   });
   await page.locator('#editor-settings-toggle').click();
   const block = page.locator('.waveform-cue-block[data-idx="1"]').first();
@@ -475,7 +475,7 @@ test('Z/X place selected or pointer-hit subtitle boundaries at the waveform poin
     { start: 25000, end: 30000 },
   ]);
 
-  await page.evaluate(() => clearSelection());
+  await page.evaluate(() => MaweSelection.clearSelection());
   await moveWaveformPointerToTime(page, block, 7500);
   await page.keyboard.press('z');
   await expect.poll(() => readTimings(page)).toEqual([
