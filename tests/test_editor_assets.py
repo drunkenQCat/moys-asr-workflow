@@ -39,6 +39,15 @@ class EditorAssetContractTests(unittest.TestCase):
                 "editor-display-settings.js",
                 "editor-split-mode.js",
                 "editor-split-trim.js",
+                "editor-floating-panel.js",
+                "editor-gap-remove-ui.js",
+                "editor-selection.js",
+                "editor-binding-align.js",
+                "editor-cue-panel.js",
+                "editor-cue-elements.js",
+                "editor-color-filter.js",
+                "editor-search.js",
+                "editor-inline-edit.js",
                 "editor.js",
                 "editor-onboarding.js",
             ),
@@ -68,6 +77,15 @@ class EditorAssetContractTests(unittest.TestCase):
             "(function initMaweDisplaySettings(global) {",
             "(function initMaweSplitMode(global) {",
             "(function initMaweSplitTrim(global) {",
+            "(function initMaweFloatingPanel(global) {",
+            "(function initMaweGapRemoveUi(global) {",
+            "(function initMaweSelection(global) {",
+            "(function initMaweBindingAlign(global) {",
+            "(function initMaweCuePanel(global) {",
+            "(function initMaweCueElements(global) {",
+            "(function initMaweColorFilter(global) {",
+            "(function initMaweSearch(global) {",
+            "(function initMaweInlineEdit(global) {",
             "let FILENAME_BASE = __FILENAME_BASE_JSON__;",
             "const helpOnboardingButton = document.getElementById('help-onboarding');",
         )
@@ -118,7 +136,7 @@ class EditorAssetContractTests(unittest.TestCase):
         self.assertNotIn("underlying", core)
 
     def test_editor_overall_gap_move_uses_shared_provenance_operation(self) -> None:
-        script = edit.read_web_asset("editor.js")
+        script = edit.read_web_asset("editor-gap-remove-ui.js")
         start = script.index("function translateManualGap(")
         end = script.index("function resizeManualGapBoundary(", start)
         section = script[start:end]
@@ -126,7 +144,7 @@ class EditorAssetContractTests(unittest.TestCase):
         self.assertNotIn("original.start, end: original.end, removed: false", section)
 
     def test_shrink_gaps_replaces_audio_source_without_manual_override(self) -> None:
-        script = edit.read_web_asset("editor.js")
+        script = edit.read_web_asset("editor-gap-remove-ui.js")
         start = script.index("function shrinkExistingGaps()")
         end = script.index("function readGapRemoveDisableSettings()", start)
         section = script[start:end]

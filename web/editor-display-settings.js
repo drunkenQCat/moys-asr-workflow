@@ -15,7 +15,7 @@
     MaweDom.cueListShowCharcountToggle.checked = MaweSettings.EDITOR_SETTINGS.cueListShowCharcount;
     MaweDom.cueListAutoScrollOnClickToggle.checked = MaweSettings.EDITOR_SETTINGS.cueListAutoScrollOnClick;
     MaweDom.cueListKeepSplitVisibleToggle.checked = MaweSettings.EDITOR_SETTINGS.cueListKeepSplitVisible;
-    syncCharCountThresholdInputs(MaweSettings.EDITOR_SETTINGS.cueListCharcountThreshold);
+    MaweCueElements.syncCharCountThresholdInputs(MaweSettings.EDITOR_SETTINGS.cueListCharcountThreshold);
     MaweDom.hideDisabled = MaweSettings.EDITOR_SETTINGS.cueListHideDisabled;
     MaweDom.hideDisabledToggle.checked = MaweDom.hideDisabled;
     MaweCoreState.container.classList.toggle('hide-disabled', MaweDom.hideDisabled);

@@ -36,20 +36,20 @@
     const panelTrack = MaweCuePanelState.currentCuePanelKind === 'extension'
       ? MaweMultiSubtitleCore.getExtensionTrack(MaweCuePanelState.currentCuePanelTrackId) : null;
     return {
-      mainIds: [...selectedIdxs]
+      mainIds: [...MaweSelection.selectedIdxs]
         .map((index) => DATA.segments[index]?.id)
         .filter(Boolean),
       extensionTrackId: extensionTrack?.id || null,
       extensionIds: extensionTrack
-        ? [...selectedExtensionIdxs].map((index) => extensionTrack.segments[index]?.id).filter(Boolean)
+        ? [...MaweSelection.selectedExtensionIdxs].map((index) => extensionTrack.segments[index]?.id).filter(Boolean)
         : [],
       panelKind: MaweCuePanelState.currentCuePanelKind,
       panelTrackId: panelTrack?.id || MaweCuePanelState.currentCuePanelTrackId || null,
       panelId: MaweCuePanelState.currentCuePanelKind === 'extension'
         ? panelTrack?.segments?.[MaweCuePanelState.currentCuePanelIdx]?.id || null
         : DATA.segments[MaweCuePanelState.currentCuePanelIdx]?.id || null,
-      lastMainId: DATA.segments[lastClickedIdx]?.id || null,
-      lastExtensionId: extensionTrack?.segments?.[lastClickedExtensionIdx]?.id || null,
+      lastMainId: DATA.segments[MaweSelection.lastClickedIdx]?.id || null,
+      lastExtensionId: extensionTrack?.segments?.[MaweSelection.lastClickedExtensionIdx]?.id || null,
     };
   }
 
@@ -137,22 +137,22 @@
 
   function restoreEditorSelection(snapshot) {
     if (!snapshot) return;
-    selectedIdxs.clear();
-    selectedExtensionIdxs.clear();
+    MaweSelection.selectedIdxs.clear();
+    MaweSelection.selectedExtensionIdxs.clear();
     const mainIds = new Set(snapshot.mainIds || []);
     DATA.segments.forEach((segment, index) => {
-      if (mainIds.has(segment?.id)) selectedIdxs.add(index);
+      if (mainIds.has(segment?.id)) MaweSelection.selectedIdxs.add(index);
     });
     const extensionTrack = MaweMultiSubtitleCore.getExtensionTrack(snapshot.extensionTrackId) || MaweMultiSubtitleCore.getActiveExtensionTrack();
     const extensionIds = new Set(snapshot.extensionIds || []);
     if (extensionTrack) {
       extensionTrack.segments.forEach((segment, index) => {
-        if (extensionIds.has(segment?.id)) selectedExtensionIdxs.add(index);
+        if (extensionIds.has(segment?.id)) MaweSelection.selectedExtensionIdxs.add(index);
       });
     }
-    lastClickedIdx = snapshot.lastMainId
+    MaweSelection.lastClickedIdx = snapshot.lastMainId
       ? DATA.segments.findIndex((segment) => segment?.id === snapshot.lastMainId) : -1;
-    lastClickedExtensionIdx = extensionTrack && snapshot.lastExtensionId
+    MaweSelection.lastClickedExtensionIdx = extensionTrack && snapshot.lastExtensionId
       ? extensionTrack.segments.findIndex((segment) => segment?.id === snapshot.lastExtensionId) : -1;
     const panelTrack = snapshot.panelTrackId ? MaweMultiSubtitleCore.getExtensionTrack(snapshot.panelTrackId) : null;
     if (snapshot.panelKind === 'extension' && panelTrack && snapshot.panelId) {
@@ -172,13 +172,13 @@
       MaweCuePanelState.currentCuePanelKind = 'main';
       MaweCuePanelState.currentCuePanelTrackId = null;
     }
-    MaweDom.selCountEl.textContent = String(selectedIdxs.size + selectedExtensionIdxs.size);
-    selectedIdxs.forEach((index) => {
+    MaweDom.selCountEl.textContent = String(MaweSelection.selectedIdxs.size + MaweSelection.selectedExtensionIdxs.size);
+    MaweSelection.selectedIdxs.forEach((index) => {
       MaweCoreState.container.querySelector(`.cue[data-idx="${index}"]`)?.classList.add('selected');
     });
-    updateMultiSelectionClasses();
+    MaweSelection.updateMultiSelectionClasses();
     MaweCoreState.waveformEditor?.updateSelection();
-    renderCurrentCuePanel();
+    MaweCuePanel.renderCurrentCuePanel();
   }
 
 
@@ -194,7 +194,7 @@
     if (record.kind === 'gap_remove') {
       DATA.gap_remove = record.gapRemove;
       gapRemoveDirty = record.gapRemoveDirty;
-      updateGapRemoveUi();
+      MaweGapRemoveUi.updateGapRemoveUi();
       return true;
     }
     if (record.kind === 'preview') {
@@ -216,11 +216,11 @@
     MaweCuePanelState.currentCuePanelKind = 'main';
     MaweCuePanelState.currentCuePanelTrackId = null;
     MaweCuePanelState.resetCuePanelEditState();
-    clearSelection();
+    MaweSelection.clearSelection();
     lastActive = -1;
     const structureChanged = previousWaveformStructure
       !== MaweMultiSubtitleCore.multiSubtitleWaveformStructureKey();
-    renderAll({
+    MaweCuePanel.renderAll({
       waveform: structureChanged ? 'full' : 'overlay',
     });
     if (record.view) restoreEditorSelection(record.view);
@@ -235,7 +235,7 @@
       MaweHint.flashHint('工作区撤销失败：波形模块尚未加载', 'warning');
       return;
     }
-    if (editingState) finishEdit(false);  // 撤销前丢弃当前编辑（保持快照前后一致）
+    if (MaweInlineEdit.editingState) MaweInlineEdit.finishEdit(false);  // 撤销前丢弃当前编辑（保持快照前后一致）
     const current = snapshotCurrentForKind(top.kind, top.label, top);
     const record = editorHistory.popUndo(current);
     if (!record) return;
@@ -252,7 +252,7 @@
       MaweHint.flashHint('工作区重做失败：波形模块尚未加载', 'warning');
       return;
     }
-    if (editingState) finishEdit(false);
+    if (MaweInlineEdit.editingState) MaweInlineEdit.finishEdit(false);
     const current = snapshotCurrentForKind(top.kind, top.label, top);
     const record = editorHistory.popRedo(current);
     if (!record) return;

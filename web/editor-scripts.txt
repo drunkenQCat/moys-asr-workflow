@@ -22,5 +22,14 @@ editor-settings-panels.js
 editor-display-settings.js
 editor-split-mode.js
 editor-split-trim.js
+editor-floating-panel.js
+editor-gap-remove-ui.js
+editor-selection.js
+editor-binding-align.js
+editor-cue-panel.js
+editor-cue-elements.js
+editor-color-filter.js
+editor-search.js
+editor-inline-edit.js
 editor.js
 editor-onboarding.js
