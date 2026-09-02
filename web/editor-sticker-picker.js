@@ -85,7 +85,7 @@
     MaweDom.stickerModal.classList.remove('show');
     if (!hadStickers && !MaweSettings.EDITOR_SETTINGS.cueListShowSticker && !MaweSettings.EDITOR_SETTINGS.cueEditorShowSticker
         && confirm('Oi！检测到你添加了表情包，是否需要帮你打开「设置」中的字幕列表/编辑区的表情包显示开关？   ヾ(´･ω･｀)ﾉ')) {
-      updateEditorSettings({ cueListShowSticker: true, cueEditorShowSticker: true });
+      MaweSettings.updateEditorSettings({ cueListShowSticker: true, cueEditorShowSticker: true });
       MaweDisplaySettings.applyCueListDisplaySettings();
       MaweDisplaySettings.applyCueEditorDisplaySettings();
     }

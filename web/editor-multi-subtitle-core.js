@@ -15,7 +15,7 @@
 
   function normalizeMultiSubtitleState() {
     if (normalizedMultiSubtitleReference === MaweBoot.DATA.multi_subtitle) return MaweBoot.DATA.multi_subtitle;
-    MULTI_SUBTITLE_UTILS.normalizeMultiSubtitleProject(MaweBoot.DATA);
+    window.AsrEditorUtils.normalizeMultiSubtitleProject(MaweBoot.DATA);
     normalizedMultiSubtitleReference = MaweBoot.DATA.multi_subtitle;
     return MaweBoot.DATA.multi_subtitle;
   }
@@ -48,7 +48,7 @@
 
 
   function isConfiguredSubtitleSplitMode(value) {
-    return MULTI_SUBTITLE_UTILS.MULTI_SUBTITLE_SPLIT_MODES.has(value);
+    return window.AsrEditorUtils.MULTI_SUBTITLE_SPLIT_MODES.has(value);
   }
 
 
@@ -64,7 +64,7 @@
       return multi.main_split_mode;
     }
     const text = segment?.text ?? MaweBoot.DATA.segments.map((item) => item?.text || '').join('\n');
-    return MULTI_SUBTITLE_UTILS.detectSubtitleSplitMode(text);
+    return window.AsrEditorUtils.detectSubtitleSplitMode(text);
   }
 
 
@@ -72,7 +72,7 @@
   function getExtensionSubtitleSplitMode(track = getActiveExtensionTrack(), segment = null) {
     if (isConfiguredSubtitleSplitMode(track?.split_mode)) return track.split_mode;
     const text = segment?.text ?? (track?.segments || []).map((item) => item?.text || '').join('\n');
-    return MULTI_SUBTITLE_UTILS.detectSubtitleSplitMode(text, track?.language);
+    return window.AsrEditorUtils.detectSubtitleSplitMode(text, track?.language);
   }
 
 
@@ -122,14 +122,14 @@
 
   function bindingForMainIndex(index) {
     const segment = MaweBoot.DATA.segments[index];
-    return segment ? MULTI_SUBTITLE_UTILS.bindingForSegment(getMultiSubtitleState(), segment.id, 'main') : null;
+    return segment ? window.AsrEditorUtils.bindingForSegment(getMultiSubtitleState(), segment.id, 'main') : null;
   }
 
 
 
   function bindingForExtensionIndex(index, track = getActiveExtensionTrack()) {
     const segment = track?.segments?.[index];
-    return segment ? MULTI_SUBTITLE_UTILS.bindingForSegment(getMultiSubtitleState(), segment.id, 'extension', track.id) : null;
+    return segment ? window.AsrEditorUtils.bindingForSegment(getMultiSubtitleState(), segment.id, 'extension', track.id) : null;
   }
 
 
@@ -168,7 +168,7 @@
   function mainIndexForExtensionIndex(index, track = getActiveExtensionTrack()) {
     const segment = track?.segments?.[index];
     if (!segment) return -1;
-    const binding = MULTI_SUBTITLE_UTILS.bindingForSegment(getMultiSubtitleState(), segment.id, 'extension', track.id);
+    const binding = window.AsrEditorUtils.bindingForSegment(getMultiSubtitleState(), segment.id, 'extension', track.id);
     const mainId = binding?.main_segment_ids?.[0];
     return MaweBoot.DATA.segments.findIndex((candidate) => candidate.id === mainId);
   }
@@ -179,11 +179,11 @@
     const mainSet = new Set(mainIds.filter(Boolean));
     const extensionSet = new Set(extensionIds.filter(Boolean));
     const multi = getMultiSubtitleState();
-    MULTI_SUBTITLE_UTILS.removeSubtitleBindings(multi, (binding) => (
+    window.AsrEditorUtils.removeSubtitleBindings(multi, (binding) => (
       binding.main_segment_ids?.some((id) => mainSet.has(id))
         || binding.extension_segment_ids?.some((id) => extensionSet.has(id))
     ));
-    MULTI_SUBTITLE_UTILS.rebuildBindingOffsets(multi, MaweBoot.DATA.segments);
+    window.AsrEditorUtils.rebuildBindingOffsets(multi, MaweBoot.DATA.segments);
   }
 
 
@@ -192,10 +192,10 @@
     if (!mainSegment || !extensionSegment || !track) return null;
     const multi = getMultiSubtitleState();
     removeBindingsForSegmentIds([mainSegment.id], [extensionSegment.id]);
-    const binding = MULTI_SUBTITLE_UTILS.buildSubtitleBinding(mainSegment, extensionSegment, track.id);
+    const binding = window.AsrEditorUtils.buildSubtitleBinding(mainSegment, extensionSegment, track.id);
     multi.bindings.push(binding);
     multi.enabled = true;
-    MULTI_SUBTITLE_UTILS.rebuildBindingOffsets(multi, MaweBoot.DATA.segments);
+    window.AsrEditorUtils.rebuildBindingOffsets(multi, MaweBoot.DATA.segments);
     return binding;
   }
 
@@ -227,7 +227,7 @@
 
 
   function syncBindingOffsets() {
-    MULTI_SUBTITLE_UTILS.rebuildBindingOffsets(getMultiSubtitleState(), MaweBoot.DATA.segments);
+    window.AsrEditorUtils.rebuildBindingOffsets(getMultiSubtitleState(), MaweBoot.DATA.segments);
   }
 
 
@@ -454,7 +454,7 @@
     if (removed.size) {
       const removedIds = new Set([...removed].map((segment) => segment.id).filter(Boolean));
       const multi = getMultiSubtitleState();
-      const removedBindings = MULTI_SUBTITLE_UTILS.removeSubtitleBindings(multi, (binding) => (
+      const removedBindings = window.AsrEditorUtils.removeSubtitleBindings(multi, (binding) => (
         binding.extension_segment_ids?.some((id) => removedIds.has(id))
       ));
       track.segments = track.segments.filter((segment) => !removed.has(segment));
@@ -543,7 +543,7 @@
 
   function syncBoundExtensionForMain(mainSegment, patch = {}) {
     if (!mainSegment || patch.independent || !multiSubtitleVisible()) return false;
-    const binding = MULTI_SUBTITLE_UTILS.bindingForSegment(getMultiSubtitleState(), mainSegment.id, 'main');
+    const binding = window.AsrEditorUtils.bindingForSegment(getMultiSubtitleState(), mainSegment.id, 'main');
     const extension = binding
       ? extensionSegmentById(binding.extension_segment_ids?.[0], getExtensionTrack(binding.track_id))
       : null;
@@ -573,7 +573,31 @@
     return true;
   }
 
+
+  const MULTI_SUBTITLE_TOLERANCE_MS = window.AsrEditorUtils.MULTI_SUBTITLE_TOLERANCE_MS || 300;
+
+
+  const MULTI_SUBTITLE_MERGE_OVERLAP_TOLERANCE_MS = 500;
+
+
+  const SUBTITLE_MIN_DURATION_MS = 100;
+
+
+  const PROJECT_SEGMENT_OVERLAP_AUTO_FIX_MAX_MS = 2;
+
+
+  const MULTI_SUBTITLE_IMPORT_PROMPT = '是否导入第二条字幕？（后续也可以将字幕或工程拖入编辑器加载）';
+
+
+  const MULTI_SUBTITLE_TOGGLE_TITLE = '当前工程如果有大于1条字幕，可以开启多重字幕模式，用于双语字幕编辑等。';
+
   global.MaweMultiSubtitleCore = Object.freeze({
+    MULTI_SUBTITLE_TOLERANCE_MS,
+    MULTI_SUBTITLE_MERGE_OVERLAP_TOLERANCE_MS,
+    SUBTITLE_MIN_DURATION_MS,
+    PROJECT_SEGMENT_OVERLAP_AUTO_FIX_MAX_MS,
+    MULTI_SUBTITLE_IMPORT_PROMPT,
+    MULTI_SUBTITLE_TOGGLE_TITLE,
     get normalizedMultiSubtitleReference() { return normalizedMultiSubtitleReference; },
     set normalizedMultiSubtitleReference(v) { normalizedMultiSubtitleReference = v; },
     get pendingSrtImportAsExtension() { return pendingSrtImportAsExtension; },

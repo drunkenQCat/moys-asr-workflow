@@ -267,7 +267,40 @@
     });
   }
 
+
+
+  function constrainBoundExtensionPanelEdit(extension, track, oldStart, oldEnd) {
+    if (!extension || !track || !MaweMultiSubtitleCore.multiSubtitleVisible()) return false;
+    const binding = window.AsrEditorUtils.bindingForSegment(
+      MaweMultiSubtitleCore.getMultiSubtitleState(), extension.id, 'extension', track.id,
+    );
+    const main = binding ? MaweMultiSubtitleCore.mainSegmentById(binding.main_segment_ids?.[0]) : null;
+    if (!main) return false;
+    const desiredMainStart = main.start + (extension.start - oldStart);
+    const desiredMainEnd = main.end + (extension.end - oldEnd);
+    const constrained = MaweMultiSubtitleCore.constrainCueRangeToTrack(
+      main,
+      desiredMainStart,
+      desiredMainEnd,
+      MaweBoot.DATA.segments,
+    );
+    const blocked = constrained.blocked
+      || constrained.start !== desiredMainStart
+      || constrained.end !== desiredMainEnd;
+    const nextStart = oldStart + (constrained.start - main.start);
+    const nextEnd = oldEnd + (constrained.end - main.end);
+    extension.items = MaweCuePanel.remapPanelItems(extension.items, oldStart, oldEnd, nextStart, nextEnd);
+    extension.start = nextStart;
+    extension.end = nextEnd;
+    main.start = constrained.start;
+    main.end = constrained.end;
+    main._dirty = true;
+    extension._dirty = true;
+    return blocked;
+  }
+
   global.MaweBindingAlign = Object.freeze({
+    constrainBoundExtensionPanelEdit,
     groupMemberIdxs,
     selectCueByClick,
     overlappingMainIndexesForExtension,

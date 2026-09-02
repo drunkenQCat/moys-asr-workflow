@@ -92,7 +92,12 @@
     }
   }
 
+
+  let dragCounter = 0;
+
   global.MaweDragDrop = Object.freeze({
+    get dragCounter() { return dragCounter; },
+    set dragCounter(v) { dragCounter = v; },
     dragOverlay,
     isJsonFile,
     isSrtFile,

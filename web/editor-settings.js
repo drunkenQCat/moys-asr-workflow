@@ -314,7 +314,15 @@
 
   const EDITOR_SETTINGS = readEditorSettings();
 
+
+
+  function updateEditorSettings(patch) {
+    Object.assign(MaweSettings.EDITOR_SETTINGS, patch);
+    MaweSettings.saveEditorSettings(MaweSettings.EDITOR_SETTINGS);
+  }
+
   global.MaweSettings = Object.freeze({
+    updateEditorSettings,
     EDITOR_SETTINGS_KEY,
     GAP_REMOVE_SCHEMA,
     MEDIA_SEEK_STEP_MIN_MS,

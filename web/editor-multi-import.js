@@ -116,7 +116,7 @@
     const match = window.AsrEditorUtils.matchSubtitleSegments(
       MaweBoot.DATA.segments,
       pending.segments,
-      MULTI_SUBTITLE_TOLERANCE_MS,
+      MaweMultiSubtitleCore.MULTI_SUBTITLE_TOLERANCE_MS,
     );
     pending.match = match;
     renderMultiImportPreview(match, pending.segments);
@@ -135,7 +135,7 @@
     const pending = pendingMultiImport;
     if (!pending) return false;
     const match = pending.match || window.AsrEditorUtils.matchSubtitleSegments(
-      MaweBoot.DATA.segments, pending.segments, MULTI_SUBTITLE_TOLERANCE_MS,
+      MaweBoot.DATA.segments, pending.segments, MaweMultiSubtitleCore.MULTI_SUBTITLE_TOLERANCE_MS,
     );
     const multi = MaweMultiSubtitleCore.getMultiSubtitleState();
     const replacing = Boolean(pending.existingTrackId);

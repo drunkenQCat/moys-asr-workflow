@@ -3,7 +3,7 @@
 // jklReverseFrameId / jklReverseLastTimestamp）为本模块私有，外部只经
 // window.MaweJklPlayback 的冻结门面访问。
 // 依赖（共享全局作用域）：
-//   editor-utils.js EDITOR_SETTINGS_UTILS.normalizeJklPlaybackMode —— 加载期使用；
+//   editor-utils.js window.AsrEditorUtils.normalizeJklPlaybackMode —— 加载期使用；
 //   editor.js      EDITOR_SETTINGS, player, waveformEditor, update, updatePlaybackFrame,
 //                  syncMediaControls, hasLoadedMedia, flashHint, updateEditorSettings
 //                  —— 本文件先于 editor.js 加载，这些只在延迟执行的事件回调中访问；
@@ -130,7 +130,7 @@
 
   function refreshJklPlaybackModeUi() {
     const language = window.MAWE_I18N?.language === 'en' ? 'en' : 'zh';
-    const mode = EDITOR_SETTINGS_UTILS.normalizeJklPlaybackMode(MaweSettings.EDITOR_SETTINGS.jklPlaybackMode);
+    const mode = window.AsrEditorUtils.normalizeJklPlaybackMode(MaweSettings.EDITOR_SETTINGS.jklPlaybackMode);
     const text = JKL_MODE_UI_TEXT[language][mode];
     if (jklPlaybackModeSelect) jklPlaybackModeSelect.value = mode;
     if (jklPlaybackModeHint) jklPlaybackModeHint.textContent = text.hint;
@@ -141,7 +141,7 @@
 
   jklPlaybackModeSelect?.addEventListener('change', () => {
     const wasReversePlaying = jklReversePlaying;
-    updateEditorSettings({ jklPlaybackMode: EDITOR_SETTINGS_UTILS.normalizeJklPlaybackMode(jklPlaybackModeSelect.value) });
+    MaweSettings.updateEditorSettings({ jklPlaybackMode: window.AsrEditorUtils.normalizeJklPlaybackMode(jklPlaybackModeSelect.value) });
     stopJklReversePlayback({ render: false });
     jklPlaybackRate = 1;
     MaweCoreState.player.playbackRate = 1;
@@ -168,7 +168,7 @@
     playForward: playJklForward,
     nextDirectionRate: nextJklDirectionRate,
     // 读取设置面板下拉框当前选择并归一化（editor.js 设置项落盘用）。
-    currentModeSelection: () => EDITOR_SETTINGS_UTILS.normalizeJklPlaybackMode(jklPlaybackModeSelect?.value ?? ''),
+    currentModeSelection: () => window.AsrEditorUtils.normalizeJklPlaybackMode(jklPlaybackModeSelect?.value ?? ''),
     refreshModeUi: refreshJklPlaybackModeUi,
   });
 })(typeof window !== 'undefined' ? window : globalThis);

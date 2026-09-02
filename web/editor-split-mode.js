@@ -55,14 +55,25 @@
     MaweHistory.pushUndo('切换主字幕语言类型');
     // 本地偏好立即生效；工程内的 main_split_mode 同步写入，
     // 保证多重字幕菜单与保存后的工程文件读到同一类型。
-    updateEditorSettings({ mainSplitModeOverride: next });
+    MaweSettings.updateEditorSettings({ mainSplitModeOverride: next });
     MaweMultiSubtitleCore.getMultiSubtitleState().main_split_mode = next;
     MaweMultiSubtitleCore.markMultiSubtitleDirty();
     // renderAll → updateMultiSubtitleUi 会回写多重字幕下拉框并刷新本提示。
     MaweCuePanel.renderAll({ waveform: 'none' });
   }
 
+
+
+  function refreshSplitKeyHelp() {
+    const label = MaweDisplaySettings.splitKeyLabel();
+    if (MaweDom.helpSplitKey) MaweDom.helpSplitKey.textContent = label;
+    if (MaweDom.cuePanelSplitKey) MaweDom.cuePanelSplitKey.textContent = label;
+    if (MaweDom.cueEditorSplitKey) MaweDom.cueEditorSplitKey.textContent = label;
+    if (MaweDom.cueEditorConfirmKey) MaweDom.cueEditorConfirmKey.textContent = MaweDisplaySettings.confirmKeyLabel();
+  }
+
   global.MaweSplitMode = Object.freeze({
+    refreshSplitKeyHelp,
     mergeJoinModeHint,
     mergeJoinModeText,
     mergeJoinModeSwitch,

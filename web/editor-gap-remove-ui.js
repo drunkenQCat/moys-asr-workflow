@@ -663,7 +663,23 @@
     else openGapRemovePanel();
   }
 
+
+
+  function finishGapRemovePanelDrag(event) {
+    if (!MaweCuePanelState.gapRemovePanelDrag || event.pointerId !== MaweCuePanelState.gapRemovePanelDrag.pointerId) return;
+    try {
+      MaweDom.gapRemoveDragHandle?.releasePointerCapture?.(event.pointerId);
+    } catch (_) {
+      // 指针在浏览器窗口外释放时，capture 可能已由浏览器自动清理。
+    }
+    MaweCuePanelState.gapRemovePanelDrag = null;
+    MaweDom.gapRemovePanel?.classList.remove('dragging');
+    const rect = MaweDom.gapRemovePanel?.getBoundingClientRect();
+    if (rect) MaweGapRemoveUi.setGapRemovePanelPosition(rect.left, rect.top, { persist: true });
+  }
+
   global.MaweGapRemoveUi = Object.freeze({
+    finishGapRemovePanelDrag,
     setGapRemoveData,
     commitManualGapRemoveChange,
     gapRemoveTotalMs,

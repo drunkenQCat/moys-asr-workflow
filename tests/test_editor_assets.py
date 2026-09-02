@@ -40,6 +40,7 @@ class EditorAssetContractTests(unittest.TestCase):
                 "editor-display-settings.js",
                 "editor-split-mode.js",
                 "editor-split-trim.js",
+                "editor-segment-ops.js",
                 "editor-floating-panel.js",
                 "editor-gap-remove-ui.js",
                 "editor-selection.js",
@@ -51,7 +52,6 @@ class EditorAssetContractTests(unittest.TestCase):
                 "editor-inline-edit.js",
                 "editor-split-core.js",
                 "editor-split-context.js",
-                "editor-segment-ops.js",
                 "editor-cue-list-anchor.js",
                 "editor-nav-preview.js",
                 "editor-cue-events.js",
@@ -71,6 +71,7 @@ class EditorAssetContractTests(unittest.TestCase):
                 "editor-dynamic-exports.js",
                 "editor-export-menus.js",
                 "editor-project-media-inputs.js",
+                "editor-json-repair.js",
                 "editor-project-load.js",
                 "editor-loading-progress.js",
                 "editor-multi-import.js",
@@ -93,7 +94,6 @@ class EditorAssetContractTests(unittest.TestCase):
                 "editor-server-connection.js",
                 "editor-drag-drop.js",
                 "editor-sticker-otio-export.js",
-                "editor-json-repair.js",
                 "editor.js",
                 "editor-onboarding.js",
             ),
@@ -124,6 +124,7 @@ class EditorAssetContractTests(unittest.TestCase):
             '(function initMaweDisplaySettings(global) {',
             '(function initMaweSplitMode(global) {',
             '(function initMaweSplitTrim(global) {',
+            '(function initMaweSegmentOps(global) {',
             '(function initMaweFloatingPanel(global) {',
             '(function initMaweGapRemoveUi(global) {',
             '(function initMaweSelection(global) {',
@@ -135,7 +136,6 @@ class EditorAssetContractTests(unittest.TestCase):
             '(function initMaweInlineEdit(global) {',
             '(function initMaweSplitCore(global) {',
             '(function initMaweSplitContext(global) {',
-            '(function initMaweSegmentOps(global) {',
             '(function initMaweCueListAnchor(global) {',
             '(function initMaweNavPreview(global) {',
             '(function initMaweCueEvents(global) {',
@@ -155,6 +155,7 @@ class EditorAssetContractTests(unittest.TestCase):
             '(function initMaweDynamicExports(global) {',
             '(function initMaweExportMenus(global) {',
             '(function initMaweProjectMediaInputs(global) {',
+            '(function initMaweJsonRepair(global) {',
             '(function initMaweProjectLoad(global) {',
             '(function initMaweLoadingProgress(global) {',
             '(function initMaweMultiImport(global) {',
@@ -177,7 +178,6 @@ class EditorAssetContractTests(unittest.TestCase):
             '(function initMaweServerConnection(global) {',
             '(function initMaweDragDrop(global) {',
             '(function initMaweStickerOtioExport(global) {',
-            '(function initMaweJsonRepair(global) {',
             "window.addEventListener('error', (event) => {",
             "const helpOnboardingButton = document.getElementById('help-onboarding');",
         )
@@ -259,7 +259,7 @@ class EditorAssetContractTests(unittest.TestCase):
     def test_server_connection_warning_uses_shared_editor_contract(self) -> None:
         template = edit.read_web_asset("editor-template.html")
         styles = edit.read_web_asset("editor.css")
-        script = edit.read_web_asset("editor.js")
+        script = edit.build_editor_scripts()
         self.assertIn('id="server-connection-banner"', template)
         self.assertIn("SERVER_CONNECTION_FAILURE_THRESHOLD", script)
         self.assertIn("function checkServerConnection()", script)
@@ -337,7 +337,7 @@ class EditorAssetContractTests(unittest.TestCase):
         self.assertIn(": 'original'", script)
         self.assertIn("stickerOtioExportMode: 'original'", script)
         self.assertIn("saved.stickerOtioExportMode === 'portable' ? 'portable' : 'original'", script)
-        self.assertIn("updateEditorSettings({ stickerOtioExportMode: stickerOtioExportMode.value })", script)
+        self.assertIn("MaweSettings.updateEditorSettings({ stickerOtioExportMode: MaweStickerOtioExport.stickerOtioExportMode.value })", script)
         # 便携导出能力只在服务器渲染绑定工程时开启；浏览器句柄工程不被服务器
         # 跟踪，解除保存时必须一并关闭，避免把导出写到服务器旧工程目录。
         self.assertIn("SERVER_CONFIG.canPortableStickerExport = false", script)

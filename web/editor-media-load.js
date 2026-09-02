@@ -68,7 +68,7 @@
         oldPlayer.querySelector('source')?.removeAttribute('src');
       }
       URL.revokeObjectURL(url);
-      syncPlayerPlaceholder();
+      MaweMediaPlayback.syncPlayerPlaceholder();
       MaweHint.flashHint(error.message || `媒体加载失败：${file.name}`, 'warning');
       return false;
     }
@@ -81,7 +81,7 @@
     }
 
     if (MaweCoreState.waveformEditor) MaweCoreState.waveformEditor.attachPlayer(MaweCoreState.player);
-    syncPlayerPlaceholder();
+    MaweMediaPlayback.syncPlayerPlaceholder();
     // 部分浏览器会在 load() 完成前暂时不给 currentSrc；文件既已由用户选定，立即恢复彩色波形。
     MaweCoreState.waveformEditor?.setMediaAvailable(true);
 

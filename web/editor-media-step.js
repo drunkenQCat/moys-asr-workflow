@@ -16,7 +16,7 @@
     const normalized = MaweSettings.clampMediaSeekStepMs(value);
     if (rewriteInput && MaweDom.mediaSeekStepInput) MaweDom.mediaSeekStepInput.value = String(normalized);
     MaweDom.mediaSeekInputLastValue = normalized;
-    updateEditorSettings({ mediaSeekStepMs: normalized });
+    MaweSettings.updateEditorSettings({ mediaSeekStepMs: normalized });
     refreshMediaSeekInputStep(normalized);
     MaweMediaPlayback.refreshMediaSeekStepHelp();
     MaweMediaPlayback.refreshMediaSeekControlLabels();

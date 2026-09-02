@@ -153,7 +153,38 @@
     el.addEventListener('pointercancel', endPreviewGesture);
   }
 
+
+
+  // --- 键盘操作（聚焦时），字幕预览与表情包预览共用 ---
+  // 方向键移动 1%；Shift 加速到 10%；Alt+方向缩放；Enter 切换 editable；Esc 失焦。
+  function handlePreviewBoxKeydown(event, target) {
+    if (!MawePreviewGeometry.previewTargetEnabled(target)) return;
+    const el = MawePreviewGeometry.previewTargetEl(target);
+    if (event.key === 'Escape') { el.blur(); return; }
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      el.classList.toggle('editable');
+      return;
+    }
+    const arrows = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+    const dir = arrows[event.key];
+    if (!dir) return;
+    event.preventDefault();
+    const step = event.shiftKey ? 0.10 : 0.01;
+    const resize = event.altKey;  // Alt+方向缩放；否则移动
+    const dx = dir[0] * step;
+    const dy = dir[1] * step;
+    const targetLabel = target === 'sticker' ? '表情包预览' : '字幕预览';
+    MaweHistory.pushPreviewUndo((resize ? '缩放' : '移动') + targetLabel, MaweHistory.snapshotPreviewState());
+    const startGeo = MawePreviewGeometry.getTargetGeometry(target);
+    const next = resize
+      ? MaweAppearance.GEO_UTILS.applyPreviewGeometryDelta(startGeo, dir[0] !== 0 ? 'e' : 's', dx, dy)
+      : MaweAppearance.GEO_UTILS.applyPreviewGeometryDelta(startGeo, 'move', dx, dy);
+    MawePreviewGeometry.setTargetGeometry(target, next);
+  }
+
   global.MawePreviewGeometry = Object.freeze({
+    handlePreviewBoxKeydown,
     setPreviewGeometry,
     applyPreviewGeometryToDom,
     getStickerGeometry,

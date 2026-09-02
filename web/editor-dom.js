@@ -891,7 +891,11 @@
 
   const subtitleExtendBackwardInput = document.getElementById('subtitle-extend-backward-ms');
 
+
+  const waveformShapeSourceSelect = document.getElementById('waveform-shape-source');
+
   global.MaweDom = Object.freeze({
+    waveformShapeSourceSelect,
     nowEl,
     searchEl,
     visibleCountEl,

@@ -14,7 +14,7 @@
     if (sticker.rel) {
       if (MaweBoot.STICKER_URL_PREFIX) {
         const url = `${MaweBoot.STICKER_URL_PREFIX.replace(/\/$/, '')}/${sticker.rel.split('/').map(encodeURIComponent).join('/')}`;
-        return stickerAssetRevision ? `${url}?root=${stickerAssetRevision}` : url;
+        return MaweStickerOverlay.stickerAssetRevision ? `${url}?root=${MaweStickerOverlay.stickerAssetRevision}` : url;
       }
       if (!MaweBoot.STICKER_ROOT) return sticker.rel;
       let root = MaweBoot.STICKER_ROOT;

@@ -240,9 +240,9 @@
 
           const repairDescription = document.createElement('div');
           repairDescription.className = 'hint-project-repair-description';
-          repairDescription.textContent = overlap.overlapMs <= PROJECT_SEGMENT_OVERLAP_AUTO_FIX_MAX_MS
-            ? `这是小于等于 ${PROJECT_SEGMENT_OVERLAP_AUTO_FIX_MAX_MS}ms 的边界误差，可以安全把后句起点吸附到前句终点。`
-            : `重叠超过 ${PROJECT_SEGMENT_OVERLAP_AUTO_FIX_MAX_MS}ms，请确认要保留哪一侧的时间边界；修复后会自动再次保存。`;
+          repairDescription.textContent = overlap.overlapMs <= MaweMultiSubtitleCore.PROJECT_SEGMENT_OVERLAP_AUTO_FIX_MAX_MS
+            ? `这是小于等于 ${MaweMultiSubtitleCore.PROJECT_SEGMENT_OVERLAP_AUTO_FIX_MAX_MS}ms 的边界误差，可以安全把后句起点吸附到前句终点。`
+            : `重叠超过 ${MaweMultiSubtitleCore.PROJECT_SEGMENT_OVERLAP_AUTO_FIX_MAX_MS}ms，请确认要保留哪一侧的时间边界；修复后会自动再次保存。`;
 
           const repairActions = document.createElement('div');
           repairActions.className = 'hint-project-actions';
@@ -257,7 +257,7 @@
             });
             repairActions.appendChild(button);
           };
-          if (overlap.overlapMs <= PROJECT_SEGMENT_OVERLAP_AUTO_FIX_MAX_MS) {
+          if (overlap.overlapMs <= MaweMultiSubtitleCore.PROJECT_SEGMENT_OVERLAP_AUTO_FIX_MAX_MS) {
             addRepairButton(
               'hint-project-repair-auto',
               `自动修复：推迟第 ${overlap.currentIndex + 1} 条字幕（${overlap.overlapMs}ms）`,
@@ -350,12 +350,12 @@
     };
     sync();
     MaweDom.autoSaveProjectToggle.addEventListener('change', () => {
-      updateEditorSettings({ autoSaveProject: MaweDom.autoSaveProjectToggle.checked });
+      MaweSettings.updateEditorSettings({ autoSaveProject: MaweDom.autoSaveProjectToggle.checked });
       sync();
       scheduleAutoSave();
     });
     MaweDom.autoSaveIntervalInput.addEventListener('change', () => {
-      updateEditorSettings({ autoSaveIntervalSeconds: MaweSettings.clampAutoSaveInterval(MaweDom.autoSaveIntervalInput.value) });
+      MaweSettings.updateEditorSettings({ autoSaveIntervalSeconds: MaweSettings.clampAutoSaveInterval(MaweDom.autoSaveIntervalInput.value) });
       sync();
       scheduleAutoSave();
     });

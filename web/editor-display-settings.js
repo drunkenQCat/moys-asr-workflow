@@ -88,9 +88,9 @@
     }
     if (MaweDom.multiSubtitleToggleLabel) {
       MaweDom.multiSubtitleToggleLabel.classList.remove('disabled');
-      MaweDom.multiSubtitleToggleLabel.title = MULTI_SUBTITLE_TOGGLE_TITLE;
+      MaweDom.multiSubtitleToggleLabel.title = MaweMultiSubtitleCore.MULTI_SUBTITLE_TOGGLE_TITLE;
     }
-    if (MaweDom.multiSubtitleToggle) MaweDom.multiSubtitleToggle.title = MULTI_SUBTITLE_TOGGLE_TITLE;
+    if (MaweDom.multiSubtitleToggle) MaweDom.multiSubtitleToggle.title = MaweMultiSubtitleCore.MULTI_SUBTITLE_TOGGLE_TITLE;
     if (MaweDom.multiSubtitleDisplayMode) {
       MaweDom.multiSubtitleDisplayMode.value = MaweMultiSubtitleCore.getMultiSubtitleState().display_mode || 'both';
       MaweDom.multiSubtitleDisplayMode.hidden = !enabled;
@@ -137,7 +137,7 @@
     if (MaweDom.extensionOverlayToggleWrap) MaweDom.extensionOverlayToggleWrap.hidden = !enabled;
     if (MaweDom.extensionSubtitlePreviewSettings) MaweDom.extensionSubtitlePreviewSettings.hidden = !enabled;
     if (MaweDom.extensionOverlayToggle) {
-      if (enteringEnabled) updateEditorSettings({ extensionOverlayEnabled: true });
+      if (enteringEnabled) MaweSettings.updateEditorSettings({ extensionOverlayEnabled: true });
       MaweDom.extensionOverlayToggle.checked = enabled
         ? (enteringEnabled || MaweSettings.EDITOR_SETTINGS.extensionOverlayEnabled)
         : false;
@@ -151,7 +151,7 @@
 
   function bindCueListDisplayToggle(toggle, key) {
     toggle.addEventListener('change', () => {
-      updateEditorSettings({ [key]: toggle.checked });
+      MaweSettings.updateEditorSettings({ [key]: toggle.checked });
       applyCueListDisplaySettings();
     });
   }
@@ -189,7 +189,7 @@
       if (typeof value[key] === 'boolean') patch[key] = value[key];
     });
     if (!Object.keys(patch).length) return;
-    updateEditorSettings(patch);
+    MaweSettings.updateEditorSettings(patch);
     applyCueListDisplaySettings();
     applyCueEditorDisplaySettings();
   }
@@ -198,7 +198,7 @@
 
   function bindCueEditorDisplayToggle(toggle, key) {
     toggle.addEventListener('change', () => {
-      updateEditorSettings({ [key]: toggle.checked });
+      MaweSettings.updateEditorSettings({ [key]: toggle.checked });
       applyCueEditorDisplaySettings();
     });
   }

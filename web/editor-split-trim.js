@@ -36,7 +36,7 @@
   function persistSplitTrimSymbols(nextSymbols) {
     // 归一化去重并保持顺序：先按传入顺序，chip 前置、文本框追加在后。
     const normalized = window.AsrEditorUtils.normalizeSplitTrimSymbols(nextSymbols);
-    updateEditorSettings({ splitTrimSymbols: normalized });
+    MaweSettings.updateEditorSettings({ splitTrimSymbols: normalized });
     window.AsrEditorUtils.setSplitTrimSymbols(normalized);
     updateSplitTrimSymbolsResetVisibility();
   }
@@ -75,7 +75,21 @@
     }
   }
 
+
+  // 拆分移除符号：前 5 个高频符号用勾选 chip，其余走「其他符号」自由文本框
+  // （空格分隔）；两者合并后即时持久化并同步给共享工具层。
+  const splitTrimSymbolGrid = document.getElementById('split-trim-symbol-grid');
+
+
+  const splitTrimSymbolsReset = document.getElementById('split-trim-symbols-reset');
+
+
+  const splitTrimExtraInput = document.getElementById('split-trim-extra-symbols');
+
   global.MaweSplitTrim = Object.freeze({
+    splitTrimSymbolGrid,
+    splitTrimSymbolsReset,
+    splitTrimExtraInput,
     currentSplitTrimPrimaryChars,
     splitTrimPrimaryCheckedSet,
     splitTrimExtraSymbols,

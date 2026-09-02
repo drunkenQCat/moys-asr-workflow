@@ -93,11 +93,11 @@
         end: Number(segment?.end),
       }))
       .filter((range) => Number.isFinite(range.start) && Number.isFinite(range.end));
-    if (!ranges.length || ranges.some((range) => range.end - range.start < SUBTITLE_MIN_DURATION_MS * 2)) {
+    if (!ranges.length || ranges.some((range) => range.end - range.start < MaweMultiSubtitleCore.SUBTITLE_MIN_DURATION_MS * 2)) {
       return null;
     }
-    const lower = Math.max(...ranges.map((range) => range.start + SUBTITLE_MIN_DURATION_MS));
-    const upper = Math.min(...ranges.map((range) => range.end - SUBTITLE_MIN_DURATION_MS));
+    const lower = Math.max(...ranges.map((range) => range.start + MaweMultiSubtitleCore.SUBTITLE_MIN_DURATION_MS));
+    const upper = Math.min(...ranges.map((range) => range.end - MaweMultiSubtitleCore.SUBTITLE_MIN_DURATION_MS));
     if (lower > upper) return null;
     const requested = Number(requestedCutMs);
     const cut = Number.isFinite(requested) ? Math.round(requested) : lower;
@@ -336,9 +336,9 @@
     if (!Number.isFinite(splitMs)
         || !Number.isFinite(segmentStart)
         || !Number.isFinite(segmentEnd)
-        || segmentEnd - segmentStart < SUBTITLE_MIN_DURATION_MS * 2
-        || leftEnd - segmentStart < SUBTITLE_MIN_DURATION_MS
-        || segmentEnd - rightStart < SUBTITLE_MIN_DURATION_MS
+        || segmentEnd - segmentStart < MaweMultiSubtitleCore.SUBTITLE_MIN_DURATION_MS * 2
+        || leftEnd - segmentStart < MaweMultiSubtitleCore.SUBTITLE_MIN_DURATION_MS
+        || segmentEnd - rightStart < MaweMultiSubtitleCore.SUBTITLE_MIN_DURATION_MS
         || rightStart < leftEnd) return null;
     const left = {
       ...segment,
@@ -381,7 +381,7 @@
     // 或两段重叠区间放不下合法切点时，不再直接拒绝：弹窗内会走「只拆主字幕并
     // 解除绑定」的降级路径（仅在主字幕自身可拆时启用）；只有主字幕总时长不足
     // （降级也无从谈起）才提前给出原因。
-    const linkedMinSpanMs = SUBTITLE_MIN_DURATION_MS * 2;
+    const linkedMinSpanMs = MaweMultiSubtitleCore.SUBTITLE_MIN_DURATION_MS * 2;
     if (main.end - main.start < linkedMinSpanMs) {
       MaweHint.flashHint('主字幕总时长不足 200ms，无法联动拆分', 'warning');
       return null;
@@ -479,7 +479,7 @@
     if (!extension || !track) return null;
     // 副字幕独立拆分同样要求总时长能容纳两侧各 100ms；不足时提交必然失败，
     // 直接提示原因，不再打开只会静默失败的弹窗。
-    if (extension.end - extension.start < SUBTITLE_MIN_DURATION_MS * 2) {
+    if (extension.end - extension.start < MaweMultiSubtitleCore.SUBTITLE_MIN_DURATION_MS * 2) {
       MaweHint.flashHint('副字幕总时长不足 200ms，无法拆分', 'warning');
       return null;
     }
@@ -1122,11 +1122,11 @@
     const mainTextValid = !main || Boolean(mainParts);
     const extensionTextValid = !extension || Boolean(extensionParts);
     const mainTimingValid = !main || Boolean(mainParts
-      && state.mainCutMs - main.start >= SUBTITLE_MIN_DURATION_MS
-      && main.end - state.mainCutMs >= SUBTITLE_MIN_DURATION_MS);
+      && state.mainCutMs - main.start >= MaweMultiSubtitleCore.SUBTITLE_MIN_DURATION_MS
+      && main.end - state.mainCutMs >= MaweMultiSubtitleCore.SUBTITLE_MIN_DURATION_MS);
     const extensionTimingValid = !extension || Boolean(extensionParts
-      && state.extensionCutMs - extension.start >= SUBTITLE_MIN_DURATION_MS
-      && extension.end - state.extensionCutMs >= SUBTITLE_MIN_DURATION_MS);
+      && state.extensionCutMs - extension.start >= MaweMultiSubtitleCore.SUBTITLE_MIN_DURATION_MS
+      && extension.end - state.extensionCutMs >= MaweMultiSubtitleCore.SUBTITLE_MIN_DURATION_MS);
     const mainValid = mainTextValid && mainTimingValid;
     const extensionValid = extensionTextValid && extensionTimingValid;
     const valid = mainValid && extensionValid;
@@ -1610,8 +1610,8 @@
     };
     resolveSplitBounds();
     const timingValid = Number.isFinite(leftEnd) && Number.isFinite(rightStart)
-      && leftEnd - seg.start >= SUBTITLE_MIN_DURATION_MS
-      && seg.end - rightStart >= SUBTITLE_MIN_DURATION_MS;
+      && leftEnd - seg.start >= MaweMultiSubtitleCore.SUBTITLE_MIN_DURATION_MS
+      && seg.end - rightStart >= MaweMultiSubtitleCore.SUBTITLE_MIN_DURATION_MS;
     if (!timingValid && !force) {
       MaweInlineEdit.editingState.forceSplitArmed = true;
       MaweHint.flashHint(forcedSplitRetryHint(), 'warning');
@@ -1636,10 +1636,10 @@
         // 强制拆分承诺两侧各 >= 100ms：当自然词边界使某一侧过短
         // （如最后一个词紧贴字幕末尾）时，该侧退回用户确认的强制切点，
         // 另一侧保留非对称自然边界。
-        if (!Number.isFinite(leftEnd) || leftEnd - seg.start < SUBTITLE_MIN_DURATION_MS) {
+        if (!Number.isFinite(leftEnd) || leftEnd - seg.start < MaweMultiSubtitleCore.SUBTITLE_MIN_DURATION_MS) {
           leftEnd = forcedCut;
         }
-        if (!Number.isFinite(rightStart) || seg.end - rightStart < SUBTITLE_MIN_DURATION_MS) {
+        if (!Number.isFinite(rightStart) || seg.end - rightStart < MaweMultiSubtitleCore.SUBTITLE_MIN_DURATION_MS) {
           rightStart = forcedCut;
         }
         if (rightStart < leftEnd) rightStart = leftEnd;

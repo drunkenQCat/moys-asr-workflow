@@ -328,7 +328,7 @@
     const value = Number(input?.value);
     if (Number.isFinite(value) && value >= 1 && value <= 200) {
       const threshold = syncCharCountThresholdInputs(value);
-      updateEditorSettings({ cueListCharcountThreshold: threshold });
+      MaweSettings.updateEditorSettings({ cueListCharcountThreshold: threshold });
     }
     updateTimedTextEditSingleGuide();
     refreshAllCharCounts();

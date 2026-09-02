@@ -64,7 +64,7 @@
       }
     }
     renderCurrentCuePanel();
-    syncPlayerPlaceholder();
+    MaweMediaPlayback.syncPlayerPlaceholder();
     MaweDisplaySettings.updateMultiSubtitleUi();
     MaweExportSrt.updateSubtitleExportUi();
     MaweTimedTextEdit.refreshTimedTextEditButton();
@@ -259,7 +259,7 @@
       }
     } else {
       if (timingChanged) {
-        const blocked = constrainBoundExtensionPanelEdit(seg, target.track, oldStart, oldEnd);
+        const blocked = MaweBindingAlign.constrainBoundExtensionPanelEdit(seg, target.track, oldStart, oldEnd);
         if (blocked) MaweHint.flashHint('主字幕轨道已无可用空间，已限制副字幕时间', 'warning');
       }
     }

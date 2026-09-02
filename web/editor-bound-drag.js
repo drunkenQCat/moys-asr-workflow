@@ -137,7 +137,7 @@
         if (drag.edge === 'start') nextStart = targetOriginal.start + (source.start - sourceOriginal.start);
         else nextEnd = targetOriginal.end + (source.end - sourceOriginal.end);
       }
-      if (nextEnd <= nextStart) nextEnd = nextStart + SUBTITLE_MIN_DURATION_MS;
+      if (nextEnd <= nextStart) nextEnd = nextStart + MaweMultiSubtitleCore.SUBTITLE_MIN_DURATION_MS;
 
       const targetTrack = MaweMultiSubtitleCore.getExtensionTrack(binding.track_id);
       const dragEdge = getBoundDragEdge(drag, index);

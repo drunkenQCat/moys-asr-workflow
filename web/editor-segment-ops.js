@@ -28,7 +28,7 @@
       const overlapStart = Math.max(Number(segment.start), Number(mergeStart));
       const overlapEnd = Math.min(Number(segment.end), Number(mergeEnd));
       return Number.isFinite(overlapStart) && Number.isFinite(overlapEnd)
-        && overlapEnd - overlapStart >= MULTI_SUBTITLE_MERGE_OVERLAP_TOLERANCE_MS;
+        && overlapEnd - overlapStart >= MaweMultiSubtitleCore.MULTI_SUBTITLE_MERGE_OVERLAP_TOLERANCE_MS;
     };
     const extensionMergeIndices = extensionTrack
       ? extensionTrack.segments.map((segment, index) => ({ segment, index }))

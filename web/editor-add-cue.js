@@ -31,7 +31,7 @@
     const nextStart = index < track.segments.length ? Number(track.segments[index].start) : duration;
     const safeStart = Math.max(previousEnd, Math.min(duration, Math.round(start / 10) * 10));
     const safeEnd = Math.min(nextStart, Math.max(safeStart, Math.round(end / 10) * 10));
-    if (safeEnd - safeStart < SUBTITLE_MIN_DURATION_MS) {
+    if (safeEnd - safeStart < MaweMultiSubtitleCore.SUBTITLE_MIN_DURATION_MS) {
       MaweHint.flashHint('该空白区域不足 100ms，无法新增副字幕', 'warning');
       return;
     }

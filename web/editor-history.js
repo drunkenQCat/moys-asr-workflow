@@ -100,10 +100,10 @@
   function applyPreviewState(state) {
     if (!state || typeof state.overlay !== 'boolean') return;
     MaweDom.overlayToggle.checked = state.overlay;
-    updateEditorSettings({ overlayEnabled: state.overlay });
+    MaweSettings.updateEditorSettings({ overlayEnabled: state.overlay });
     if (typeof state.extensionOverlay === 'boolean' && MaweDom.extensionOverlayToggle) {
       MaweDom.extensionOverlayToggle.checked = state.extensionOverlay && MaweMultiSubtitleCore.multiSubtitleVisible();
-      updateEditorSettings({ extensionOverlayEnabled: state.extensionOverlay });
+      MaweSettings.updateEditorSettings({ extensionOverlayEnabled: state.extensionOverlay });
     }
     if (state.subtitle) MawePreviewGeometry.setPreviewGeometry(state.subtitle, { markDirty: true, replaceAppearance: true });
     if (state.extensionSubtitle) MaweAppearance.restoreExtensionSubtitleAppearance(state.extensionSubtitle, { markDirty: true });

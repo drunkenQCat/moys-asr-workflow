@@ -130,7 +130,15 @@
     renderedStickerSignature = signature;
   }
 
+
+
+  // 合成表情包文件的 URL（用于 <img src>）
+  // 优先级:
+  let stickerAssetRevision = 0;
+
   global.MaweStickerOverlay = Object.freeze({
+    get stickerAssetRevision() { return stickerAssetRevision; },
+    set stickerAssetRevision(v) { stickerAssetRevision = v; },
     stickerOverlayLayer,
     stickerOverlayContent,
     get stickerOverlayDataVersion() { return stickerOverlayDataVersion; },

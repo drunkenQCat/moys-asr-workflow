@@ -241,7 +241,22 @@
     return true;
   }
 
+
+
+  function syncPlayerPlaceholder() {
+    if (!MaweDom.playerEmpty) return;
+    const source = MaweCoreState.player?.currentSrc
+      || MaweCoreState.player?.getAttribute('src')
+      || MaweCoreState.player?.querySelector('source')?.getAttribute('src')
+      || '';
+    const hasMedia = Boolean(String(source).trim());
+    MaweDom.playerEmpty.classList.toggle('hidden', hasMedia);
+    MaweDom.playerWrap?.classList.toggle('empty-state', !hasMedia);
+    MaweCoreState.waveformEditor?.setMediaAvailable(hasMedia);
+  }
+
   global.MaweMediaPlayback = Object.freeze({
+    syncPlayerPlaceholder,
     togglePlayback,
     hasLoadedMedia,
     formatMediaTime,

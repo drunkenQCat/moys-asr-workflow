@@ -23,6 +23,7 @@ editor-settings-panels.js
 editor-display-settings.js
 editor-split-mode.js
 editor-split-trim.js
+editor-segment-ops.js
 editor-floating-panel.js
 editor-gap-remove-ui.js
 editor-selection.js
@@ -34,7 +35,6 @@ editor-search.js
 editor-inline-edit.js
 editor-split-core.js
 editor-split-context.js
-editor-segment-ops.js
 editor-cue-list-anchor.js
 editor-nav-preview.js
 editor-cue-events.js
@@ -54,6 +54,7 @@ editor-project-save.js
 editor-dynamic-exports.js
 editor-export-menus.js
 editor-project-media-inputs.js
+editor-json-repair.js
 editor-project-load.js
 editor-loading-progress.js
 editor-multi-import.js
@@ -76,6 +77,5 @@ editor-behavior-hints.js
 editor-server-connection.js
 editor-drag-drop.js
 editor-sticker-otio-export.js
-editor-json-repair.js
 editor.js
 editor-onboarding.js

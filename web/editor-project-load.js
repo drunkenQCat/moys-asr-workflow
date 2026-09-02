@@ -42,7 +42,7 @@
     MaweNavPreview.pendingMediaSeekTimeSec = null;
     MaweNavPreview.autoLoadedMediaReadyNotified = false;
     MaweCoreState.waveformEditor?.attachPlayer(MaweCoreState.player);
-    syncPlayerPlaceholder();
+    MaweMediaPlayback.syncPlayerPlaceholder();
   }
 
 
@@ -312,7 +312,19 @@
     return true;
   }
 
+
+
+  // === 启动 ===
+  // 兜底：工程可能带有上游写入的 0 长/倒挂段、词时间码（旧版工具或异常识别结果），
+  // 加载时统一拉齐到至少 100ms，避免拆分后看不见字幕块、工程无法保存。
+  const repairedGroupReferenceCount = window.AsrEditorUtils.repairGroupReferenceIndices(MaweBoot.DATA.segments);
+
+
+  const repairedTimingCount = MaweJsonRepair.normalizeProjectTimings(MaweBoot.DATA);
+
   global.MaweProjectLoad = Object.freeze({
+    repairedGroupReferenceCount,
+    repairedTimingCount,
     updateUnloadedMediaLabel,
     resetLoadedMedia,
     buildBlankProject,
