@@ -272,12 +272,12 @@ class EditorAssetContractTests(unittest.TestCase):
 
     def test_sticker_root_uses_server_validation_without_browser_picker(self) -> None:
         template = edit.read_web_asset("editor-template.html")
-        script = edit.read_web_asset("editor-sticker-root.js")
+        script = edit.build_editor_scripts()
         styles = edit.read_web_asset("editor.css")
         self.assertIn('id="sticker-root-input"', template)
         self.assertIn('id="sticker-root-read"', template)
         self.assertIn('id="sticker-root-status"', template)
-        self.assertIn("SERVER_CONFIG.stickerRootUrl", script)
+        self.assertIn("MaweBoot.SERVER_CONFIG?.stickerRootUrl", script)
         self.assertIn("MaweBoot.STICKERS.splice(0, MaweBoot.STICKERS.length, ...result.stickers)", script)
         self.assertIn("let stickerRootHintCard = null", script)
         self.assertIn("stickerRootHintCard?.remove()", script)
