@@ -314,7 +314,7 @@
       );
       return;
     }
-    toggleDisabled(targetIndexes, 'main', { successDetail: '静音空隙内的字幕' });
+    MaweStickerPicker.toggleDisabled(targetIndexes, 'main', { successDetail: '静音空隙内的字幕' });
   }
 
 

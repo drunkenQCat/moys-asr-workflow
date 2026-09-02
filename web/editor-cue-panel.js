@@ -67,7 +67,7 @@
     syncPlayerPlaceholder();
     MaweDisplaySettings.updateMultiSubtitleUi();
     MaweExportSrt.updateSubtitleExportUi();
-    refreshTimedTextEditButton();
+    MaweTimedTextEdit.refreshTimedTextEditButton();
     MaweGapRemoveUi.updateGapRemoveDisableHint();
     window.MAWE_ONBOARDING?.afterRender();
     MaweCueListAnchor.restoreCueListRenderAnchor(cueListAnchor);

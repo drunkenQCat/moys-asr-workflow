@@ -116,7 +116,7 @@
       event.stopPropagation();
       if (event.altKey) {
         event.preventDefault();
-        toggleDisabled([index], track);
+        MaweStickerPicker.toggleDisabled([index], track);
         pointerDown = null;
         return;
       }
@@ -137,7 +137,7 @@
       MawePlaybackLoop.suppressCueListAutoScroll = true;
       try {
         MaweCoreState.waveformEditor?.revealTime(segment.start, true);
-        if (MaweSettings.EDITOR_SETTINGS.clickBehavior !== 'select-only') seekFromWaveform(segment.start / 1000);
+        if (MaweSettings.EDITOR_SETTINGS.clickBehavior !== 'select-only') MaweTextCleanup.seekFromWaveform(segment.start / 1000);
       } finally {
         MawePlaybackLoop.suppressCueListAutoScroll = previousSuppress;
       }
@@ -179,7 +179,7 @@
     el.addEventListener('contextmenu', (event) => {
       event.preventDefault();
       event.stopPropagation();
-      showExtensionContextMenu(event.clientX, event.clientY, index, null, track);
+      MaweContextMenus.showExtensionContextMenu(event.clientX, event.clientY, index, null, track);
     });
   }
 

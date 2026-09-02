@@ -16,7 +16,7 @@
       // Alt+点击 = 快速切换禁用状态
       if (event.altKey) {
         event.preventDefault();
-        toggleDisabled([idx]);
+        MaweStickerPicker.toggleDisabled([idx]);
         return 'alt';
       }
 
@@ -118,7 +118,7 @@
         MawePlaybackLoop.suppressCueListAutoScroll = state?.preserveListScroll
           ? true : !MaweSettings.EDITOR_SETTINGS.cueListAutoScrollOnClick;
         try {
-          seekFromWaveform(MaweBoot.DATA.segments[idx].start / 1000);
+          MaweTextCleanup.seekFromWaveform(MaweBoot.DATA.segments[idx].start / 1000);
         } finally {
           MawePlaybackLoop.suppressCueListAutoScroll = state?.preserveListScroll
             ? true : previousSuppress;
@@ -142,7 +142,7 @@
     });
     el.addEventListener('contextmenu', (e) => {
       e.preventDefault();
-      showContextMenu(e.clientX, e.clientY, idx);
+      MaweContextMenus.showContextMenu(e.clientX, e.clientY, idx);
     });
   }
 

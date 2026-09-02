@@ -73,7 +73,7 @@
       img.title = seg.sticker.name || '表情包';
       img.addEventListener('click', (event) => {
         event.stopPropagation();
-        if (!isExtension) openStickerPreview(idx);
+        if (!isExtension) MaweStickerPicker.openStickerPreview(idx);
       });
       const nameEl = document.createElement('div');
       nameEl.className = 'sname';

@@ -163,7 +163,7 @@
       const extension = context.track === 'extension' && MaweMultiSubtitleCore.multiSubtitleVisible();
       const track = extension ? MaweMultiSubtitleCore.getExtensionTrack(context.trackId) : null;
       const segments = extension ? track?.segments : MaweBoot.DATA.segments;
-      const index = findWaveformCueAtTime(context.timeMs, segments);
+      const index = MaweContextMenus.findWaveformCueAtTime(context.timeMs, segments);
       if (index < 0 || !segments?.[index]) return null;
       return {
         kind: extension ? 'extension' : 'main',

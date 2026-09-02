@@ -137,7 +137,7 @@
       remapRef(segment.sticker_ref);
       remapRef(segment.color_ref);
     });
-    syncTimelineGroupRanges();
+    MaweTextCleanup.syncTimelineGroupRanges();
     return merged;
   }
 
@@ -284,7 +284,7 @@
         linkedChanged = MaweMultiSubtitleCore.syncBoundExtensionForMain(segment, syncPatch) || linkedChanged;
       });
       MaweMultiSubtitleCore.markMainSegmentsDirty(changedSegments);
-      syncTimelineGroupRanges();
+      MaweTextCleanup.syncTimelineGroupRanges();
       if (linkedChanged || MaweMultiSubtitleCore.multiSubtitleVisible()) MaweMultiSubtitleCore.markMultiSubtitleDirty();
       MaweMultiSubtitleCore.syncBindingOffsets();
       MaweServerSave.scheduleAutoSaveFlush();
