@@ -89,10 +89,10 @@
   function snapshotPreviewState() {
     return {
       overlay: !!MaweDom.overlayToggle.checked,
-      subtitle: { ...getPreviewGeometry(), ...getSubtitleAppearance() },
+      subtitle: { ...MaweAppearance.getPreviewGeometry(), ...MaweAppearance.getSubtitleAppearance() },
       extensionOverlay: !!MaweDom.extensionOverlayToggle?.checked,
-      extensionSubtitle: { ...getStoredExtensionSubtitleAppearance() },
-      sticker: { ...getStickerGeometry() },
+      extensionSubtitle: { ...MaweAppearance.getStoredExtensionSubtitleAppearance() },
+      sticker: { ...MawePreviewGeometry.getStickerGeometry() },
     };
   }
 
@@ -105,11 +105,11 @@
       MaweDom.extensionOverlayToggle.checked = state.extensionOverlay && MaweMultiSubtitleCore.multiSubtitleVisible();
       updateEditorSettings({ extensionOverlayEnabled: state.extensionOverlay });
     }
-    if (state.subtitle) setPreviewGeometry(state.subtitle, { markDirty: true, replaceAppearance: true });
-    if (state.extensionSubtitle) restoreExtensionSubtitleAppearance(state.extensionSubtitle, { markDirty: true });
-    if (state.sticker) setStickerGeometry(state.sticker, { markDirty: true });
-    refreshPreviewGeometryEditable();
-    update();
+    if (state.subtitle) MawePreviewGeometry.setPreviewGeometry(state.subtitle, { markDirty: true, replaceAppearance: true });
+    if (state.extensionSubtitle) MaweAppearance.restoreExtensionSubtitleAppearance(state.extensionSubtitle, { markDirty: true });
+    if (state.sticker) MawePreviewGeometry.setStickerGeometry(state.sticker, { markDirty: true });
+    MawePreviewGeometry.refreshPreviewGeometryEditable();
+    MawePlaybackLoop.update();
   }
 
 
@@ -217,7 +217,7 @@
     MaweCuePanelState.currentCuePanelTrackId = null;
     MaweCuePanelState.resetCuePanelEditState();
     MaweSelection.clearSelection();
-    lastActive = -1;
+    MawePlaybackLoop.lastActive = -1;
     const structureChanged = previousWaveformStructure
       !== MaweMultiSubtitleCore.multiSubtitleWaveformStructureKey();
     MaweCuePanel.renderAll({

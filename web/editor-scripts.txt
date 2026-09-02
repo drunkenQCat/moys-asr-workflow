@@ -37,5 +37,15 @@ editor-segment-ops.js
 editor-cue-list-anchor.js
 editor-nav-preview.js
 editor-cue-events.js
+editor-media-playback.js
+editor-keyboard-targets.js
+editor-shortcuts.js
+editor-merge-adjacent.js
+editor-appearance.js
+editor-preview-geometry.js
+editor-playback-loop.js
+editor-sticker-overlay.js
+editor-export-srt.js
+editor-export-timeline.js
 editor.js
 editor-onboarding.js

@@ -164,7 +164,7 @@
     // 合并完成后选中合并结果，方便继续对这句新字幕操作
     MaweSelection.selectOnly(sorted[0]);
     const el = MaweCoreState.container.querySelector(`.cue[data-idx="${sorted[0]}"]`);
-    updateWithoutCueListAutoScroll();
+    MawePlaybackLoop.updateWithoutCueListAutoScroll();
     // C 合并和 B 拆分一样会重建整张字幕列表；保留首条源字幕的屏幕位置，
     // 避免主动居中与 content-visibility 行高回填叠加成一次大幅跳动。
     if (cueListAnchor) MaweCueListAnchor.restoreCueListVisualAnchor(el, cueListAnchor);
@@ -224,7 +224,7 @@
     MaweCuePanel.renderAll();
     MaweSelection.selectOnlyExtension(sorted[0]);
     MaweSelection.lastClickedExtensionIdx = sorted[0];
-    updateWithoutCueListAutoScroll();
+    MawePlaybackLoop.updateWithoutCueListAutoScroll();
     const el = MaweCoreState.container.querySelector(`.cue[data-ext-idx="${sorted[0]}"]`);
     if (cueListAnchor) MaweCueListAnchor.restoreCueListVisualAnchor(el, cueListAnchor);
     MaweHint.flashHint(
@@ -289,7 +289,7 @@
       MaweMultiSubtitleCore.syncBindingOffsets();
       scheduleAutoSaveFlush();
       MaweCuePanel.renderAll();
-      updateWithoutCueListAutoScroll();
+      MawePlaybackLoop.updateWithoutCueListAutoScroll();
     }
     const scope = hasSelection ? `已处理 ${plan.indices.length} 个选中字幕` : `已处理 ${plan.indices.length} 个字幕`;
     MaweHint.flashHint(
@@ -346,7 +346,7 @@
       mergeContiguousIndices(plan.groups[i]);
     }
     MaweCuePanel.renderAll();
-    updateWithoutCueListAutoScroll();
+    MawePlaybackLoop.updateWithoutCueListAutoScroll();
     const mergedCount = plan.groups.reduce((sum, group) => sum + group.length - 1, 0);
     const parts = [];
     if (snappedCount) parts.push(`吸附 ${snappedCount} 处间隔`);
@@ -550,7 +550,7 @@
     // splitGroups 写入的 refField.headIdx 是删除前的 idx，需要同样位移
     // 上面 shiftHeadIdx 已经覆盖（它扫所有 segments 的所有 ref）
     MaweSelection.clearSelection({ silent: true });
-    lastActive = -1;
+    MawePlaybackLoop.lastActive = -1;
     MaweCuePanel.renderAll();
     MaweHint.flashHint(`已删除 ${sorted.length} 条`, 'success');
   }

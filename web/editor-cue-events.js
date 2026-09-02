@@ -114,20 +114,20 @@
       MaweCoreState.waveformEditor?.revealTime(DATA.segments[idx].start, true);
       if (MaweSettings.EDITOR_SETTINGS.clickBehavior !== 'select-only') {
         // 默认只跳转不改动播放状态；“选中并跳转（自动播放）”会在暂停时启动播放。
-        const previousSuppress = suppressCueListAutoScroll;
-        suppressCueListAutoScroll = state?.preserveListScroll
+        const previousSuppress = MawePlaybackLoop.suppressCueListAutoScroll;
+        MawePlaybackLoop.suppressCueListAutoScroll = state?.preserveListScroll
           ? true : !MaweSettings.EDITOR_SETTINGS.cueListAutoScrollOnClick;
         try {
           seekFromWaveform(DATA.segments[idx].start / 1000);
         } finally {
-          suppressCueListAutoScroll = state?.preserveListScroll
+          MawePlaybackLoop.suppressCueListAutoScroll = state?.preserveListScroll
             ? true : previousSuppress;
         }
         if (state?.preserveListScroll) {
           MaweCueListAnchor.invalidateCueListVisualAnchorRestore();
           MaweCoreState.container.scrollTop = state.listScrollBeforeClick;
         }
-        if (MaweSettings.EDITOR_SETTINGS.clickBehavior === 'select-and-play' && MaweCoreState.player.paused) togglePlayback();
+        if (MaweSettings.EDITOR_SETTINGS.clickBehavior === 'select-and-play' && MaweCoreState.player.paused) MaweMediaPlayback.togglePlayback();
       }
     });
     el.addEventListener('dblclick', (e) => {

@@ -11,7 +11,7 @@
   function renderAll({ waveform = 'overlay', preserveCueListScroll = true } = {}) {
     MaweCueListAnchor.invalidateCueListVisualAnchorRestore();
     const cueListAnchor = preserveCueListScroll ? MaweCueListAnchor.captureCueListRenderAnchor() : null;
-    stickerOverlayDataVersion += 1;
+    MaweStickerOverlay.stickerOverlayDataVersion += 1;
     // cues-container 同时是字幕列表和停靠模块；重绘列表时不要把布局编辑模式
     // 下的顶部拖拽栏一起清掉。
     const dockHandle = MaweCoreState.container.querySelector(':scope > .dock-handle');
@@ -66,7 +66,7 @@
     renderCurrentCuePanel();
     syncPlayerPlaceholder();
     MaweDisplaySettings.updateMultiSubtitleUi();
-    updateSubtitleExportUi();
+    MaweExportSrt.updateSubtitleExportUi();
     refreshTimedTextEditButton();
     MaweGapRemoveUi.updateGapRemoveDisableHint();
     window.MAWE_ONBOARDING?.afterRender();
@@ -268,7 +268,7 @@
     scheduleAutoSaveFlush();
     MaweCuePanelState.resetCuePanelEditState();
     renderAll();
-    updateWithoutCueListAutoScroll();
+    MawePlaybackLoop.updateWithoutCueListAutoScroll();
     return true;
   }
 
@@ -440,7 +440,7 @@
     discardPendingCuePanelUndo();
     if (restored) {
       renderAll();
-      updateWithoutCueListAutoScroll();
+      MawePlaybackLoop.updateWithoutCueListAutoScroll();
     }
     if (document.activeElement === MaweDom.cuePanelText) {
       MaweCuePanelState.cuePanelCanceling = true;

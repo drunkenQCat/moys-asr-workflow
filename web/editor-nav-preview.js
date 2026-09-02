@@ -137,7 +137,7 @@
   function keyboardOperationReference() {
     const pointer = waveformPointerContext();
     const target = MaweCuePanel.getCurrentCuePanelTarget();
-    return GEO_UTILS.resolveKeyboardOperationReference(
+    return MaweAppearance.GEO_UTILS.resolveKeyboardOperationReference(
       MaweSettings.EDITOR_SETTINGS.keyboardOperationReference,
       {
         pointer,
@@ -210,7 +210,7 @@
   function handlePointerBoundaryShortcut(event, edge) {
     if (event.key !== (edge === 'start' ? 'z' : 'x')
         && event.key !== (edge === 'start' ? 'Z' : 'X')) return;
-    if (event.repeat || MaweInlineEdit.editingState || MaweInlineEdit.extensionEditingState || isTextEditingTarget(event)) return;
+    if (event.repeat || MaweInlineEdit.editingState || MaweInlineEdit.extensionEditingState || MaweKeyboardTargets.isTextEditingTarget(event)) return;
     const active = document.activeElement;
     if (active && (
       active.tagName === 'INPUT' || active.tagName === 'TEXTAREA'

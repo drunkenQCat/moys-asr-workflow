@@ -103,7 +103,7 @@
     MaweCoreState.waveformEditor?.refreshExtensionCueLabel(index, trackId);
     syncCuePanelAfterInlineEdit('extension', index, trackId);
     extensionEditingState = null;
-    refreshSubtitlePreview();
+    MawePlaybackLoop.refreshSubtitlePreview();
   }
 
 
@@ -131,15 +131,15 @@
       if (!pointerDown) return;
       pointerDown = null;
       const segment = track.segments[index];
-      const previousSuppress = suppressCueListAutoScroll;
+      const previousSuppress = MawePlaybackLoop.suppressCueListAutoScroll;
       // 副字幕点击后 seek 会同步刷新主字幕 active 状态；这次刷新不能把
       // 列表从刚点击的副字幕行再次滚到对应的主字幕行。
-      suppressCueListAutoScroll = true;
+      MawePlaybackLoop.suppressCueListAutoScroll = true;
       try {
         MaweCoreState.waveformEditor?.revealTime(segment.start, true);
         if (MaweSettings.EDITOR_SETTINGS.clickBehavior !== 'select-only') seekFromWaveform(segment.start / 1000);
       } finally {
-        suppressCueListAutoScroll = previousSuppress;
+        MawePlaybackLoop.suppressCueListAutoScroll = previousSuppress;
       }
       if (MaweSettings.EDITOR_SETTINGS.cueListAutoScrollOnClick) {
         const currentRow = MaweCoreState.container.querySelector(
@@ -303,7 +303,7 @@
     MaweCoreState.waveformEditor?.refreshCueLabel(idx);
     syncCuePanelAfterInlineEdit('main', idx);
     editingState = null;
-    refreshSubtitlePreview();
+    MawePlaybackLoop.refreshSubtitlePreview();
   }
 
   global.MaweInlineEdit = Object.freeze({

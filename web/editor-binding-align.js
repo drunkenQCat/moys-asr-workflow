@@ -226,7 +226,7 @@
     MaweMultiSubtitleCore.markMultiSubtitleDirty();
     MaweMultiSubtitleCore.syncBindingOffsets();
     MaweCuePanel.renderAll();
-    updateWithoutCueListAutoScroll();
+    MawePlaybackLoop.updateWithoutCueListAutoScroll();
     const details = [];
     if (resolved.squeezedCount) details.push(`挤压 ${resolved.squeezedCount} 条副字幕`);
     if (resolved.removedCount) details.push(`删除 ${resolved.removedCount} 条副字幕`);

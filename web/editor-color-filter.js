@@ -242,9 +242,9 @@
     MaweCoreState.container.classList.toggle('hide-cue-sticker',
       !MaweSettings.EDITOR_SETTINGS.cueListShowSticker || !projectHasStickers,
     );
-    stickerOverlayDataVersion += 1;
+    MaweStickerOverlay.stickerOverlayDataVersion += 1;
     MaweCuePanel.renderCurrentCuePanel();
-    refreshSubtitlePreview();
+    MawePlaybackLoop.refreshSubtitlePreview();
   }
 
 
@@ -261,8 +261,8 @@
       MaweSearch.applySearch(MaweDom.searchEl.value, { refreshText: false, preserveCueListScroll: false });
     }
     MaweCoreState.waveformEditor?.refreshCueOverlay?.();
-    refreshSubtitlePreview();
-    updateSubtitleExportUi();
+    MawePlaybackLoop.refreshSubtitlePreview();
+    MaweExportSrt.updateSubtitleExportUi();
   }
 
 

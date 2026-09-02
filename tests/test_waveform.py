@@ -706,7 +706,7 @@ class EditorAssetTests(unittest.TestCase):
         self.assertIn('event.composedPath?.().includes(MaweCoreState.player)', page)
         self.assertIn('function isTextEditingTarget(event)', page)
         self.assertIn('function isPlaybackKeyboardTarget(event)', page)
-        self.assertIn('if (MaweInlineEdit.editingState || isTextEditingTarget(e)) return;', page)
+        self.assertIn('if (MaweInlineEdit.editingState || MaweKeyboardTargets.isTextEditingTarget(e)) return;', page)
         self.assertIn('let interceptedSpace = false;', page)
         self.assertIn('e.stopImmediatePropagation();', page)
         self.assertIn('width: 74px; aspect-ratio: 1;', page)

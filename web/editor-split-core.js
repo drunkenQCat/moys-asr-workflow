@@ -1287,7 +1287,7 @@
     MaweCuePanel.renderAll();
     MaweSelection.selectOnly(mainIndex + 1);
     MaweSelection.lastClickedIdx = mainIndex + 1;
-    updateWithoutCueListAutoScroll();
+    MawePlaybackLoop.updateWithoutCueListAutoScroll();
     flashSplitFeedback({
       index: mainIndex,
       track: 'main',
@@ -1376,7 +1376,7 @@
     MaweCuePanel.renderAll();
     MaweSelection.selectOnlyExtension(extensionIndex + 1);
     MaweSelection.lastClickedExtensionIdx = extensionIndex + 1;
-    updateWithoutCueListAutoScroll();
+    MawePlaybackLoop.updateWithoutCueListAutoScroll();
     flashSplitFeedback({
       index: extensionIndex,
       track: 'extension',
@@ -1502,7 +1502,7 @@
     MaweCuePanel.renderAll();
     MaweSelection.selectOnly(mainIndex);
     MaweSelection.lastClickedIdx = mainIndex;
-    updateWithoutCueListAutoScroll();
+    MawePlaybackLoop.updateWithoutCueListAutoScroll();
     flashSplitFeedback({
       index: mainIndex,
       track: 'main',
@@ -1732,7 +1732,7 @@
         || MaweCoreState.waveformEditor?.getSplitPointAtTime?.(splitMs, 'main')
         || ninjaFeedbackPoint,
     );
-    updateWithoutCueListAutoScroll();
+    MawePlaybackLoop.updateWithoutCueListAutoScroll();
     flashSplitFeedback({
       index: idx,
       track: 'main',
