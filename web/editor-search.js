@@ -9,7 +9,7 @@
 
   // === 搜索 ===
   function applySearch(query, { refreshText = true, preserveCueListScroll = true } = {}) {
-    const cueListAnchor = preserveCueListScroll ? captureCueListRenderAnchor() : null;
+    const cueListAnchor = preserveCueListScroll ? MaweCueListAnchor.captureCueListRenderAnchor() : null;
     try {
       const trimmed = query.trim();
       let visible = 0;
@@ -62,7 +62,7 @@
       });
       MaweDom.visibleCountEl.textContent = visible;
     } finally {
-      restoreCueListRenderAnchor(cueListAnchor);
+      MaweCueListAnchor.restoreCueListRenderAnchor(cueListAnchor);
     }
   }
 

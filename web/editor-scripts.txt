@@ -31,5 +31,11 @@ editor-cue-elements.js
 editor-color-filter.js
 editor-search.js
 editor-inline-edit.js
+editor-split-core.js
+editor-split-context.js
+editor-segment-ops.js
+editor-cue-list-anchor.js
+editor-nav-preview.js
+editor-cue-events.js
 editor.js
 editor-onboarding.js

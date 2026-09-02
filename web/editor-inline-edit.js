@@ -24,7 +24,7 @@
     { deferCaret = false } = {},
   ) {
     if (!el || !track?.segments?.[index]) return;
-    hideCueSplitPreview();
+    MaweNavPreview.hideCueSplitPreview();
     if (editingState) finishEdit(true);
     if (extensionEditingState) finishExtensionEdit(true);
     MaweCuePanel.setCurrentCuePanelExtensionIndex(index, track);
@@ -145,30 +145,30 @@
         const currentRow = MaweCoreState.container.querySelector(
           `.multi-dual-cue[data-ext-idx="${index}"], .multi-extension-cue[data-ext-idx="${index}"]`,
         );
-        scrollCueToCenter(currentRow || dualRow || el);
+        MaweCueListAnchor.scrollCueToCenter(currentRow || dualRow || el);
       }
     });
     el.addEventListener('pointermove', (event) => {
       event.stopPropagation();
       if (extensionEditingState?.el === el) {
-        hideCueSplitPreview();
+        MaweNavPreview.hideCueSplitPreview();
         return;
       }
-      cueListPointer = {
+      MaweNavPreview.cueListPointer = {
         kind: 'extension',
         idx: index,
         trackId: track.id,
         x: event.clientX,
         y: event.clientY,
       };
-      scheduleCueSplitPreview(index, event.clientX, event.clientY, 'extension', track.id);
+      MaweNavPreview.scheduleCueSplitPreview(index, event.clientX, event.clientY, 'extension', track.id);
     });
     el.addEventListener('pointerleave', () => {
-      if (cueListPointer?.kind === 'extension'
-          && cueListPointer.idx === index
-          && cueListPointer.trackId === track.id) {
-        cueListPointer = null;
-        hideCueSplitPreview();
+      if (MaweNavPreview.cueListPointer?.kind === 'extension'
+          && MaweNavPreview.cueListPointer.idx === index
+          && MaweNavPreview.cueListPointer.trackId === track.id) {
+        MaweNavPreview.cueListPointer = null;
+        MaweNavPreview.hideCueSplitPreview();
       }
     });
     el.addEventListener('dblclick', (event) => {
@@ -187,7 +187,7 @@
 
   function startEdit(el, idx, clickX, clickY, { deferCaret = false } = {}) {
     if (editingState) finishEdit(true);
-    hideCueSplitPreview();
+    MaweNavPreview.hideCueSplitPreview();
     const textEl = el.querySelector('.text');
     if (!textEl) return;
     const seg = DATA.segments[idx];

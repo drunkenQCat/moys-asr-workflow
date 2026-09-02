@@ -9,8 +9,8 @@
 
   // === 渲染 ===
   function renderAll({ waveform = 'overlay', preserveCueListScroll = true } = {}) {
-    invalidateCueListVisualAnchorRestore();
-    const cueListAnchor = preserveCueListScroll ? captureCueListRenderAnchor() : null;
+    MaweCueListAnchor.invalidateCueListVisualAnchorRestore();
+    const cueListAnchor = preserveCueListScroll ? MaweCueListAnchor.captureCueListRenderAnchor() : null;
     stickerOverlayDataVersion += 1;
     // cues-container 同时是字幕列表和停靠模块；重绘列表时不要把布局编辑模式
     // 下的顶部拖拽栏一起清掉。
@@ -70,7 +70,7 @@
     refreshTimedTextEditButton();
     MaweGapRemoveUi.updateGapRemoveDisableHint();
     window.MAWE_ONBOARDING?.afterRender();
-    restoreCueListRenderAnchor(cueListAnchor);
+    MaweCueListAnchor.restoreCueListRenderAnchor(cueListAnchor);
   }
 
 
@@ -485,7 +485,7 @@
     const cue = MaweCoreState.container.querySelector(
       target.kind === 'extension' ? `.cue[data-ext-idx="${next}"]` : `.cue[data-idx="${next}"]`,
     );
-    if (cue) scrollCueToCenter(cue);
+    if (cue) MaweCueListAnchor.scrollCueToCenter(cue);
     MaweCoreState.waveformEditor?.revealTime(segments[next].start, true);
   }
 
@@ -496,13 +496,13 @@
     if (!target) return;
     const cursorOffset = MaweDom.cuePanelText.selectionStart;
     if (target.kind === 'extension') {
-      const splitTime = splitTimeForTextOffset(target.segment, cursorOffset);
+      const splitTime = MaweSplitCore.splitTimeForTextOffset(target.segment, cursorOffset);
       commitCuePanelEdit();
       const refreshed = getCurrentCuePanelTarget();
       if (!refreshed) return;
-      openExtensionSplitModal(
+      MaweSplitCore.openExtensionSplitModal(
         refreshed.index,
-        splitTimeForTextOffset(refreshed.segment, cursorOffset) || splitTime,
+        MaweSplitCore.splitTimeForTextOffset(refreshed.segment, cursorOffset) || splitTime,
         refreshed.track,
       );
       return;
@@ -522,7 +522,7 @@
     const selection = window.getSelection();
     selection.removeAllRanges();
     selection.addRange(range);
-    splitAtCursor(null, { listFeedback: false });
+    MaweSplitCore.splitAtCursor(null, { listFeedback: false });
   }
 
   global.MaweCuePanel = Object.freeze({

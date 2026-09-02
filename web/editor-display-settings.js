@@ -8,7 +8,7 @@
 
 
   function applyCueListDisplaySettings({ preserveCueListScroll = true } = {}) {
-    const cueListAnchor = preserveCueListScroll ? captureCueListRenderAnchor() : null;
+    const cueListAnchor = preserveCueListScroll ? MaweCueListAnchor.captureCueListRenderAnchor() : null;
     MaweDom.cueListShowIndexToggle.checked = MaweSettings.EDITOR_SETTINGS.cueListShowIndex;
     MaweDom.cueListShowTimeToggle.checked = MaweSettings.EDITOR_SETTINGS.cueListShowTime;
     MaweDom.cueListShowStickerToggle.checked = MaweSettings.EDITOR_SETTINGS.cueListShowSticker;
@@ -28,7 +28,7 @@
       !MaweSettings.EDITOR_SETTINGS.cueListShowSticker || !projectHasStickers,
     );
     MaweCoreState.container.classList.toggle('hide-cue-charcount', !MaweSettings.EDITOR_SETTINGS.cueListShowCharcount);
-    restoreCueListRenderAnchor(cueListAnchor);
+    MaweCueListAnchor.restoreCueListRenderAnchor(cueListAnchor);
   }
 
 

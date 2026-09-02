@@ -539,7 +539,7 @@ class EditorAssetTests(unittest.TestCase):
         self.assertIn("const multiVisible = MaweMultiSubtitleCore.multiSubtitleVisible();", page)
         self.assertIn('id="multi-subtitle-toggle"', page)
         self.assertIn("cuePanelText?.addEventListener('keydown'", page)
-        self.assertIn('const action = getConfiguredEnterAction(event);', page)
+        self.assertIn('const action = MaweCueEvents.getConfiguredEnterAction(event);', page)
         self.assertIn("if (action === 'split') MaweCuePanel.splitCuePanelAtCursor();", page)
         self.assertIn('if (e.target === MaweDom.cuePanelText) return;', page)
         self.assertIn('.cue .sticker-slot {\n    flex: 0 1 80px; min-width: 40px;', page)

@@ -85,7 +85,7 @@
 
 
   function clearSelection({ silent = false, commitCuePanel = true } = {}) {
-    hideCueSplitPreview();
+    MaweNavPreview.hideCueSplitPreview();
     cancelPendingExtensionBinding();
     selectedIdxs.forEach(i => {
       const el = MaweCoreState.container.querySelector(`.cue[data-idx="${i}"]`);
@@ -248,7 +248,7 @@
   function toggleSel(idx) {
     if (isHiddenDisabled(idx)) return;  // 隐藏禁用项不参与选择
     MaweCueElements.releaseTemporaryVisibleSplitCuesUnless('main', idx);
-    hideCueSplitPreview();
+    MaweNavPreview.hideCueSplitPreview();
     const el = MaweCoreState.container.querySelector(`.cue[data-idx="${idx}"]`);
     if (selectedIdxs.has(idx)) {
       selectedIdxs.delete(idx);
@@ -266,7 +266,7 @@
 
 
   function selectRange(a, b) {
-    hideCueSplitPreview();
+    MaweNavPreview.hideCueSplitPreview();
     MaweCueElements.releaseTemporaryVisibleSplitCuesUnless('main', b);
     const lo = Math.min(a, b), hi = Math.max(a, b);
     for (let i = lo; i <= hi; i++) {
@@ -286,7 +286,7 @@
 
 
   function selectOnly(idx, syncPair = true) {
-    hideCueSplitPreview();
+    MaweNavPreview.hideCueSplitPreview();
     MaweCueElements.releaseTemporaryVisibleSplitCuesUnless('main', idx);
     // 这是键盘导航的热路径：clearSelection() 会先把面板切到空状态，
     // 再由下面的 setCurrentCuePanelIndex() 切回目标，导致一次按键触发
@@ -309,7 +309,7 @@
   function addToSelection(idx) {
     if (isHiddenDisabled(idx) || selectedIdxs.has(idx)) return;
     MaweCueElements.releaseTemporaryVisibleSplitCuesUnless('main', idx);
-    hideCueSplitPreview();
+    MaweNavPreview.hideCueSplitPreview();
     selectedIdxs.add(idx);
     syncBoundSelection('main', idx);
     const el = MaweCoreState.container.querySelector(`.cue[data-idx="${idx}"]`);

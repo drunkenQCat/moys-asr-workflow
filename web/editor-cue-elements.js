@@ -24,7 +24,7 @@
           isExtension ? `.cue[data-ext-idx="${headIndex}"]` : `.cue[data-idx="${headIndex}"]`,
         );
         if (!head) return;
-        scrollCueToCenter(head);
+        MaweCueListAnchor.scrollCueToCenter(head);
         if (isExtension) MaweSelection.selectOnlyExtension(headIndex);
         else MaweSelection.selectOnly(headIndex);
       });
@@ -95,7 +95,7 @@
           isExtension ? `.cue[data-ext-idx="${headIndex}"]` : `.cue[data-idx="${headIndex}"]`,
         );
         if (!head) return;
-        scrollCueToCenter(head);
+        MaweCueListAnchor.scrollCueToCenter(head);
         if (isExtension) MaweSelection.selectOnlyExtension(headIndex, extensionTrack);
         else MaweSelection.selectOnly(headIndex);
       });
@@ -166,7 +166,7 @@
     el.appendChild(cntEl);
 
     if (isExtension) MaweInlineEdit.bindExtensionCueEvents(el, idx, extensionTrack);
-    else bindCueEvents(el, idx);
+    else MaweCueEvents.bindCueEvents(el, idx);
     return el;
   }
 
@@ -235,7 +235,7 @@
       buildMultiCueColumn(main, mainIndex ?? -1, track, 'main'),
       buildMultiCueColumn(extension, extensionIndex ?? -1, track, 'extension'),
     );
-    if (main) bindCueEvents(el, mainIndex);
+    if (main) MaweCueEvents.bindCueEvents(el, mainIndex);
     if (extension) {
       const extensionColumn = el.querySelector('.multi-cue-column.extension');
       MaweInlineEdit.bindExtensionCueEvents(extensionColumn, extensionIndex, track, el);
