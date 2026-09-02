@@ -258,7 +258,7 @@
         window.AsrEditorUtils.normalizeSegmentTimings(data.segments);
         window.AsrEditorUtils.repairGroupReferenceIndices(data.segments);
         window.AsrEditorUtils.normalizeMultiSubtitleProject(data);
-        normalizeProjectTimings(data);
+        MaweJsonRepair.normalizeProjectTimings(data);
       }
       if (!MaweProjectLoad.isMawProject(data)) {
         MaweHint.flashHint('打开了错误的文件，请使用 MAW 生成的工程文件。', 'warning');
