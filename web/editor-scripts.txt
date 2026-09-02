@@ -8,5 +8,6 @@ editor-utils.js
 editor-i18n.js
 waveform.js
 editor-jkl.js
+editor-hint.js
 editor.js
 editor-onboarding.js

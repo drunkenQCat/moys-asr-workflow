@@ -79,7 +79,7 @@
 
   function startJklReversePlayback() {
     if (!hasLoadedMedia()) {
-      flashHint('请先加载媒体，然后才能预览', 'invalid');
+      MaweHint.flashHint('请先加载媒体，然后才能预览', 'invalid');
       return false;
     }
     jklReversePlaying = true;
@@ -93,7 +93,7 @@
 
   function playJklForward() {
     if (!hasLoadedMedia()) {
-      flashHint('请先加载媒体，然后才能预览', 'invalid');
+      MaweHint.flashHint('请先加载媒体，然后才能预览', 'invalid');
       return false;
     }
     stopJklReversePlayback({ render: false });
