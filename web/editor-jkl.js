@@ -33,7 +33,7 @@
   const JKL_PLAYBACK_RATE_STEPS = [1, 2, 4, 8, 16];
 
   function isJklDirectionMode() {
-    return EDITOR_SETTINGS.jklPlaybackMode === 'direction';
+    return MaweSettings.EDITOR_SETTINGS.jklPlaybackMode === 'direction';
   }
 
   function stopJklReversePlayback({ render = true } = {}) {
@@ -130,7 +130,7 @@
 
   function refreshJklPlaybackModeUi() {
     const language = window.MAWE_I18N?.language === 'en' ? 'en' : 'zh';
-    const mode = EDITOR_SETTINGS_UTILS.normalizeJklPlaybackMode(EDITOR_SETTINGS.jklPlaybackMode);
+    const mode = EDITOR_SETTINGS_UTILS.normalizeJklPlaybackMode(MaweSettings.EDITOR_SETTINGS.jklPlaybackMode);
     const text = JKL_MODE_UI_TEXT[language][mode];
     if (jklPlaybackModeSelect) jklPlaybackModeSelect.value = mode;
     if (jklPlaybackModeHint) jklPlaybackModeHint.textContent = text.hint;

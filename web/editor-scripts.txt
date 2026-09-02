@@ -9,5 +9,9 @@ editor-i18n.js
 waveform.js
 editor-jkl.js
 editor-hint.js
+editor-multi-subtitle-core.js
+editor-settings.js
+editor-colors.js
+editor-gap-remove-data.js
 editor.js
 editor-onboarding.js
