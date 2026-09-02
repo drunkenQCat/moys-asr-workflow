@@ -50,7 +50,7 @@ class EditorAssetContractTests(unittest.TestCase):
             "(function initMaweSettings(global) {",
             "(function initMaweColors(global) {",
             "(function initMaweGapRemoveData(global) {",
-            "const EDITOR_SETTINGS_KEY = 'moy.asr.editor.settings.v1';",
+            "let FILENAME_BASE = __FILENAME_BASE_JSON__;",
             "const helpOnboardingButton = document.getElementById('help-onboarding');",
         )
         for asset_name, marker in zip(edit.read_editor_script_manifest(), markers):
@@ -200,11 +200,12 @@ class EditorAssetContractTests(unittest.TestCase):
         self.assertIn("timeline: JSON.parse(payload)", script)
 
     def test_portable_sticker_export_capability_syncs_after_project_binding(self) -> None:
-        script = edit.read_web_asset("editor.js")
+        # 断言对象是清单拼接后的完整脚本：符号可以跨模块搬迁，装配后的行为不变。
+        script = edit.build_editor_scripts()
         self.assertIn("function syncStickerOtioExportMode()", script)
         self.assertIn("portableStickerExportOption.disabled = !available", script)
         self.assertIn("stickerOtioExportMode.value = available", script)
-        self.assertIn("? EDITOR_SETTINGS.stickerOtioExportMode", script)
+        self.assertIn("? MaweSettings.EDITOR_SETTINGS.stickerOtioExportMode", script)
         self.assertIn(": 'original'", script)
         self.assertIn("stickerOtioExportMode: 'original'", script)
         self.assertIn("saved.stickerOtioExportMode === 'portable' ? 'portable' : 'original'", script)
