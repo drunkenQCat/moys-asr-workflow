@@ -17,5 +17,10 @@ editor-core-state.js
 editor-history.js
 editor-dom.js
 editor-cue-panel-state.js
+editor-ninja.js
+editor-settings-panels.js
+editor-display-settings.js
+editor-split-mode.js
+editor-split-trim.js
 editor.js
 editor-onboarding.js
