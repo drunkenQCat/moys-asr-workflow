@@ -91,9 +91,15 @@ test('拆分后的模块顺序满足加载期依赖（gap-remove core 必须先�
     'compat-surface.js 必须排在 editor/lib 各模块之后：它一次性快照整个 window.MaweLib 出口',
   );
 });
-const i18nSource = fs.readFileSync(new URL('../web/editor/i18n/i18n.js', import.meta.url), 'utf8');
+// i18n 同样是 namespace.js … compat-surface.js 的连续模块块，按清单顺序整块加载：
+// 断言对象是装配出来的 window.MAWE_I18N，而不是某个文件。
+const i18nStart = manifest.indexOf('editor/i18n/namespace.js');
+const i18nEnd = manifest.indexOf('editor/i18n/compat-surface.js');
+assert.ok(i18nStart >= 0 && i18nEnd > i18nStart, '清单应包含 editor/i18n 的 namespace.js … compat-surface.js 模块块');
 const i18nContext = { window: {} };
-vm.runInNewContext(i18nSource, i18nContext);
+for (const entry of manifest.slice(i18nStart, i18nEnd + 1)) {
+  vm.runInNewContext(fs.readFileSync(new URL(`../web/${entry}`, import.meta.url), 'utf8'), i18nContext);
+}
 const i18n = i18nContext.window.MAWE_I18N;
 
 // XML assertions are part of the Node unit suite, but still need a Python

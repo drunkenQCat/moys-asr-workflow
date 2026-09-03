@@ -26,6 +26,13 @@
 # contiguous: every module runs getElementById at load time and the last one
 # rebuilds the frozen window.MaweDom facade, whose 5 accessor keys keep their
 # setter so external assignments still reach the owning module.
+# editor/i18n/* follows the same rule on window.MaweI18n: namespace.js first (every
+# module reads window.MaweI18n at load time), then the two dictionaries, the
+# language state, the text rules and the DOM walker, and
+# editor/i18n/compat-surface.js last. That last file rebuilds the *unfrozen*
+# window.MAWE_I18N so `language` stays a live accessor, and repeats the three
+# load-time statements that used to follow the export, whose order relative to the
+# export decides whether startup can still read it.
 editor/boot/data.js
 editor/boot/registry.js
 shared/gap-remove-core.js
@@ -57,7 +64,13 @@ editor/lib/preview-geometry.js
 editor/lib/graphics/lottie.js
 editor/lib/graphics/ograf.js
 editor/lib/compat-surface.js
-editor/i18n/i18n.js
+editor/i18n/namespace.js
+editor/i18n/dict-en-text.js
+editor/i18n/dict-en-attr.js
+editor/i18n/language-state.js
+editor/i18n/text-patterns.js
+editor/i18n/dom-translate.js
+editor/i18n/compat-surface.js
 editor/waveform/namespace.js
 editor/waveform/constants.js
 editor/waveform/workspaces.js

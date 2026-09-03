@@ -12935,13 +12935,26 @@ export default MawDynamicCaptions;
   }
 })(typeof window !== 'undefined' ? window : globalThis);
 
-(function initMaweI18n(global) {
+// editor/i18n/ 的内部命名空间：各模块把自己的符号发布到这里，
+// 可变状态用 get/set 访问器发布，因此跨模块读到、写到的都是同一份最新值。
+// 对外的兼容出口是 window.MAWE_I18N，由 editor/i18n/compat-surface.js 最后组装；
+// 新增内部 helper 只进 MaweI18n，不要加进兼容出口。
+(function initMaweI18nNamespace(global) {
   'use strict';
 
-  const STORAGE_KEY = 'mawe.language';
-  const ZH = 'zh';
-  const EN = 'en';
-  const GENERATED_LANGUAGE = typeof null === 'undefined' ? null : null;
+  if (global.MaweI18n) {
+    throw new Error('MaweI18n 必须在 editor/i18n/ 所有模块之前初始化且只初始化一次');
+  }
+  global.MaweI18n = {};
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// 英文词典：界面文本原文 → 英文。纯数据，改文案只动这里。
+// 自 web/editor/i18n/i18n.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweI18n；
+// 兼容出口 window.MAWE_I18N 仍由 editor/i18n/compat-surface.js 统一组装。
+(function initMaweI18nDictEnText(global) {
+  'use strict';
+
+  const U = global.MaweI18n;
 
   // The editor keeps one source template. Exact UI strings are translated at
   // the DOM boundary; project content is excluded from traversal below.
@@ -13471,6 +13484,19 @@ export default MawDynamicCaptions;
     '红色': 'red', '黄色': 'yellow', '蓝色': 'blue', '绿色': 'green', '紫色': 'purple'
   };
 
+  Object.assign(U, {
+    EN_TEXT,
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// 英文属性词典：title / placeholder / aria-label 原文 → 英文。
+// 自 web/editor/i18n/i18n.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweI18n；
+// 兼容出口 window.MAWE_I18N 仍由 editor/i18n/compat-surface.js 统一组装。
+(function initMaweI18nDictEnAttr(global) {
+  'use strict';
+
+  const U = global.MaweI18n;
+
   const EN_ATTR = {
     '切换到亮色主题': 'Switch to light theme',
     '切换到暗色主题': 'Switch to dark theme',
@@ -13669,17 +13695,23 @@ export default MawDynamicCaptions;
     '字符型：中文、日文等按字符拆分的语言': 'Character-based: languages such as Chinese and Japanese, split per character',
   };
 
-  const textOriginals = new WeakMap();
-  const attributeOriginals = new WeakMap();
-  const SKIP_SELECTOR = [
-    '#cue-list', '#cue-panel-text', '#overlay', '#sticker-overlay-layer',
-    '#media-name', '#json-name', '#sticker-grid', '.hint-project-preview-value', 'script', 'style'
-  ].join(',');
-  const ATTRIBUTE_SKIP_SELECTOR = [
-    // .waveform-cue-block 的 title 是用户字幕原文，不能参与翻译
-    '#cue-list', '#overlay', '#sticker-overlay-layer', '.waveform-cue-block',
-    '#media-name', '#json-name', '#sticker-grid', 'script', 'style'
-  ].join(',');
+  Object.assign(U, {
+    EN_ATTR,
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// 当前语言的判定与持久化：启动参数、注入语言、localStorage，不碰 DOM。
+// 自 web/editor/i18n/i18n.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweI18n；
+// 兼容出口 window.MAWE_I18N 仍由 editor/i18n/compat-surface.js 统一组装。
+(function initMaweI18nLanguageState(global) {
+  'use strict';
+
+  const U = global.MaweI18n;
+
+  const STORAGE_KEY = 'mawe.language';
+  const ZH = 'zh';
+  const EN = 'en';
+  const GENERATED_LANGUAGE = typeof null === 'undefined' ? null : null;
 
   function normalizeLanguage(value) {
     return String(value || '').toLowerCase().startsWith('en') ? EN : ZH;
@@ -13725,16 +13757,40 @@ export default MawDynamicCaptions;
 
   let language = readLanguage();
 
-  function translateText(value, lang = language) {
+  Object.assign(U, {
+    STORAGE_KEY,
+    ZH,
+    EN,
+    GENERATED_LANGUAGE,
+    normalizeLanguage,
+    persistLanguage,
+    languageFromLaunchUrl,
+    readLanguage,
+  });
+  // language 是本模块可变状态且会被其他模块写入：以 get/set 访问器发布，
+  // 语义与拆分前整个闭包共享同一个 let 完全一致。
+  Object.defineProperty(U, 'language', { enumerable: true, configurable: true,
+    get: () => language, set: (value) => { language = value; } });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// 带变量文案的逐条翻译：先查词典，再按顺序匹配正则模板；以及词典覆盖自检。
+// 自 web/editor/i18n/i18n.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweI18n；
+// 兼容出口 window.MAWE_I18N 仍由 editor/i18n/compat-surface.js 统一组装。
+(function initMaweI18nTextPatterns(global) {
+  'use strict';
+
+  const U = global.MaweI18n;
+
+  function translateText(value, lang = U.language) {
     const text = String(value ?? '');
-    if (lang !== EN) return text;
-    if (EN_TEXT[text]) return EN_TEXT[text];
-    if (EN_ATTR[text]) return EN_ATTR[text];
+    if (lang !== U.EN) return text;
+    if (U.EN_TEXT[text]) return U.EN_TEXT[text];
+    if (U.EN_ATTR[text]) return U.EN_ATTR[text];
     let match = /^(主字幕|副字幕)\s+(\d+)$/.exec(text);
-    if (match) return `${translateText(match[1], EN)} ${match[2]}`;
+    if (match) return `${translateText(match[1], U.EN)} ${match[2]}`;
     match = /^(主字幕|副字幕)(?:（(.+)）)?\s*·\s*(\d+)\s*条$/.exec(text);
     if (match) {
-      const label = translateText(match[1], EN);
+      const label = translateText(match[1], U.EN);
       return `${label}${match[2] ? ` (${match[2]})` : ''} · ${match[3]}`;
     }
     match = /^(\d+)\s*条（未修改\s*(\d+)\s*条）$/.exec(text);
@@ -13742,7 +13798,7 @@ export default MawDynamicCaptions;
     match = /^第\s*(\d+)\s*条\s*字幕文本$/.exec(text);
     if (match) return `Subtitle ${match[1]} text`;
     match = /^第\s*(\d+)\s*条\s*·\s*(.+)$/.exec(text);
-    if (match) return `Subtitle ${match[1]} · ${translateText(match[2], EN)}`;
+    if (match) return `Subtitle ${match[1]} · ${translateText(match[2], U.EN)}`;
     match = /^有效字词时间码覆盖率：\s*(\d+)%$/.exec(text);
     if (match) return `Word-timing coverage: ${match[1]}%`;
     match = /^原始时间码复用率：\s*(\d+)%$/.exec(text);
@@ -13763,11 +13819,11 @@ export default MawDynamicCaptions;
     // 动态 title / 徽标：带变量的属性文案
     match = /^颜色：(.+)$/.exec(text);
     if (match) {
-      const name = translateText(match[1], EN);
+      const name = translateText(match[1], U.EN);
       return `Color: ${name.charAt(0).toUpperCase()}${name.slice(1)}`;
     }
     match = /^↑\s*属于第\s*(\d+)\s*条的颜色（(.+)）$/.exec(text);
-    if (match) return `↑ Inherits the color of subtitle ${match[1]} (${translateText(match[2], EN)})`;
+    if (match) return `↑ Inherits the color of subtitle ${match[1]} (${translateText(match[2], U.EN)})`;
     match = /^属于上方第\s*(\d+)\s*条的表情包$/.exec(text);
     if (match) return `Inherits the sticker of subtitle ${match[1]}`;
     match = /^工程路径失效：(.+)$/.exec(text);
@@ -13779,7 +13835,7 @@ export default MawDynamicCaptions;
     match = /^工程关联媒体：(.+)$/.exec(text);
     if (match) return `Media linked to this project: ${match[1]}`;
     match = /^(.+)（按\s*(\d+)）$/.exec(text);
-    if (match) return `${translateText(match[1], EN)} (press ${match[2]})`;
+    if (match) return `${translateText(match[1], U.EN)} (press ${match[2]})`;
     // 时长片段（供下面各摘要规则递归调用，必须排在它们之前，且只匹配纯时长，
     //  不能吞掉前缀文字，否则会抢先匹配整句）：6秒 / 6秒（占比 2.1%） / 1分 6秒
     match = /^(\d+(?:\.\d+)?)\s*秒（占比\s+(.+?)）$/.exec(text);
@@ -13797,7 +13853,7 @@ export default MawDynamicCaptions;
       const body = manual ? text.replace(/ ·\s*人工修正$/, '') : text;
       const m = /^已移除\s+(\d+)\/(\d+)\s+段\s+·\s+(.+)$/.exec(body);
       if (m) {
-        return `${m[1]}/${m[2]} gaps removed · ${translateText(m[3], EN)}`
+        return `${m[1]}/${m[2]} gaps removed · ${translateText(m[3], U.EN)}`
           + (manual ? ' · manually adjusted' : '');
       }
     }
@@ -13806,12 +13862,12 @@ export default MawDynamicCaptions;
     // 空隙摘要（工具窗完整版）
     match = /^已移除\s+(\d+)\/(\d+)\s+段，共\s+(.+)；左键空隙跳转播放头，Alt\+左键切换移除。$/.exec(text);
     if (match) {
-      return `${match[1]}/${match[2]} gaps removed, ${translateText(match[3], EN)} total. `
+      return `${match[1]}/${match[2]} gaps removed, ${translateText(match[3], U.EN)} total. `
         + 'Left-click a gap to move the playhead; Alt+left-click toggles removal.';
     }
     // flashHint：已移除 N 段音量空隙，共 6秒（占比 2.1%）
     match = /^已移除\s+(\d+)\s+段音量空隙，共\s+(.+)$/.exec(text);
-    if (match) return `Removed ${match[1]} loudness gaps, ${translateText(match[2], EN)} total`;
+    if (match) return `Removed ${match[1]} loudness gaps, ${translateText(match[2], U.EN)} total`;
     // 波形状态：12:34.567 · 缓存波形（未加载媒体）
     match = /^(.+?)\s+·\s+缓存波形（未加载媒体）$/.exec(text);
     if (match) return `${match[1]} · cached waveform (no media loaded)`;
@@ -13881,12 +13937,12 @@ export default MawDynamicCaptions;
     // 合并连接设置旁的主字幕类型提示与切换按钮 title（目标类型语言说明）
     match = /^当前为「(.+)」(?:（(.+)）)?$/.exec(text);
     if (match) {
-      const mode = translateText(match[1], EN);
-      const example = match[2] ? translateText(match[2], EN) : '';
+      const mode = translateText(match[1], U.EN);
+      const example = match[2] ? translateText(match[2], U.EN) : '';
       return `Current: ${mode}${example ? ` (${example})` : ''}`;
     }
     match = /^切换为(单词型|字符型)$/.exec(text);
-    if (match) return `Switch to ${translateText(match[1], EN)}`;
+    if (match) return `Switch to ${translateText(match[1], U.EN)}`;
     // 颜色过滤行 title：该颜色的字幕共 N 条；点击条目只显示此颜色，勾选可多选
     match = /^该颜色的字幕共\s*(\d+)\s*条；点击条目只显示此颜色，勾选可多选$/.exec(text);
     if (match) {
@@ -13900,7 +13956,7 @@ export default MawDynamicCaptions;
         if (inner) return `snapped ${inner[2]} intervals`;
         inner = /^吸收\s*(\d+)\s*条短字幕$/.exec(part);
         if (inner) return `absorbed ${inner[1]} short subtitles`;
-        return translateText(part, EN);
+        return translateText(part, U.EN);
       });
       return `${match[1] === '已拼接/合并字幕' ? 'Join / merge subtitles' : 'Snap subtitles'}: ${parts.join(', ')}`;
     }
@@ -13929,17 +13985,43 @@ export default MawDynamicCaptions;
     }
     // 表情包导出灰显拦截 flashHint：当前模式不可用：<原因>
     match = /^当前模式不可用：(.+)$/.exec(text);
-    if (match) return `Unavailable in the current mode: ${translateText(match[1], EN)}`;
+    if (match) return `Unavailable in the current mode: ${translateText(match[1], U.EN)}`;
     return text;
   }
 
   function validateTranslationKeys(keys) {
     const values = Array.from(keys, (key) => String(key));
     return {
-      zh: values.filter((key) => !(key in EN_TEXT) && !(key in EN_ATTR)),
-      en: values.filter((key) => translateText(key, EN) === key),
+      zh: values.filter((key) => !(key in U.EN_TEXT) && !(key in U.EN_ATTR)),
+      en: values.filter((key) => translateText(key, U.EN) === key),
     };
   }
+
+  Object.assign(U, {
+    translateText,
+    validateTranslationKeys,
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// 在 DOM 边界上应用语言：遍历文本节点与属性、跳过项目内容、切换按钮与启动接线。
+// 自 web/editor/i18n/i18n.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweI18n；
+// 兼容出口 window.MAWE_I18N 仍由 editor/i18n/compat-surface.js 统一组装。
+(function initMaweI18nDomTranslate(global) {
+  'use strict';
+
+  const U = global.MaweI18n;
+
+  const textOriginals = new WeakMap();
+  const attributeOriginals = new WeakMap();
+  const SKIP_SELECTOR = [
+    '#cue-list', '#cue-panel-text', '#overlay', '#sticker-overlay-layer',
+    '#media-name', '#json-name', '#sticker-grid', '.hint-project-preview-value', 'script', 'style'
+  ].join(',');
+  const ATTRIBUTE_SKIP_SELECTOR = [
+    // .waveform-cue-block 的 title 是用户字幕原文，不能参与翻译
+    '#cue-list', '#overlay', '#sticker-overlay-layer', '.waveform-cue-block',
+    '#media-name', '#json-name', '#sticker-grid', 'script', 'style'
+  ].join(',');
 
   function translateTextNode(node) {
     const parent = node.parentElement;
@@ -13949,7 +14031,7 @@ export default MawDynamicCaptions;
     const leading = original.match(/^\s*/)?.[0] || '';
     const trailing = original.match(/\s*$/)?.[0] || '';
     const core = original.trim();
-    if (core) node.nodeValue = leading + translateText(core) + trailing;
+    if (core) node.nodeValue = leading + U.translateText(core) + trailing;
   }
 
   function translateAttributes(element) {
@@ -13963,11 +14045,11 @@ export default MawDynamicCaptions;
         originals[name] = current;
       } else {
         const original = originals[name];
-        const translated = translateText(original, EN);
+        const translated = U.translateText(original, U.EN);
         if (current !== original && current !== translated) originals[name] = current;
       }
       const original = originals[name];
-      const next = language === EN ? translateText(original, EN) : original;
+      const next = U.language === U.EN ? U.translateText(original, U.EN) : original;
       if (current !== next) element.setAttribute(name, next);
     });
   }
@@ -13991,20 +14073,20 @@ export default MawDynamicCaptions;
   function refreshToggle() {
     const button = document.getElementById('language-toggle');
     if (!button) return;
-    button.textContent = language === ZH ? '🌐English' : '🌐中文';
-    button.title = language === ZH ? 'Switch to English' : '切换为中文';
+    button.textContent = U.language === U.ZH ? '🌐English' : '🌐中文';
+    button.title = U.language === U.ZH ? 'Switch to English' : '切换为中文';
     button.setAttribute('aria-label', button.title);
   }
 
   function applyLanguage(nextLanguage, persist = true) {
-    language = normalizeLanguage(nextLanguage);
+    U.language = U.normalizeLanguage(nextLanguage);
     if (persist) {
-      persistLanguage(language);
+      U.persistLanguage(U.language);
     }
-    document.documentElement.lang = language === EN ? 'en' : 'zh-CN';
+    document.documentElement.lang = U.language === U.EN ? 'en' : 'zh-CN';
     translateTree(document.body);
     refreshToggle();
-    document.dispatchEvent(new CustomEvent('mawe:languagechange', { detail: { language } }));
+    document.dispatchEvent(new CustomEvent('mawe:languagechange', { detail: { language: U.language } }));
   }
 
   function installDialogTranslation() {
@@ -14012,7 +14094,7 @@ export default MawDynamicCaptions;
       const original = global[name];
       if (typeof original !== 'function' || original.__maweLocalized) return;
       const wrapped = function localizedDialog(message, ...args) {
-        return original.call(global, translateText(message), ...args);
+        return original.call(global, U.translateText(message), ...args);
       };
       wrapped.__maweLocalized = true;
       global[name] = wrapped;
@@ -14021,9 +14103,9 @@ export default MawDynamicCaptions;
 
   function start() {
     installDialogTranslation();
-    applyLanguage(language, false);
+    applyLanguage(U.language, false);
     document.getElementById('language-toggle')?.addEventListener('click', () => {
-      applyLanguage(language === ZH ? EN : ZH);
+      applyLanguage(U.language === U.ZH ? U.EN : U.ZH);
     });
     const observer = new MutationObserver((records) => {
       records.forEach((record) => {
@@ -14037,22 +14119,47 @@ export default MawDynamicCaptions;
     });
   }
 
-  global.MAWE_I18N = {
-    get language() { return language; },
+  Object.assign(U, {
+    textOriginals,
+    attributeOriginals,
+    SKIP_SELECTOR,
+    ATTRIBUTE_SKIP_SELECTOR,
+    translateTextNode,
+    translateAttributes,
+    translateTree,
+    refreshToggle,
     applyLanguage,
+    installDialogTranslation,
     start,
-    translateText,
-    validateTranslationKeys,
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// window.MAWE_I18N 兼容出口：结构、键名与键序与拆分前完全一致（契约测试逐项比对），
+// 取值来自 editor/i18n/ 各模块发布到 window.MaweI18n 的内部符号。内部 helper 不要往这里加。
+// 必须在 editor/i18n/ 全部模块之后加载。
+// 出口之后的 3 条加载期语句（L1110、L1111、L1113）也原样跟在出口后面，
+// 它们与出口之间的先后顺序决定启动时能不能读到出口，因此不搬去前置模块。
+(function initMaweI18nCompatSurface(global) {
+  'use strict';
+
+  const U = global.MaweI18n;
+
+  global.MAWE_I18N = {
+    get language() { return U.language; },
+    applyLanguage: U.applyLanguage,
+    start: U.start,
+    translateText: U.translateText,
+    validateTranslationKeys: U.validateTranslationKeys,
   };
   global.MAWE?.register('i18n', () => global.MAWE_I18N);
 
   if (typeof document === 'undefined') return;
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', start, { once: true });
+    document.addEventListener('DOMContentLoaded', U.start, { once: true });
   } else {
-    start();
+    U.start();
   }
-})(window);
+})(typeof window !== 'undefined' ? window : globalThis);
 
 // editor/waveform/ 的内部命名空间：各模块把自己的符号 Object.assign 到这里，
 // 可变状态用访问器发布，因此跨模块读到的一定是最新值。

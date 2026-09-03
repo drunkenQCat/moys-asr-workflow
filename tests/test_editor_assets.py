@@ -83,7 +83,13 @@ class EditorAssetContractTests(unittest.TestCase):
                 "editor/lib/graphics/lottie.js",
                 "editor/lib/graphics/ograf.js",
                 "editor/lib/compat-surface.js",
-                "editor/i18n/i18n.js",
+                "editor/i18n/namespace.js",
+                "editor/i18n/dict-en-text.js",
+                "editor/i18n/dict-en-attr.js",
+                "editor/i18n/language-state.js",
+                "editor/i18n/text-patterns.js",
+                "editor/i18n/dom-translate.js",
+                "editor/i18n/compat-surface.js",
                 "editor/waveform/namespace.js",
                 "editor/waveform/constants.js",
                 "editor/waveform/workspaces.js",
@@ -255,11 +261,9 @@ class EditorAssetContractTests(unittest.TestCase):
         for entry in mixins:
             self.assertGreater(manifest.index(entry), manifest.index(class_owner), f"{entry} 在类声明之前加载")
 
-    def assert_facade_matches_modules(self, modules: list[str], surface: str, area: str) -> set[str]:
-        """按内部命名空间装配的块（editor/split、editor/text/timed-edit、
-        editor/ui/elements）共用这套比对：模块发布到 U 的符号不许重名，兼容出口的
-        门面键集合必须与发布集合完全相等——多一个键说明有人把内部 helper 漏进了
-        出口，少一个键说明出口重建时丢了线。"""
+    def assert_published_symbols_disjoint(self, modules: list[str], area: str) -> set[str]:
+        """收集各模块发布到内部命名空间的符号，并要求同一块内不重名：重名意味着后加载的
+        模块静默覆盖前一个，装配顺序一变就换实现，是这类拆分最容易悄悄劣化的地方。"""
         published: set[str] = set()
         for entry in modules:
             source = edit.editor_script_path(entry).read_text(encoding="utf-8")
@@ -270,6 +274,14 @@ class EditorAssetContractTests(unittest.TestCase):
             overlap = names & published
             self.assertFalse(overlap, f"{sorted(overlap)} 被 {area} 两个模块同时发布")
             published |= names
+        return published
+
+    def assert_facade_matches_modules(self, modules: list[str], surface: str, area: str) -> set[str]:
+        """按内部命名空间装配、出口是**冻结快照**的块（editor/split、
+        editor/text/timed-edit、editor/ui/elements）共用这套比对：模块发布到 U 的符号不许重名，
+        兼容出口的门面键集合必须与发布集合完全相等——多一个键说明有人把内部 helper 漏进了
+        出口，少一个键说明出口重建时丢了线。"""
+        published = self.assert_published_symbols_disjoint(modules, area)
 
         facade_body = surface.split("Object.freeze({", 1)[1]
         facade_keys = set(re.findall(r"^    (?:get |set )?([\w$]+)[:(]", facade_body, re.MULTILINE))
@@ -361,6 +373,49 @@ class EditorAssetContractTests(unittest.TestCase):
         for entry in modules:
             lines = len(edit.editor_script_path(entry).read_text(encoding="utf-8").splitlines())
             self.assertLessEqual(lines, 200, f"{entry} 有 {lines} 行，超出区域模块的量级")
+
+    def test_i18n_block_keeps_unfrozen_language_accessor(self) -> None:
+        """editor/i18n/* 是四块按内部命名空间装配的块里唯一**不冻结**出口的：
+        外部会经 `MAWE_I18N.language` 读当前语言，而 `applyLanguage` 在另一个模块里写它，
+        所以这个键在内部命名空间和兼容出口两侧都必须是活的访问器。出口一旦被冻结，
+        或 `language` 被"顺手"展平成加载期取一次的字符串常量，语言切换就会静默失效。
+        导出之后的 3 条加载期语句（注册到 MAWE、无 document 时提前返回、按 readyState
+        启动首次翻译）也必须继续跟在出口后面——它们在装配结果里的先后，决定启动时能不能读到出口。"""
+        manifest = list(edit.read_editor_script_manifest())
+        block = [e for e in manifest if e.startswith("editor/i18n/")]
+        self.assertEqual(block[0], "editor/i18n/namespace.js")
+        self.assertEqual(block[-1], "editor/i18n/compat-surface.js")
+        modules = block[1:-1]
+        self.assertGreaterEqual(len(modules), 4, "i18n 块模块数量异常，疑似装配方式被改动")
+
+        surface = edit.editor_script_path("editor/i18n/compat-surface.js").read_text(encoding="utf-8")
+        self.assertIn("global.MAWE_I18N = {", surface)
+        self.assertNotIn("Object.freeze", surface, "i18n 兼容出口被冻结，language 的访问器会失效")
+
+        # 出口是历史契约（5 个键），内部命名空间是块的内部面（词典、选择器等都住在里面），
+        # 两者本来就不相等：只能单向要求"出口每个键都取得到内部符号"。这与其余三块
+        # （门面 = 发布集合的冻结快照）不同，反过来断言会把正常的内部符号当成泄漏。
+        published = self.assert_published_symbols_disjoint(modules, "editor/i18n/")
+        facade_body = surface.split("global.MAWE_I18N = {", 1)[1]
+        facade_keys = re.findall(r"^    (?:get |set )?([\w$]+)[:(]", facade_body, re.MULTILINE)
+        self.assertEqual(sorted(facade_keys), ["applyLanguage", "language", "start", "translateText", "validateTranslationKeys"])
+        for name in facade_keys:
+            self.assertIn(name, published, f"兼容出口的 {name} 取不到 editor/i18n/ 发布的内部符号")
+
+        self.assertIn("get language() { return U.language; },", surface)
+        owner = edit.editor_script_path("editor/i18n/language-state.js").read_text(encoding="utf-8")
+        self.assertIn("Object.defineProperty(U, 'language'", owner)
+        self.assertIn("set: (value) => { language = value; }", owner)
+        for entry in modules:
+            if entry != "editor/i18n/language-state.js":
+                source = edit.editor_script_path(entry).read_text(encoding="utf-8")
+                self.assertNotIn("let language", source, f"{entry} 重复持有了 language 状态")
+
+        export_at = surface.index("global.MAWE_I18N = {")
+        register_at = surface.index("global.MAWE?.register('i18n'")
+        start_at = surface.index("U.start()")
+        self.assertLess(export_at, register_at, "MAWE 注册跑到了兼容出口的出口赋值之前")
+        self.assertLess(register_at, start_at, "启动翻译的调用顺序与拆分前不一致")
 
     def test_waveform_gap_display_type_uses_shared_core_and_subtle_protected_style(self) -> None:
         waveform = edit.read_editor_scripts_under("editor/waveform/")
