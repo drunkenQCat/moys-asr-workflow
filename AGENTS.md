@@ -56,6 +56,8 @@ web/launcher/    启动器前端（独立于编辑器清单）
 
 `editor/waveform/*` 用同一套命名空间（`window.MaweWaveform`），额外一层：`WaveformEditor` 的构造器留在 `core.js`，其余成员按职责放进同目录的原型混入模块，由 `U.defineMethods(U.WaveformEditor.prototype, {…})` 在加载期安装——它在加载期就要拿到类，所以必须排在 `core.js` 之后、`compat-surface.js` 之前（契约测试守住）。`defineMethods` 逐描述符复制，不能用 `Object.assign`，否则类里的访问器成员会被降级成数据属性。
 
+`editor/split/*`、`editor/text/timed-edit/*`、`editor/ui/elements/*` 沿用 `MaweLib` 那套规则，命名空间分别是 `window.MaweSplit` / `MaweText` / `MaweElements`，兼容出口是冻结的 `window.MaweSplitCore` / `MaweTimedTextEdit` / `MaweDom`。补一条硬性不变量：**兼容出口里某键是 `get`/`set` 成对的访问器时，拥有该状态的模块必须同时发布 setter**。外部经出口的赋值（`MaweDom.hideDisabled = true` 这类，块外有 11 处）在块内不可见，owner 只发布 getter 会让出口重建出来的 `U.x = v` 在严格模式抛 `TypeError`，而 Node/Python 测试环境根本不加载这些脚本，只有真实浏览器点到时才炸。
+
 ## 开发与验证
 
 ```powershell

@@ -37,7 +37,7 @@ web/editor/onboarding/ 新手引导
 web/launcher/        启动器前端（有自己的 <script src>，不在编辑器清单内）
 ```
 
-  目录只负责导航，**装配顺序唯一由 `web/editor-scripts.txt` 决定**；新增脚本必须登记进该清单，否则契约测试失败。`editor/lib/*` 之间不用 `import`，而是把内部符号发布到 `window.MaweLib`（`namespace.js` 独占创建、`compat-surface.js` 最后组装兼容出口 `window.AsrEditorUtils`）；可变状态必须以访问器发布，新增 helper 不要往兼容出口加。`editor/waveform/*` 同构地使用 `window.MaweWaveform`，`WaveformEditor` 的其余成员按职责放在原型混入模块里，必须在 `core.js` 之后加载。大闭包的拆分判定与进度见 [`dev/MAWE web 目录结构化与巨型 IIFE 拆解台账.md`](https://github.com/Moyf/moys-asr-workflow/blob/main/docs/dev/MAWE%20web%20目录结构化与巨型%20IIFE%20拆解台账.md)。
+  目录只负责导航，**装配顺序唯一由 `web/editor-scripts.txt` 决定**；新增脚本必须登记进该清单，否则契约测试失败。`editor/lib/*` 之间不用 `import`，而是把内部符号发布到 `window.MaweLib`（`namespace.js` 独占创建、`compat-surface.js` 最后组装兼容出口 `window.AsrEditorUtils`）；可变状态必须以访问器发布，新增 helper 不要往兼容出口加。`editor/waveform/*` 同构地使用 `window.MaweWaveform`，`WaveformEditor` 的其余成员按职责放在原型混入模块里，必须在 `core.js` 之后加载。`editor/split/*`、`editor/text/timed-edit/*`、`editor/ui/elements/*` 沿用同一套规则，分别用 `window.MaweSplit` / `window.MaweText` / `window.MaweElements`，兼容出口是冻结的 `window.MaweSplitCore` / `MaweTimedTextEdit` / `MaweDom`。**兼容出口里某键若是 `get`/`set` 成对的访问器，拥有该状态的模块必须同时发布 setter**：外部经出口的赋值（例如 `MaweDom.hideDisabled = true`）发生在块外，owner 只给 getter 会让出口重建出来的 `U.x = v` 在严格模式抛 `TypeError`。大闭包的拆分判定与进度见 [`dev/MAWE web 目录结构化与巨型 IIFE 拆解台账.md`](https://github.com/Moyf/moys-asr-workflow/blob/main/docs/dev/MAWE%20web%20目录结构化与巨型%20IIFE%20拆解台账.md)。
 
 ### 当前编辑器维护重点
 
