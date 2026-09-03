@@ -36,7 +36,7 @@ uv run python edit.py --blank
 编辑器 JS 按层分目录存放；**唯一的装配顺序是 `web/editor-scripts.txt`**，目录只负责导航，不携带顺序语义。新增脚本必须登记进该清单（`test_every_editor_source_is_listed_in_the_manifest` 会拒绝未登记的孤儿文件）。
 
 ```text
-web/shared/      MAWE 与 server-align 共用的纯核心（gap-remove-core）
+web/shared/      MAWE 与 server-align 共用的纯核心（gap-remove/ 空隙移除核心块）
 web/editor/boot/ 注入数据、模块注册表、启动装配（shortcuts/ 快捷键、modals/ 弹窗）
 web/editor/lib/  纯逻辑与数据规范化：不碰 DOM/媒体/localStorage，可在 Node vm 中加载
 web/editor/state/工程状态、字幕面板状态、历史栈
@@ -58,7 +58,9 @@ web/launcher/    启动器前端（独立于编辑器清单）
 
 `editor/split/*`、`editor/text/timed-edit/*`、`editor/ui/elements/*` 沿用 `MaweLib` 那套规则，命名空间分别是 `window.MaweSplit` / `MaweText` / `MaweElements`，兼容出口是冻结的 `window.MaweSplitCore` / `MaweTimedTextEdit` / `MaweDom`。补一条硬性不变量：**兼容出口里某键是 `get`/`set` 成对的访问器时，拥有该状态的模块必须同时发布 setter**。外部经出口的赋值（`MaweDom.hideDisabled = true` 这类，块外有 11 处）在块内不可见，owner 只发布 getter 会让出口重建出来的 `U.x = v` 在严格模式抛 `TypeError`，而 Node/Python 测试环境根本不加载这些脚本，只有真实浏览器点到时才炸。
 
-`editor/i18n/*`（命名空间 `window.MaweI18n`）是这套规则的唯一例外，因为历史出口 `window.MAWE_I18N` 本来就不冻结、且只有 5 个键：`language` 必须由 owner 以访问器发布、出口原样保留 getter（不能冻结，也不能展平成加载期取一次的常量）；出口键是历史契约，内部命名空间还要装词典与选择器等内部符号，两者本来就不相等，契约测试只能单向断言"出口每个键都取得到内部符号"。另外 `compat-surface.js` 允许在出口赋值之后原样保留**导出语句后面的加载期语句**（本块是注册到 `MAWE` 与按 `readyState` 启动首次翻译）——它们的先后决定启动时能否读到出口，不许搬进前置模块。
+`editor/i18n/*`（命名空间 `window.MaweI18n`）是这套规则的一条例外，因为历史出口 `window.MAWE_I18N` 本来就不冻结、且只有 5 个键：`language` 必须由 owner 以访问器发布、出口原样保留 getter（不能冻结，也不能展平成加载期取一次的常量）；出口键是历史契约，内部命名空间还要装词典与选择器等内部符号，两者本来就不相等，契约测试只能单向断言"出口每个键都取得到内部符号"。另外 `compat-surface.js` 允许在出口赋值之后原样保留**导出语句后面的加载期语句**（本块是注册到 `MAWE` 与按 `readyState` 启动首次翻译）——它们的先后决定启动时能否读到出口，不许搬进前置模块。
+
+`shared/gap-remove/*`（命名空间 `window.MaweGapRemove`）是 MAWE 与对齐页共用的纯空隙核心，装配规则与上面几块相同：`namespace.js` 第一，`compat-surface.js` 最后重建冻结出口 `window.AsrGapRemoveCore`。两点不同要记住。一是出口只重建 **44 个历史键**，块内 82 个符号的其余部分不外露，所以契约只能单向断言"出口键是发布集合的子集、且键名键序逐项相等"，不能套用"出口键集合与发布集合相等"。二是这块还有**清单之外的第二个消费者**：`server-align/serve.py` 用 `edit.read_editor_scripts_under("shared/gap-remove/")` 把整块按清单顺序注入对齐页。注入源必须是清单里的那一段而不是某个文件路径——写成路径会在拆块后静默只注入一小截，页面在浏览器里才报 `AsrGapRemoveCore must load before the alignment UI`。
 
 `editor/boot/*` 里从 `entry.js` 起的那一段是另一种形态：它不是闭包，而是启动期 DOM 接线的 423 条顶层语句，摊在同一个脚本作用域里，既没有内部命名空间也没有兼容出口。装配把整份清单拼成同一个 `<script>`，所以这类文件**只能按语句边界连续切段，段与段的顺序就是事件注册顺序**——同一目标上的监听器按注册先后分发，重排没有任何等价保证；也不许为了"看起来整齐"给它们补门面，或把只有几行的段并进不相干的邻居。切段文件头部统一保留「自 `web/editor/boot/entry.js` …连续切段而来」来源标记，`test_boot_wiring_is_cut_into_ordered_contiguous_chunks` 逐段断言它，并守住 `entry.js` 必须最先装配（它声明后面各段直读的两个顶层 `const`）与块尾不是 `boot-sequence.js`（原文件的启动收尾本来就排在字幕列表筛选与离开提示之前）。同目录的 `data.js` / `registry.js` 是注入数据与模块注册表，另一回事，排在清单最前。
 

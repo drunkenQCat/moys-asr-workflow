@@ -24,7 +24,7 @@ MAW（Moy's ASR Workflow）是一个收窄的本地工作流：本地媒体经�
 - `web/`：唯一前端源码。`editor-template.html` 组合 `editor.css`、`waveform.css` 与 `editor-scripts.txt` 中按顺序列出的脚本；禁止手改生成后的 `blank-editor.html`（契约测试会逐字节比对）。编辑器 JS 按层放在 `web/editor/` 下：
 
 ```text
-web/shared/          MAWE 与 server-align 共用的纯核心
+web/shared/          MAWE 与 server-align 共用的纯核心（gap-remove/ 空隙移除核心块）
 web/editor/boot/     注入数据、模块注册表、启动装配（shortcuts/ 快捷键、modals/ 弹窗）
 web/editor/lib/      纯逻辑与数据规范化（不碰 DOM，可在 Node vm 中加载）
 web/editor/state/    工程状态、字幕面板状态、历史栈
@@ -37,9 +37,11 @@ web/editor/onboarding/ 新手引导
 web/launcher/        启动器前端（有自己的 <script src>，不在编辑器清单内）
 ```
 
-  目录只负责导航，**装配顺序唯一由 `web/editor-scripts.txt` 决定**；新增脚本必须登记进该清单，否则契约测试失败。`editor/lib/*` 之间不用 `import`，而是把内部符号发布到 `window.MaweLib`（`namespace.js` 独占创建、`compat-surface.js` 最后组装兼容出口 `window.AsrEditorUtils`）；可变状态必须以访问器发布，新增 helper 不要往兼容出口加。`editor/waveform/*` 同构地使用 `window.MaweWaveform`，`WaveformEditor` 的其余成员按职责放在原型混入模块里，必须在 `core.js` 之后加载。`editor/split/*`、`editor/text/timed-edit/*`、`editor/ui/elements/*` 沿用同一套规则，分别用 `window.MaweSplit` / `window.MaweText` / `window.MaweElements`，兼容出口是冻结的 `window.MaweSplitCore` / `MaweTimedTextEdit` / `MaweDom`。**兼容出口里某键若是 `get`/`set` 成对的访问器，拥有该状态的模块必须同时发布 setter**：外部经出口的赋值（例如 `MaweDom.hideDisabled = true`）发生在块外，owner 只给 getter 会让出口重建出来的 `U.x = v` 在严格模式抛 `TypeError`。`editor/i18n/*`（`window.MaweI18n` → 未冻结的 `window.MAWE_I18N`）是这套规则的唯一例外：出口只有 5 个历史键、`language` 必须保持活访问器，内部命名空间反而比出口大（词典与选择器等内部符号也住在里面），所以契约测试只能单向断言出口键取得到内部符号；该块的 `compat-surface.js` 还允许在出口赋值之后原样保留导出语句后面的加载期语句，不许搬进前置模块。大闭包的拆分判定与进度见 [`dev/MAWE web 目录结构化与巨型 IIFE 拆解台账.md`](https://github.com/Moyf/moys-asr-workflow/blob/main/docs/dev/MAWE%20web%20目录结构化与巨型%20IIFE%20拆解台账.md)。
+  目录只负责导航，**装配顺序唯一由 `web/editor-scripts.txt` 决定**；新增脚本必须登记进该清单，否则契约测试失败。`editor/lib/*` 之间不用 `import`，而是把内部符号发布到 `window.MaweLib`（`namespace.js` 独占创建、`compat-surface.js` 最后组装兼容出口 `window.AsrEditorUtils`）；可变状态必须以访问器发布，新增 helper 不要往兼容出口加。`editor/waveform/*` 同构地使用 `window.MaweWaveform`，`WaveformEditor` 的其余成员按职责放在原型混入模块里，必须在 `core.js` 之后加载。`editor/split/*`、`editor/text/timed-edit/*`、`editor/ui/elements/*` 沿用同一套规则，分别用 `window.MaweSplit` / `window.MaweText` / `window.MaweElements`，兼容出口是冻结的 `window.MaweSplitCore` / `MaweTimedTextEdit` / `MaweDom`。**兼容出口里某键若是 `get`/`set` 成对的访问器，拥有该状态的模块必须同时发布 setter**：外部经出口的赋值（例如 `MaweDom.hideDisabled = true`）发生在块外，owner 只给 getter 会让出口重建出来的 `U.x = v` 在严格模式抛 `TypeError`。`editor/i18n/*`（`window.MaweI18n` → 未冻结的 `window.MAWE_I18N`）是这套规则的一条例外：出口只有 5 个历史键、`language` 必须保持活访问器，内部命名空间反而比出口大（词典与选择器等内部符号也住在里面），所以契约测试只能单向断言出口键取得到内部符号；该块的 `compat-surface.js` 还允许在出口赋值之后原样保留导出语句后面的加载期语句，不许搬进前置模块。大闭包的拆分判定与进度见 [`dev/MAWE web 目录结构化与巨型 IIFE 拆解台账.md`](https://github.com/Moyf/moys-asr-workflow/blob/main/docs/dev/MAWE%20web%20目录结构化与巨型%20IIFE%20拆解台账.md)。
 
 `editor/boot/*` 里从 `entry.js` 起的那一段是第三种形态：不是闭包，而是启动期 DOM 接线的几百条顶层语句摊在同一个脚本作用域里，没有内部命名空间也没有兼容出口。装配把整份清单拼成同一个 `<script>`，所以这类文件**只能按语句边界连续切段，段间顺序就是事件注册顺序**——同一目标上的监听器按注册先后分发，重排没有任何等价保证；也不许反过来给它们补门面，或把只有几行的段并进不相干的邻居。每段头部保留「自 `web/editor/boot/entry.js` …连续切段而来」来源标记，`test_boot_wiring_is_cut_into_ordered_contiguous_chunks` 逐段断言它，并守住 `entry.js` 必须最先装配（它声明后面各段直读的两个顶层 `const`）与块尾不是 `boot-sequence.js`。
+
+`shared/gap-remove/*`（`window.MaweGapRemove` → 冻结的 `window.AsrGapRemoveCore`）是这套命名空间规则的另一条例外，因为这块有**两个注入方**：编辑器经 `editor/lib/gap-remove-bridge.js` 读出口，`server-align/serve.py` 则把整块注入对齐页。两点必须守住：一是出口只重建 44 个历史键、块内其余符号不外露，契约只能单向断言"出口键是发布集合的子集且键名键序逐项相等"，不能套用"出口键集合等于发布集合"；二是对齐页的注入源必须是 `edit.read_editor_scripts_under("shared/gap-remove/")`（清单里那一段按清单顺序拼接），写成某个文件路径会在块被拆细后静默只注入一小截，而 Node/Python 都不加载对齐页，错误只在真实浏览器里暴露。
 
 ### 当前编辑器维护重点
 
