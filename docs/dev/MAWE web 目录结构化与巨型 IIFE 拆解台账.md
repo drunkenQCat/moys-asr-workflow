@@ -235,6 +235,74 @@ status: in_progress
 
 工具加固后**复跑**已提交的 `editor/split/`（53 键、2499 次调用）与 `editor/text/timed-edit/`（32 键、1568 次调用）两块，仍为零差异；加固前的改写器复跑这两块，产物与仓库文件也逐字节相同——即新加的 `facade-setters` 条件不改变已完成块的输出。
 
+## `editor/i18n/i18n.js`：1119 行 → 7 个文件
+
+### 结构与切法
+
+这个文件的"巨型"和前面几块不同：主体是两张词典。`EN_TEXT`（525 行，中文原文 → 英文文案，约 450 条）
+与 `EN_ATTR`（197 行，中文 → 英文 `aria-label` / `title` / `placeholder`）。真正的逻辑只占约 160 行，
+核心是 `translateText` —— 一条**按顺序命中的 70 分支链**，前面是精确匹配，后面是大量正则，顺序决定结果。
+
+因此按"词典 / 语言状态 / 文本规则 / DOM 翻译"四类切，而不是按行数平均切：
+
+- `namespace.js`（12）：`MaweI18n`，**不冻结**（`applyLanguage` 要写 `language`）。
+- `dict-en-text.js`（540）/ `dict-en-attr.js`（210）：两张词典各自成文。**不再按首字继续二分** ——
+  扁平词典没有自然分界，为了行数再切只会制造两本需要来回翻的半册词典。
+- `language-state.js`（72）：`language` 本身及其读写（`normalizeLanguage`、`persistLanguage`、
+  `languageFromLaunchUrl`、`readLanguage`）。
+- `text-patterns.js`（229）：`translateText` 与 `validateTranslationKeys`，整条链不拆散。
+- `dom-translate.js`（130）：`translateTextNode`、`translateAttributes`、`translateTree`、`refreshToggle`、
+  `applyLanguage`、`installDialogTranslation`、`start`。
+- `compat-surface.js`（26）：重建**未冻结**的 `MAWE_I18N`。
+
+### 途中踩到的三个坑（都回写到工具，不是只改本次产物）
+
+1. **导出之后的顶层语句被静默丢弃**。本块在 `global.MAWE_I18N = …` 之后还有三条语句
+   （`global.MAWE?.register('i18n', …)`、`if (typeof document === 'undefined') return;`、
+   按 `readyState` 挂 `DOMContentLoaded` 或直接 `start()` 的分支），落在"导出语句 → 文件末尾"
+   这段此前被当作固定尾巴的区间里。改写器把这段解析出的声明按归属搬走，却把剩余语句标成丢弃，
+   产物里再也看不到它们 —— 报告只多写一行"丢弃 3 条顶层语句"，不细看就会漏。
+   修复：新增 `tail` 通道，把导出之后的语句原样重新发射进兼容出口的赋值之后，并强制要求这段不得包含声明。
+   **为什么是原样保留顺序，而不是把它们搬进靠前的模块**：`start()` 必须在新语言真正生效之后运行，
+   提前执行等于改变初始化语义。今天可复核的证据：`compat-surface.js` 头部注明这 3 条语句的行号
+   （L1110、L1111、L1113）并把它们跟在出口赋值之后原样列出，改写报告对应一行 `tail 3`。
+2. **差分脚本给块内部命名空间打了桩**。为别的块加的 `MaweI18n: { t: … }` 挡板会让新产物的
+   `namespace.js` 直接抛出"必须在 `web/` 清单之前初始化且只初始化一次"。已删除，并在挡板表里写明：
+   内部命名空间永远不能预置。
+3. **简写属性的改写被源码层当成差异**。跨模块引用会把 `{ language }` 改写成 `{ language: U.language }`，
+   只剥 `U.` 前缀的比对把这判成源码差异。剥前缀后再折叠一次 `x: x` → `x`（JS 里两者本是同一件事）；
+   名字不同的 `{ x: U.y }` 不会被折叠，真接错仍会暴露。
+
+另外给差分脚本补了两处能力，专门覆盖本块这种"访问器是唯一可变出口"的形态：结构层逐键比对**值指纹**
+（`typeof` 之外再记录函数字面量源码、原始值、嵌套字典的键集合，否则 `language` 被接到另一张字典上照样能过）；
+行为层在每个调用之后比较**共享状态**（`applyLanguage` 的返回值恒为 `undefined`，只比返回值等于没比）。
+
+### 验证
+
+- 差分：结构层 5 个键的键名键序、属性种类、是否冻结（两侧都是 `false`）、值指纹全部一致；
+  写入语义探针按预期跳过 —— 兼容出口的 `language` 从来只有 getter，外部没有写入口，拆分前后一致；
+  源码层旧 IIFE 的 24 个顶层声明逐个剥前缀比对，**逐字节一致**；行为层出口面调用 **196 次、差异 0**
+  （覆盖 `translateText` 的词典原文、词典译文、各正则分支、`按钮 {n}` 插值、纯计数、HTML 标签、空白串、
+  未命中长句、`#徽标`、`00:00:00,000 --> 00:00:01,000` 时间轴行，`validateTranslationKeys` 用新产物自身
+  导出的键集合分别喂 A/B，并在两侧各执行一次未打补丁的 `applyLanguage('en')` / `applyLanguage('zh')`），
+  每次调用后再比对访问器键 `language` 的状态视图。结果 `NO DIFFERENCE DETECTED`。
+- 产物一致性：7 个文件与已通过差分的 dryrun **sha256 全部相同**（`HASH_MISMATCHES=0`）。改写回归脚本
+  已把本块加进去，四块一起复跑（split 12 + timed-edit 7 + elements 18 + i18n 7 = 44 文件）全部与仓库文件
+  逐字节相同；三个已完成块的差分也重跑为零差异（差分脚本的公共挡板与源码归一化在本轮被动过，
+  不重跑就不能说它们仍然成立）。
+- 契约测试：`test_i18n_block_keeps_unfrozen_language_accessor` 断言模块连续、兼容出口里没出现
+  `Object.freeze`、出口的 5 个键恰好是那 5 个历史键且每个都取得到内部符号、`language` 由
+  `language-state.js` 以 `get`/`set` 访问器发布而其余模块不得再持有 `let language`、
+  导出赋值与后面的注册及启动调用顺序未被调换。
+  注意这块与其余三块不同：出口是历史契约（5 个键），内部命名空间还要装词典与选择器等内部符号，
+  两者本来就不相等，所以只能单向断言，不能套"门面键集合 == 发布集合"。
+- `tests/test_editor_utils.mjs` 原本**按文件路径**读 `web/editor/i18n/i18n.js` 再 `vm` 执行来取
+  `window.MAWE_I18N`，删掉单文件后它在模块加载期就 ENOENT，整份 Node 套件一起挂。改为按清单顺序
+  加载 `editor/i18n/namespace.js … compat-surface.js` 整块（与 `editor/lib` 块早就采用的做法一致），
+  断言对象变成装配结果；252 项 Node 测试数量不变，说明覆盖面没有缩水。
+- `uv run python edit.py --blank` 已重跑，`blank-editor.html` 内联副本由契约测试逐字节比对通过；
+  `git diff --check` 无输出；ruff 全部通过。清单 **173** 条（167 − 1 + 7）。
+
 ## 顺手挖出的重复与既有缺陷（仅说明）
 
 这些是 46 个共享名普查的结果，不属于本轮改动范围，记录以免丢失：
@@ -258,23 +326,25 @@ status: in_progress
 | 6 | `editor/split/core.js` 1852 行拆解 | 已修复 | `d874d73`；12 模块（最大 321 行）；Node 252/252；`tests.test_editor_assets tests.test_waveform` 40/40；三层差分零差异；仓库文件与 dryrun 产物 sha256 相同 |
 | 7 | `editor/text/timed-edit.js` 839 行拆解 | 已修复 | `e3d45ed`；7 模块（最大 218 行）；Node 252/252；`tests.test_editor_assets tests.test_waveform` 41/41；Python 全量 996 项仅 5 项既有环境错误；三层差分零差异（1568 次调用）；仓库文件与 dryrun 产物 sha256 相同；`blank-editor.html` 已重生成 |
 | 8 | `editor/ui/elements.js` 1200 行拆解 | 已修复 | `51f02ea`；18 模块（区域模块最大 165 行，门面 312 行）；Node 252/252；`tests.test_editor_assets tests.test_waveform` 42/42；Python 全量 997 项仅 5 项既有环境错误；结构层 295 键含逐键 id 指纹零差异、5 个 setter 全部写探针通过；仓库文件与 dryrun 产物 sha256 相同 |
-| 9 | `shared/gap-remove-core.js` 1409 / `editor/i18n/i18n.js` 1119 | 待处理 | 阈值以上，逐个独立处理；`gap-remove-core.js` 还需同步改 `server-align/serve.py` 的单文件注入链 |
+| 9 | `editor/i18n/i18n.js` 1119 行拆解 | 已修复 | `d259a21`；7 个文件（词典 540/210 行，逻辑模块最大 229 行）；Node 252/252；`tests.test_editor_assets tests.test_waveform` 43/43；Python 全量 998 项仅 5 项既有环境错误；三层差分零差异（出口面 196 次调用 + 每次调用后比对 `language` 状态）；仓库文件与 dryrun 产物 sha256 相同；改写回归四块 44 文件逐字节相同；`blank-editor.html` 已重生成 |
 | 10 | `editor/boot/entry.js` 423 条平铺接线语句按接线域分组 | 待处理 | — |
-| 11 | 文档同步（AGENTS.md 的 `web/` 树、`docs/DEVELOPMENT.md`、网站开发页、基线文档） | 已修复 | 目录树、`MaweLib` 规则、`MaweWaveform` 原型混入顺序规则均已写入 `AGENTS.md` 与 `docs/DEVELOPMENT.md`；网站开发页由 `scripts/sync-maw-docs.mjs` 重生成（只保留 `development.md`，其余 4 篇的既有漂移已还原，不夹带） |
+| 11 | 文档同步（AGENTS.md 的 `web/` 树、`docs/DEVELOPMENT.md`、网站开发页、基线文档） | 已修复 | 目录树、`MaweLib` 规则、`MaweWaveform` 原型混入顺序规则、门面 setter 硬性不变量、i18n 块"出口未冻结 + 内部面比出口大 + 导出后语句留在出口"这条例外，均已写入 `AGENTS.md` 与 `docs/DEVELOPMENT.md`；网站开发页由 `npm --prefix website run sync:docs` 重生成（只保留 `development.md`，其余 4 篇的既有漂移已还原，不夹带） |
+| 12 | `shared/gap-remove-core.js` 1409 行拆解 | 待处理 | 阈值以上；还需同步把 `server-align/serve.py:44 GAP_REMOVE_CORE_PATH` 的单文件注入改为目录拼接，并更新 Align 页与契约测试 |
 
 ## 验证记录（分层，不互相冒充）
 
 | 层次 | 命令 | 结果 |
 | --- | --- | --- |
-| 语法 | `node --test tests\test_editor_script_syntax.mjs` | 通过（167 条目，逐个编译） |
+| 语法 | `node --test tests\test_editor_script_syntax.mjs` | 通过（173 条目，逐个编译） |
 | 装配顺序/重名 | `node --test tests\test_editor_script_order.mjs` | 通过（含 `namespace.js` 首位、`compat-surface.js` 末位、跨模块重名检测） |
 | 波形块顺序契约 | `test_waveform_prototype_mixins_load_after_the_class_and_before_the_exit` | 通过（≥10 个混入模块全部落在 `core.js` 之后、出口之前） |
 | split 块顺序契约 | `test_split_block_builds_the_frozen_facade_after_every_module` | 通过（模块导出不重名，冻结门面键集合与模块导出集合完全相等） |
 | 整轨文本编辑块顺序契约 | `test_timed_edit_block_builds_the_frozen_facade_after_every_module` | 通过（目录内脚本连续装配、导出不重名、门面键集合相等） |
 | DOM 引用块契约 | `test_dom_elements_block_is_split_by_ui_region_and_stays_contiguous` | 通过（连续装配、门面键集合相等、发布符号 ≥280、5 个访问器键成对存在、区域模块 ≤200 行） |
+| i18n 块契约 | `test_i18n_block_keeps_unfrozen_language_accessor` | 通过（连续装配、兼容出口未冻结、出口 5 个键恰为历史键且都取得到内部符号、`language` 由 owner 以 get/set 发布且其余模块不再持有、导出后的注册与启动调用顺序未变） |
 | JS 单测 + lib/waveform 契约 | `node --test tests\test_editor_script_syntax.mjs tests\test_editor_script_order.mjs tests\test_editor_utils.mjs tests\test_waveform_js.mjs tests\test_editor_runtime.mjs` | 252/252 通过 |
-| Python 资产契约 | `uv run python -m unittest tests.test_editor_assets tests.test_waveform` | 42/42 通过 |
-| Python 全量 | `uv run python -m unittest discover -s tests -p "test_*.py"` | 997 项，5 错误全部为既有环境问题：子进程 `stdout` 为 `None`，或其读取线程按 GBK 解码崩溃（`test_gui_workflow` ×2、`test_local_editor_server` ×1、`test_local_runtime` ×2；单独运行同样失败，与本改造无关） |
+| Python 资产契约 | `uv run python -m unittest tests.test_editor_assets tests.test_waveform` | 43/43 通过 |
+| Python 全量 | `uv run python -m unittest discover -s tests -p "test_*.py"` | 998 项，5 错误全部为既有环境问题：子进程 `stdout` 为 `None`，或其读取线程按 GBK 解码崩溃（`test_gui_workflow` ×2、`test_local_editor_server` ×1、`test_local_runtime` ×2；单独运行同样失败，与本改造无关） |
 | Lint | `uv run --frozen ruff check .` | 全部通过 |
 | 空白 | `git diff --check` | 干净 |
 | 产物一致性 | `test_committed_blank_editor_is_regenerated_from_web_sources` | 通过（提交内容与 `web/` 重新生成结果逐字节一致） |

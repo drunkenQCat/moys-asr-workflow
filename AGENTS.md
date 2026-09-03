@@ -58,6 +58,8 @@ web/launcher/    启动器前端（独立于编辑器清单）
 
 `editor/split/*`、`editor/text/timed-edit/*`、`editor/ui/elements/*` 沿用 `MaweLib` 那套规则，命名空间分别是 `window.MaweSplit` / `MaweText` / `MaweElements`，兼容出口是冻结的 `window.MaweSplitCore` / `MaweTimedTextEdit` / `MaweDom`。补一条硬性不变量：**兼容出口里某键是 `get`/`set` 成对的访问器时，拥有该状态的模块必须同时发布 setter**。外部经出口的赋值（`MaweDom.hideDisabled = true` 这类，块外有 11 处）在块内不可见，owner 只发布 getter 会让出口重建出来的 `U.x = v` 在严格模式抛 `TypeError`，而 Node/Python 测试环境根本不加载这些脚本，只有真实浏览器点到时才炸。
 
+`editor/i18n/*`（命名空间 `window.MaweI18n`）是这套规则的唯一例外，因为历史出口 `window.MAWE_I18N` 本来就不冻结、且只有 5 个键：`language` 必须由 owner 以访问器发布、出口原样保留 getter（不能冻结，也不能展平成加载期取一次的常量）；出口键是历史契约，内部命名空间还要装词典与选择器等内部符号，两者本来就不相等，契约测试只能单向断言"出口每个键都取得到内部符号"。另外 `compat-surface.js` 允许在出口赋值之后原样保留**导出语句后面的加载期语句**（本块是注册到 `MAWE` 与按 `readyState` 启动首次翻译）——它们的先后决定启动时能否读到出口，不许搬进前置模块。
+
 ## 开发与验证
 
 ```powershell
