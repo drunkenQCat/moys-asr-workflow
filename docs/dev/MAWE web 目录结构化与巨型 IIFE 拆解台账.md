@@ -365,7 +365,7 @@ status: in_progress
 | 1 | 装配链允许 `web/` 子目录脚本路径 + 清单级全量语法检查 | 已修复 | `7a862f9`；`tests/test_editor_script_syntax.mjs` 当时 104 个条目全通过（清单现为 167 条） |
 | 2 | 77 个平铺脚本按层与域归入子目录 | 已修复 | `7ce93a9`；77 个 rename 全 100% 相似度；Python 资产契约 + Node 套件通过 |
 | 3 | `editor/lib/utils.js` 4965 行单 IIFE → 28 模块 | 已修复 | `0246ca5`；Node 252/252；`tests.test_editor_assets` 通过；差分测试无行为差异；`blank-editor.html` 已重生成并逐字节比对 |
-| 4 | Playwright 全量回归 | 进行中 | 基线 `7ce93a9` 16 失败 / 273 通过；`utils.js` 拆分后失败标题集合与基线逐条相同；`waveform/runtime.js` 拆分后 17 失败，多出的 1 条单独复跑通过且该 commit 未触碰相关代码路径（见下节）。`split/core.js` 及后续拆分并入一次累积全量回归 |
+| 4 | Playwright 全量回归 | 已修复 | 累积全量（`f26d153`）17 失败 / 272 通过，对照基线 `7ce93a9` 16 失败 / 273 通过；失败标题集合差 = 0 消失 + 1 新增（`click-behavior.spec.mjs:365`）。该差项不再靠"单独复跑通过"或"commit 未触碰该路径"下结论，已用交替 A/B（7/7 vs 2/7）、逐用例状态转储、预置 `_dirty` 的构造性复现、以及五条 `_dirty` 链路文件 `git diff` 为空，归为既有测试隔离缺陷撞上既有产品行为（见「Playwright 全量回归的做法与既有失败」起的三节）|
 | 5 | `editor/waveform/runtime.js` 5371 行拆解 | 已修复 | `0a39d8b`；30 模块（最大 526 行）；Node 252/252；`tests.test_editor_assets tests.test_waveform` 39/39；三层差分零差异；`blank-editor.html` 已重生成并由契约测试逐字节比对 |
 | 6 | `editor/split/core.js` 1852 行拆解 | 已修复 | `d874d73`；12 模块（最大 321 行）；Node 252/252；`tests.test_editor_assets tests.test_waveform` 40/40；三层差分零差异；仓库文件与 dryrun 产物 sha256 相同 |
 | 7 | `editor/text/timed-edit.js` 839 行拆解 | 已修复 | `e3d45ed`；7 模块（最大 218 行）；Node 252/252；`tests.test_editor_assets tests.test_waveform` 41/41；Python 全量 996 项仅 5 项既有环境错误；三层差分零差异（1568 次调用）；仓库文件与 dryrun 产物 sha256 相同；`blank-editor.html` 已重生成 |
@@ -393,7 +393,7 @@ status: in_progress
 | Lint | `uv run --frozen ruff check .` | 全部通过 |
 | 空白 | `git diff --check` | 干净 |
 | 产物一致性 | `test_committed_blank_editor_is_regenerated_from_web_sources` | 通过（提交内容与 `web/` 重新生成结果逐字节一致） |
-| 浏览器交互 | Playwright | 进行中 |
+| 浏览器交互 | `npx playwright test`（workers=1，必须串行） | 全量 289 项：累积 `f26d153` 17 失败 / 272 通过，对照基线 `7ce93a9` 16 失败 / 273 通过；标题集合差 = 0 消失 + 1 新增（`click-behavior.spec.mjs:365`），该差项已逐状态归因为既有测试隔离缺陷撞上既有产品行为，非本轮引入（见下两节）|
 
 `test_editor_script_payload_follows_manifest_order` 不再维护一张与清单 1:1 的"标记表"（拆细模块会让它错位），改为从每个脚本源码取第一行非注释行作为标记，在整包里顺序查找。
 
@@ -401,14 +401,78 @@ status: in_progress
 
 浏览器回归不能只看"失败数一样"， timing 类失败会随机漂移。做法是在 `7ce93a9`（搬家完成、尚未拆任何闭包）另开一个对照 worktree，跑同一套 spec，然后**逐条比对失败标题集合**而不是比数字。两次运行必须串行：并发跑时资源竞争会凭空多出 timing 失败（实测出现过 `click-behavior.spec.mjs:365` 和多条 multi-subtitle 超时，串行后全部通过）。
 
-- 对照基线 `7ce93a9`：16 失败 / 273 通过。
-- 拆完 `editor/lib/utils.js` 后：16 失败 / 273 通过，**失败标题集合与基线逐条相同**（0 项新增、0 项消失）。
-- 拆完 `editor/waveform/runtime.js` 后：17 失败 / 272 通过。与基线逐条比对，**唯一新增**是 `tests/e2e/click-behavior.spec.mjs:365 › Escape exits inline cue editing without saving the text`。判定为加载抖动，证据两条：单独复跑该 spec 通过（1.2s，全量跑时它在 5.9s 超时）；`git show --name-only 0a39d8b` 在 `web/editor/waveform/` 之外只改了 `blank-editor.html`、两个测试文件和 `web/editor-scripts.txt`，inline cue 编辑与 Escape 路径一行未动。
-- `split/core.js` 及之后的拆分不再逐次跑全量：并入最后一次累积全量回归，失败归因依靠每块独立的三层差分证据 + 针对可疑 spec 的单独复跑。
+- 累积全量（`f26d153`，`utils` / `waveform` / `split` / `timed-edit` / `elements` / `i18n` / `boot` 全部拆完）：17 失败 / 272 通过。
+- 对照基线 `7ce93a9`（同机串行、全新一次全量）：16 失败 / 273 通过。
+- 把两份报告的失败标题做成集合比对（脚本取标题、不靠眼看）：**0 项消失，唯一新增**是 `tests/e2e/click-behavior.spec.mjs:365 › Escape exits inline cue editing without saving the text`。
+- `split/core.js` 及之后的拆分不逐次跑全量：并入上面这一次累积全量回归，每块的正确性由各自独立的三层差分证据承担。
 
-这 16 项在拆分之前就存在，集中在 launcher 交互、multi-subtitle 长流程、waveform 历史与两处 timing 敏感断言上，属分支既有状态，本轮不修（修 spec 或调超时属于另一件事，且会掩盖真实问题）。
+基线既有的 16 项（拆分之前就存在，本轮不修；修 spec 或调超时属于另一件事，且会掩盖真实问题）：
 
-其中一条值得单列：
+```text
+click-behavior.spec.mjs:56    media seek buttons and arrow keys use the configured seek duration
+cue-color-filter.spec.mjs:65  clicking a row shows only that color; checkboxes multi-select; clear restores all
+launcher-interactions.spec.mjs:109/162/217/273/301/328   运行时错误提示相关 6 条
+multi-subtitle.spec.mjs:117/338/860/3638                multi-subtitle 长流程 4 条
+waveform-history.spec.mjs:108/372/756/1800              波形历史/空隙 4 条
+```
+
+
+### 唯一差项 `:365`：撤回"加载抖动"这个判定
+
+本节先前把它写成加载抖动，证据是"单独复跑该 spec 通过（1.2s，全量跑时它在 5.9s 超时）"和"`git show --name-only 0a39d8b` 没碰 inline cue 编辑与 Escape 路径"。**两条都不成立**，已撤回：
+
+- 单独复跑通过，只能证明"干净工程下它通过"，恰恰不能区分"它抖动"与"它依赖工程文件状态"。后来在 HEAD 上按整个 spec 文件连跑 3/3 失败，当场反证。
+- "这条 commit 没改相关路径"是范围论证。本轮改的正是脚本装配顺序与页面加载结构，时序本身就在改动范围内，不能用它排除因果。
+
+正确的做法是同一 worktree 内交替 checkout 两个 rev、跑同一份 spec（避免机器差异），逐轮记录该用例结果：
+
+| 批次 | 条件 | HEAD `f26d153` | 基线 `7ce93a9` |
+| --- | --- | --- | --- |
+| 交替 A/B 7 轮 | 同一份未加探针的 spec | 7/7 失败 | 2/7 失败（第 1、2 轮），单侧 Fisher p≈0.0105 |
+| 追加 2 轮 | afterEach 带逐用例状态转储、`beforeEach` 多 2.5s 等待 | 2/2 失败 | 0/2 失败 |
+
+HEAD 命中率高是事实，不需要否认。但它不是语义差异，下面逐状态实测到了根因。
+
+### `:365` 的真实机制：用例间共享工程文件 + 400ms 防抖自动保存
+
+同一个 spec 文件里所有用例共用一个 server 与一个 `project.json`。前一条用例 `:329 › Escape keeps cue-panel text edits by default` 在右侧详情面板留下的编辑会置 `segments[0]._dirty = true` 并调用 `MaweServerSave.scheduleAutoSaveFlush()`；`web/editor/lib/json-repair.js:31,59` 明确把 `_dirty` 序列化进工程 JSON（注释写着"便于二次打开时仍能识别脏行 / 离开提醒"）。于是 `:365` 可能加载到一个第 0 条已标脏的工程，行在渲染时就带 `dirty` class（`web/editor/ui/cue-elements.js:119,192`），而 `web/editor/cues/inline-edit.js:293-294` 的 `finishEdit(save)` 只在 `save` 分支 `classList.add('dirty')`，取消分支从不 `remove`。此时 `:365` 的 `await expect(cue).not.toHaveClass(/dirty/)` 在这个页面状态下**不可满足**。
+
+逐用例转储（afterEach 打印内存标记数量与工程文件里的脏下标），同一条用例在两个 rev 上的差别：
+
+```text
+HEAD  轮  :329 结束 {"seg":0,"unsaved":false,"onDisk":[0]}   :365 结束 {"seg":1,"unsaved":true,"onDisk":[0]}
+基线  轮  :329 结束 {"seg":0,"unsaved":false,"onDisk":[]}    :365 结束 {"seg":0,"unsaved":false,"onDisk":[]}
+```
+
+即全部差在"那条 400ms 防抖落盘有没有赶在下一条用例 `page.goto` 之前完成"。
+
+构造性证明（临时 spec，跑完已入回收站）：把 `generateProjectJson` 产物的 `segments[0]._dirty` 直接置真再启服务，其余步骤与 `:365` 逐字一致（`goto` → `dblclick .cue[data-idx="0"] .text` → `fill` → `page.keyboard.press('Escape')`）：
+
+```text
+预置脏  进入 {"dirty":true,"cls":"cue dirty"}                 取消后 "cue dirty selected active"   → class 不掉
+干净工程 进入 {"dirty":null,"cls":"cue"}                      取消后 "cue selected active"        → 无 dirty
+```
+
+各 1/1 确定性复现。唯一变量就是工程文件里的 `_dirty`，与抖动窗口之外的任何东西无关。
+
+代码层面为何与本轮拆分无关（可复跑）：
+
+```powershell
+git diff 7ce93a9..HEAD -- web/editor/lib/json-repair.js web/editor/server/save.js web/editor/project/save.js web/editor/ui/cue-elements.js web/editor/cues/inline-edit.js web/editor/cues/panel.js
+```
+
+输出为空——`_dirty` 的置位、持久化、加载、未保存判定、行 class 这五条链路的文件，在基线与 HEAD 之间逐字节相同。
+
+定性：**既有测试隔离缺陷**（用例间共享工程文件，防抖自动保存异步落盘）**撞上既有产品行为**（取消的行内编辑不清 `dirty` class）。HEAD 只是把这条竞态撞中的频率显著抬高。修 spec（每条用例独立工程文件或等 flush 收敛）与修产品行为都是另一件事，本轮未擅自改，等维护者定。
+
+### 顺手挖出的两个既有产品行为（仅说明，未修改）
+
+| 发现 | 实测证据 | 处理 |
+| --- | --- | --- |
+| 取消的行内编辑仍留着 `dirty` class | `finishEdit(save)` 只在 save 分支加 class，取消分支不 `remove`；行 class 只有在下一次顺带重渲染时才与模型对齐 | 仅说明：改法（取消时 `remove('dirty')` 还是按模型重算 class）需要维护者定 |
+| 已取消的**面板**编辑仍会以 `_dirty` 落盘 | 面板 `input` 立即置 `_dirty` 并 `scheduleAutoSaveFlush()`（400ms），之后的 Escape 只回滚内存；实测 2s 后内存标记全假而文件仍写着 `[0]`，重开工程"人工改过"标记复活 | 仅说明：静默自动保存会把"用户已撤销的编辑"的脏标记持久化，是否可接受由维护者判断 |
+
+上面 16 项里有一条值得单列：
 
 `tests/e2e/cue-color-filter.spec.mjs:65` 在本轮改动之前的 `HEAD`（对照 worktree）上同样失败，**不是**本轮引入：`#color-filter-menu .color-filter-clear` 解析到 2 个元素——"全选过滤结果"按钮复用了 `.color-filter-clear` 类，spec 未随之更新。属陈旧 spec，未擅自修改（改 spec 会掩盖"这个类到底该不该复用"这个真实问题）。
 
