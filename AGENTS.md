@@ -37,7 +37,7 @@ uv run python edit.py --blank
 
 ```text
 web/shared/      MAWE 与 server-align 共用的纯核心（gap-remove-core）
-web/editor/boot/ 注入数据、模块注册表、启动装配
+web/editor/boot/ 注入数据、模块注册表、启动装配（shortcuts/ 快捷键、modals/ 弹窗）
 web/editor/lib/  纯逻辑与数据规范化：不碰 DOM/媒体/localStorage，可在 Node vm 中加载
 web/editor/state/工程状态、字幕面板状态、历史栈
 web/editor/ui/   元素表、浮层、提示、右键菜单等界面基元
@@ -59,6 +59,8 @@ web/launcher/    启动器前端（独立于编辑器清单）
 `editor/split/*`、`editor/text/timed-edit/*`、`editor/ui/elements/*` 沿用 `MaweLib` 那套规则，命名空间分别是 `window.MaweSplit` / `MaweText` / `MaweElements`，兼容出口是冻结的 `window.MaweSplitCore` / `MaweTimedTextEdit` / `MaweDom`。补一条硬性不变量：**兼容出口里某键是 `get`/`set` 成对的访问器时，拥有该状态的模块必须同时发布 setter**。外部经出口的赋值（`MaweDom.hideDisabled = true` 这类，块外有 11 处）在块内不可见，owner 只发布 getter 会让出口重建出来的 `U.x = v` 在严格模式抛 `TypeError`，而 Node/Python 测试环境根本不加载这些脚本，只有真实浏览器点到时才炸。
 
 `editor/i18n/*`（命名空间 `window.MaweI18n`）是这套规则的唯一例外，因为历史出口 `window.MAWE_I18N` 本来就不冻结、且只有 5 个键：`language` 必须由 owner 以访问器发布、出口原样保留 getter（不能冻结，也不能展平成加载期取一次的常量）；出口键是历史契约，内部命名空间还要装词典与选择器等内部符号，两者本来就不相等，契约测试只能单向断言"出口每个键都取得到内部符号"。另外 `compat-surface.js` 允许在出口赋值之后原样保留**导出语句后面的加载期语句**（本块是注册到 `MAWE` 与按 `readyState` 启动首次翻译）——它们的先后决定启动时能否读到出口，不许搬进前置模块。
+
+`editor/boot/*` 里从 `entry.js` 起的那一段是另一种形态：它不是闭包，而是启动期 DOM 接线的 423 条顶层语句，摊在同一个脚本作用域里，既没有内部命名空间也没有兼容出口。装配把整份清单拼成同一个 `<script>`，所以这类文件**只能按语句边界连续切段，段与段的顺序就是事件注册顺序**——同一目标上的监听器按注册先后分发，重排没有任何等价保证；也不许为了"看起来整齐"给它们补门面，或把只有几行的段并进不相干的邻居。切段文件头部统一保留「自 `web/editor/boot/entry.js` …连续切段而来」来源标记，`test_boot_wiring_is_cut_into_ordered_contiguous_chunks` 逐段断言它，并守住 `entry.js` 必须最先装配（它声明后面各段直读的两个顶层 `const`）与块尾不是 `boot-sequence.js`（原文件的启动收尾本来就排在字幕列表筛选与离开提示之前）。同目录的 `data.js` / `registry.js` 是注入数据与模块注册表，另一回事，排在清单最前。
 
 ## 开发与验证
 

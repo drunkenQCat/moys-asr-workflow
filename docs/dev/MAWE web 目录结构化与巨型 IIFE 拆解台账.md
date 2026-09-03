@@ -51,11 +51,11 @@ status: in_progress
 | `editor/split/core.js` | 1852 | 1847 | 1 | 已拆（见下节） |
 | `shared/gap-remove-core.js` | 1409 | 1406 | 1 | 待处理 |
 | `editor/ui/elements.js` | 1200 | 1195 | 1 | 已拆（见下节） |
-| `editor/i18n/i18n.js` | 1119 | 1118 | 1 | 待处理（主体是词典） |
+| `editor/i18n/i18n.js` | 1119 | 1118 | 1 | 已拆（见下节） |
 | `editor/text/timed-edit.js` | 839 | 834 | 1 | 已拆（见下节） |
 | `editor/export/timeline.js` | 729 | 724 | 1 | 待处理（低于阈值，暂缓） |
 | `editor/gap/ui.js` | 721 | 716 | 1 | 待处理（低于阈值，暂缓） |
-| `editor/boot/entry.js` | 2813 | 无 IIFE | 423 | 待处理：问题不是闭包，是 423 条平铺接线语句 |
+| `editor/boot/entry.js` | 2813 | 无 IIFE | 423 | 已拆（见下节）：问题不是闭包，是 423 条平铺接线语句 |
 | `editor/onboarding/tour.js` | 630 | — | 1 | 仅说明：未达阈值 |
 
 `editor/lib/utils.js` 原本以 4965 行排第二，本轮已拆完，故不在此表。
@@ -303,6 +303,50 @@ status: in_progress
 - `uv run python edit.py --blank` 已重跑，`blank-editor.html` 内联副本由契约测试逐字节比对通过；
   `git diff --check` 无输出；ruff 全部通过。清单 **173** 条（167 − 1 + 7）。
 
+## `editor/boot/entry.js`：2813 行平铺接线 → 35 个连续段（已修复）
+
+### 为什么这块不能套用前几块的做法
+
+前面几块（`utils.js`、`waveform/runtime.js`、`split/core.js`、`ui/elements.js`、`i18n/i18n.js`）都是**一个闭包**：拆它的动机是把闭包内部的符号重新安置，所以必须建内部命名空间、逐条改写引用、重建兼容出口，正确性只能靠 vm 差分证明。
+
+`entry.js` 没有闭包。423 条顶层语句（388 条表达式、33 个 `if`、2 个 `const`）直接摊在共享的脚本作用域里，彼此只经 `MaweXxx` 命名空间对象联系，不存在"内部符号要往哪安置"的问题——它唯一的毛病就是长。
+
+对这种文件，装配链的性质本身就是一条证明：`edit.build_editor_scripts()` 把清单里每个文件 `rstrip()` 后用 `\n\n` 连成**同一个 `<script>`**。所以"按行连续切段 + 顺序不变 ⇒ 拼出来的脚本逐字节不变"。不建命名空间、不改写任何一处引用、不做差分，也**不给它补门面**：门面是新的风险面，而这里没有任何需要它解决的问题。
+
+### 切法与落位
+
+35 段，切点全部落在两条顶层语句之间，段间零重排。按搬运的原文行数计，最大一段 `export-buttons.js` 206 行，最小一段 `leave-prompt.js` 5 行。
+
+- `editor/boot/`（20 段）：`entry.js`（L1-35，启动前置）、`settings-init.js`（L36-170）、`settings-popovers.js`（L171-273）、`help-and-theme.js`（L274-355）、`settings-bindings.js`（L356-494）、`playback-settings.js`（L495-553）、`appearance-settings.js`（L554-613）、`gap-remove-panel.js`（L614-693）、`cue-panel.js`（L694-762）、`cue-list-tools.js`（L763-784）、`media-controls.js`（L888-921）、`preview-overlays.js`（L1775-1858）、`export-buttons.js`（L1859-2064）、`project-media-modal.js`（L2065-2109）、`load-media.js`（L2110-2142）、`load-media-file-input.js`（L2274-2289）、`global-events.js`（L2669-2722）、`boot-sequence.js`（L2723-2772）、`cue-list-filters.js`（L2773-2808）、`leave-prompt.js`（L2809-2813）
+- `editor/boot/shortcuts/`（8 段）：`pointer-and-inline-edit.js`（L785-887）、`seek-and-lane.js`（L922-1014）、`space-and-jkl.js`（L1015-1098）、`cue-nav-and-select.js`（L1099-1264）、`cue-edits.js`（L1265-1418）、`tools-and-create.js`（L1419-1508）、`binding-align.js`（L1509-1606）、`split-key.js`（L1607-1774）
+- `editor/boot/modals/`（7 段）：`multi-subtitle-import.js`（L2143-2189）、`split-modal.js`（L2190-2273）、`sticker-root.js`（L2290-2375）、`find-replace.js`（L2376-2413）、`text-process.js`（L2414-2498）、`timed-edit-modal.js`（L2499-2646）、`sticker-picker.js`（L2647-2668）
+
+### 唯一的硬约束：段间不许重排
+
+同一目标上的监听器按注册先后分发，事件注册顺序没有"挪一下应该没事"的余地；启动序列（`MaweWaveformInit.initWaveformEditor()` 那一段）在原文件里也**不**是尾巴，它后面还排着字幕列表筛选与离开提示。所以两条看起来"更合理"的整理动作其实都会改变语义，必须挡住：
+
+1. **把只有几行的段并进邻居**。`load-media-file-input.js`（16 行）是本地媒体文件输入的 `change`/`cancel`，原文件里它就排在拆分弹窗之后；搬到 `load-media.js` 旁边就是重排。同理 `leave-prompt.js`（5 行）不并进 `cue-list-filters.js`。
+2. **把启动收尾挪到块尾**。`boot-sequence.js` 后面还有两段是原样事实，契约测试直接断言"块尾不是 `boot-sequence.js`"。
+
+切段用的三个判据（临时脚本，不入库）本身也要能被反证：
+
+- `mawe_cut_check.mjs`：AST 逐条断言 423 条顶层语句**无一被切断**，且 35 段无缝无重叠地覆盖 2813 行。
+- `mawe_cut_block.mjs`：去掉每段新加的头部注释后按顺序拼回，必须与原文件**逐字节相同**（`REBUILD EXACT`），否则拒绝承认成功。
+- `mawe_cut_astcheck.mjs`：从**真实清单**里取这一串条目（顺带核对清单顺序与方案完全一致），按 `\n\n` + `rstrip` 复刻装配拼回去，与 `git show HEAD:` 的原文件逐语句比对源码（`ASSEMBLY AST IDENTICAL`，423 条全等）。
+
+第三条曾经自测反证过一次：故意把头部注释插到某条语句中间，脚本如实报出该处语句源码不一致并以 3 退出——判据不是摆设。
+
+顺带修的两处工具缺陷：段文件此前不带结尾换行，仓库里每个 `.js` 都以 LF 收尾，缺了它以后每次 diff 都会多一行 `\ No newline at end of file`；`area` 原来整份方案共用一个值，现在允许逐段指定，才可能把段分到 `shortcuts/` 与 `modals/`。
+
+### 验证
+
+- 域划分不靠猜。先把 423 条语句逐条导出成"行区间 + 调用签名 + 紧邻注释"的清单（`MaweDom.x.addEventListener` 这类只暴露被绑的 DOM 元素名），再据此定域；委派出去的粗粒度域地图在这里被当场纠正了几处（`L615-651` 报成"波形同步"实为空隙移除把手与面板数值输入、`L681-744` 报成"同步偏移"实为空隙面板的 Esc 与跳过播放、`L695-744` 报成"跟随模式"实为右侧字幕详情面板的文本框与表情包槽位），按签名清单重新划定。
+- 三层判据全部通过（见上）；`git show --stat` 38 个文件，`entry.js` 从 2813 行缩到 38 行。
+- 契约测试 `test_boot_wiring_is_cut_into_ordered_contiguous_chunks`：块内各段在清单里连续、子目录归属恰为 `shortcuts/` 与 `modals/`、`entry.js` 仍声明后面各段直读的两个顶层 `const`、每段都带「自 `web/editor/boot/entry.js` …连续切段而来」来源标记、块尾是 `leave-prompt.js` 且不是 `boot-sequence.js`、装配结果里 7 个地标的相对顺序不变。
+- 清单 **207** 条（173 − 1 + 35），`editor/boot/` 共 37 条。清单头部新增一段说明：这一块的段间顺序就是注册顺序，必须连续且保持现有次序。
+- Node 252/252（数量与拆分前相同，覆盖面未缩水）；`tests.test_editor_assets` 27/27；Python 全量 **999** 项，仅 5 项既有环境错误；ruff 通过；`git diff --check` 干净；`uv run python edit.py --blank` 已重跑并由产物契约逐字节比对。
+- 未验证边界照旧：Node/Python 都在无 DOM 环境里跑，事件注册顺序、快捷键互抢、弹窗键盘流这些只能由浏览器证明，并入待做的累积 Playwright 回归。
+
 ## 顺手挖出的重复与既有缺陷（仅说明）
 
 这些是 46 个共享名普查的结果，不属于本轮改动范围，记录以免丢失：
@@ -327,24 +371,25 @@ status: in_progress
 | 7 | `editor/text/timed-edit.js` 839 行拆解 | 已修复 | `e3d45ed`；7 模块（最大 218 行）；Node 252/252；`tests.test_editor_assets tests.test_waveform` 41/41；Python 全量 996 项仅 5 项既有环境错误；三层差分零差异（1568 次调用）；仓库文件与 dryrun 产物 sha256 相同；`blank-editor.html` 已重生成 |
 | 8 | `editor/ui/elements.js` 1200 行拆解 | 已修复 | `51f02ea`；18 模块（区域模块最大 165 行，门面 312 行）；Node 252/252；`tests.test_editor_assets tests.test_waveform` 42/42；Python 全量 997 项仅 5 项既有环境错误；结构层 295 键含逐键 id 指纹零差异、5 个 setter 全部写探针通过；仓库文件与 dryrun 产物 sha256 相同 |
 | 9 | `editor/i18n/i18n.js` 1119 行拆解 | 已修复 | `d259a21`；7 个文件（词典 540/210 行，逻辑模块最大 229 行）；Node 252/252；`tests.test_editor_assets tests.test_waveform` 43/43；Python 全量 998 项仅 5 项既有环境错误；三层差分零差异（出口面 196 次调用 + 每次调用后比对 `language` 状态）；仓库文件与 dryrun 产物 sha256 相同；改写回归四块 44 文件逐字节相同；`blank-editor.html` 已重生成 |
-| 10 | `editor/boot/entry.js` 423 条平铺接线语句按接线域分组 | 待处理 | — |
-| 11 | 文档同步（AGENTS.md 的 `web/` 树、`docs/DEVELOPMENT.md`、网站开发页、基线文档） | 已修复 | 目录树、`MaweLib` 规则、`MaweWaveform` 原型混入顺序规则、门面 setter 硬性不变量、i18n 块"出口未冻结 + 内部面比出口大 + 导出后语句留在出口"这条例外，均已写入 `AGENTS.md` 与 `docs/DEVELOPMENT.md`；网站开发页由 `npm --prefix website run sync:docs` 重生成（只保留 `development.md`，其余 4 篇的既有漂移已还原，不夹带） |
+| 10 | `editor/boot/entry.js` 423 条平铺接线语句按接线域分组 | 已修复 | `62e2c49`；35 个连续段（最大 206 行，`editor/boot/` 20 + `shortcuts/` 8 + `modals/` 7）；三层判据通过（无语句被切断、去头拼回逐字节相同、按真实清单拼接与 `HEAD` 逐语句相同）；Node 252/252；`tests.test_editor_assets` 27/27；Python 全量 999 项仅 5 项既有环境错误；`blank-editor.html` 已按 207 条清单重生成 |
+| 11 | 文档同步（AGENTS.md 的 `web/` 树、`docs/DEVELOPMENT.md`、网站开发页、基线文档） | 已修复 | 目录树、`MaweLib` 规则、`MaweWaveform` 原型混入顺序规则、门面 setter 硬性不变量、i18n 块"出口未冻结 + 内部面比出口大 + 导出后语句留在出口"这条例外、启动接线块"只能连续切段且段间顺序即注册顺序"这条硬约束，均已写入 `AGENTS.md` 与 `docs/DEVELOPMENT.md`；网站开发页由 `npm --prefix website run sync:docs` 重生成（只保留 `development.md`，其余 4 篇的既有漂移已还原，不夹带） |
 | 12 | `shared/gap-remove-core.js` 1409 行拆解 | 待处理 | 阈值以上；还需同步把 `server-align/serve.py:44 GAP_REMOVE_CORE_PATH` 的单文件注入改为目录拼接，并更新 Align 页与契约测试 |
 
 ## 验证记录（分层，不互相冒充）
 
 | 层次 | 命令 | 结果 |
 | --- | --- | --- |
-| 语法 | `node --test tests\test_editor_script_syntax.mjs` | 通过（173 条目，逐个编译） |
+| 语法 | `node --test tests\test_editor_script_syntax.mjs` | 通过（207 条目，逐个编译） |
 | 装配顺序/重名 | `node --test tests\test_editor_script_order.mjs` | 通过（含 `namespace.js` 首位、`compat-surface.js` 末位、跨模块重名检测） |
 | 波形块顺序契约 | `test_waveform_prototype_mixins_load_after_the_class_and_before_the_exit` | 通过（≥10 个混入模块全部落在 `core.js` 之后、出口之前） |
 | split 块顺序契约 | `test_split_block_builds_the_frozen_facade_after_every_module` | 通过（模块导出不重名，冻结门面键集合与模块导出集合完全相等） |
 | 整轨文本编辑块顺序契约 | `test_timed_edit_block_builds_the_frozen_facade_after_every_module` | 通过（目录内脚本连续装配、导出不重名、门面键集合相等） |
 | DOM 引用块契约 | `test_dom_elements_block_is_split_by_ui_region_and_stays_contiguous` | 通过（连续装配、门面键集合相等、发布符号 ≥280、5 个访问器键成对存在、区域模块 ≤200 行） |
 | i18n 块契约 | `test_i18n_block_keeps_unfrozen_language_accessor` | 通过（连续装配、兼容出口未冻结、出口 5 个键恰为历史键且都取得到内部符号、`language` 由 owner 以 get/set 发布且其余模块不再持有、导出后的注册与启动调用顺序未变） |
+| 启动接线块契约 | `test_boot_wiring_is_cut_into_ordered_contiguous_chunks` | 通过（块内各段在清单里连续、子目录归属为 `shortcuts/` 与 `modals/`、`entry.js` 仍声明两个顶层 `const`、逐段带来源标记、块尾是 `leave-prompt.js` 且不是 `boot-sequence.js`、7 个地标的相对顺序不变） |
 | JS 单测 + lib/waveform 契约 | `node --test tests\test_editor_script_syntax.mjs tests\test_editor_script_order.mjs tests\test_editor_utils.mjs tests\test_waveform_js.mjs tests\test_editor_runtime.mjs` | 252/252 通过 |
-| Python 资产契约 | `uv run python -m unittest tests.test_editor_assets tests.test_waveform` | 43/43 通过 |
-| Python 全量 | `uv run python -m unittest discover -s tests -p "test_*.py"` | 998 项，5 错误全部为既有环境问题：子进程 `stdout` 为 `None`，或其读取线程按 GBK 解码崩溃（`test_gui_workflow` ×2、`test_local_editor_server` ×1、`test_local_runtime` ×2；单独运行同样失败，与本改造无关） |
+| Python 资产契约 | `uv run python -m unittest tests.test_editor_assets tests.test_waveform` | 44/44 通过 |
+| Python 全量 | `uv run python -m unittest discover -s tests -p "test_*.py"` | 999 项，5 错误全部为既有环境问题：子进程 `stdout` 为 `None`，或其读取线程按 GBK 解码崩溃（`test_gui_workflow` ×2、`test_local_editor_server` ×1、`test_local_runtime` ×2；单独运行同样失败，与本改造无关） |
 | Lint | `uv run --frozen ruff check .` | 全部通过 |
 | 空白 | `git diff --check` | 干净 |
 | 产物一致性 | `test_committed_blank_editor_is_regenerated_from_web_sources` | 通过（提交内容与 `web/` 重新生成结果逐字节一致） |
