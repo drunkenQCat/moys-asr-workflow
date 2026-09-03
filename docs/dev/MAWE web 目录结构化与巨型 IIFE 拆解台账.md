@@ -48,11 +48,11 @@ status: in_progress
 | 条目 | 行数 | 单 IIFE 行数 | 顶层语句 | 判定 |
 | --- | ---: | ---: | ---: | --- |
 | `editor/waveform/runtime.js` | 5371 | 5368 | 1 | 已拆（见下节） |
-| `editor/split/core.js` | 1852 | 1847 | 1 | 待处理 |
+| `editor/split/core.js` | 1852 | 1847 | 1 | 已拆（见下节） |
 | `shared/gap-remove-core.js` | 1409 | 1406 | 1 | 待处理 |
 | `editor/ui/elements.js` | 1200 | 1195 | 1 | 待处理 |
 | `editor/i18n/i18n.js` | 1119 | 1118 | 1 | 待处理（主体是词典） |
-| `editor/text/timed-edit.js` | 839 | 834 | 1 | 待处理 |
+| `editor/text/timed-edit.js` | 839 | 834 | 1 | 已拆（见下节） |
 | `editor/export/timeline.js` | 729 | 724 | 1 | 待处理（低于阈值，暂缓） |
 | `editor/gap/ui.js` | 721 | 716 | 1 | 待处理（低于阈值，暂缓） |
 | `editor/boot/entry.js` | 2813 | 无 IIFE | 423 | 待处理：问题不是闭包，是 423 条平铺接线语句 |
@@ -131,6 +131,64 @@ status: in_progress
 
 `WaveformEditor` 构造器内部有一批 4 空格缩进的语句（同文件其余是 2 空格），属拆分前既有。搬运要求逐字节原样，故本次未修；顺手格式化会破坏"剥前缀后逐字节一致"这条证据链。留给后续单独一次纯格式提交。
 
+## `editor/split/core.js`：1852 行 → 12 个模块
+
+`editor/split/` 本来就有 `mode.js`、`trim.js`、`context-menu.js` 三个独立脚本，`core.js` 是这块的主闭包：1847 行、顶层一条语句，对外只留一个冻结门面 `window.MaweSplitCore`（53 个键，含一对 `pendingLinkedSplit` 读写访问器）。
+
+拆法与 `editor/lib/` 同构，不同点只在门面是 `Object.freeze(...)` 包起来的字面量：
+
+| 模块 | 行 | 职责 |
+| --- | ---: | --- |
+| `namespace.js` | 13 | 独占创建 `window.MaweSplit`，重复初始化直接抛错 |
+| `pending-state.js` | 19 | `pendingLinkedSplit`，以访问器形式发布到命名空间 |
+| `offset-timing.js` | 73 | 文本偏移 ↔ 时间换算 |
+| `item-cut.js` | 321 | 条目切分与合并 |
+| `lane-state.js` | 215 | 分轨待提交状态 |
+| `lane-controls.js` | 214 | 分轨控件事件 |
+| `lane-render.js` | 281 | 分轨渲染 |
+| `auto-submit.js` | 70 | 自动提交 |
+| `modal.js` | 185 | 弹窗开关 |
+| `commit.js` | 298 | 提交链路 |
+| `cursor-split.js` | 285 | 游标切分 |
+| `compat-surface.js` | 66 | 按原文逐字节重建冻结门面 |
+
+关键技术点：
+
+1. **`Object.freeze` 不妨碍访问器写入。** 门面里 `set pendingLinkedSplit(v)` 仍然可调用，冻结只锁属性描述符的增删，所以重建时把原文的 `get`/`set` 成对搬过来即可，不需要改变门面的可写性语义。
+2. **门面由原文字面量文本重建**，而不是按名字表重新生成。键顺序、简写属性、访问器对全部保持原样，这是"剥掉 `U.` 前缀后逐字节一致"这条证据的前提。
+3. **`pendingLinkedSplit` 的跨模块写入**改写为 `U.pendingLinkedSplit = v`，由 `pending-state.js` 发布读写访问器。与原来共享闭包里的 `let` 可证明等价：读写仍落到同一个存储位置。
+4. **外部 53 个键的调用点一行不改**，`window.MaweSplitCore` 的出口形状由 `tests/test_editor_assets.py` 新增的块顺序契约锁定：`namespace.js` 必须在块首、`compat-surface.js` 必须在块末、模块导出不允许重名、门面键集合必须与模块导出集合完全相等。
+
+三层差分（`editor/split/core.js` → 12 模块，改动前后各加载一次）：
+
+| 层次 | 做法 | 结果 |
+| --- | --- | --- |
+| 结构 | 两次上下文的顶层键、类型、可枚举性逐项比对 | 0 处差异 |
+| 源码 | 每个模块剥掉 `U.` 前缀后与原文件对应区间逐字节比对 | 12 个文件，0 处不一致 |
+| 行为 | 对可调用导出与可枚举属性发起 2499 次调用，比对返回值与抛错 | 0 处差异 |
+
+仓库内落盘的 12 个文件与通过差分的 dryrun 产物 sha256 逐一相同，因此差分结论直接适用于提交内容。
+
+## `editor/text/timed-edit.js`：839 行 → 7 个模块
+
+"整轨文本编辑"面板的主闭包：834 行、顶层一条语句，对外出口 `window.MaweTimedTextEdit`（32 个键，同样 `Object.freeze`）。
+
+| 模块 | 行 | 职责 |
+| --- | ---: | --- |
+| `namespace.js` | 13 | 独占创建 `window.MaweText` |
+| `source-state.js` | 63 | 当前轨别、待改段落、来源选区 |
+| `row-diff.js` | 191 | 逐行差异的构造与渲染 |
+| `view.js` | 218 | 面板开关、轨道切换、整体重绘 |
+| `draft.js` | 217 | 草稿行与 DOM 同步、差异报告调度 |
+| `apply.js` | 199 | 把草稿应用回段落并与隐藏字幕合并 |
+| `compat-surface.js` | 44 | 按原文逐字节重建冻结门面 |
+
+与 `editor/split/*` 的区别只有一点：**这块没有跨模块写入的可变状态**（改写器报告 foreign-written 为空），因此门面的 32 个键全是数据属性，不含访问器对；契约测试也不检查访问器，改为断言"目录内脚本必须连续装配"。
+
+工具链在这一块完成了通用化：`mawe_split_mod.mjs` 与它的差分脚本原来写死 `editor/split/core.js`，现在按 `<root> <config.json>` / `<dryrunRoot> <area> <exportTarget> <oldRelPath> <report>` 传参，第四块（`ui/elements.js`）起直接复用。通用化的同时用旧配置复跑了一次 `editor/split/` 差分（53 键、2499 次调用、0 差异），确认改动没有让已提交的结论失效。
+
+三层差分：结构层 32 个键的键名键序、属性种类、frozen 状态全部一致；源码层 32 个顶层声明剥前缀后逐字节一致；行为层 1568 次调用零差异。落盘的 7 个文件与通过差分的 dryrun 产物 sha256 逐一相同。
+
 ## 顺手挖出的重复与既有缺陷（仅说明）
 
 这些是 46 个共享名普查的结果，不属于本轮改动范围，记录以免丢失：
@@ -146,25 +204,29 @@ status: in_progress
 
 | # | 事项 | 状态 | 验证 |
 | --- | --- | --- | --- |
-| 1 | 装配链允许 `web/` 子目录脚本路径 + 清单级全量语法检查 | 已修复 | `7a862f9`；`tests/test_editor_script_syntax.mjs` 当时 104 个条目全通过（清单现为 133 条） |
+| 1 | 装配链允许 `web/` 子目录脚本路径 + 清单级全量语法检查 | 已修复 | `7a862f9`；`tests/test_editor_script_syntax.mjs` 当时 104 个条目全通过（清单现为 150 条） |
 | 2 | 77 个平铺脚本按层与域归入子目录 | 已修复 | `7ce93a9`；77 个 rename 全 100% 相似度；Python 资产契约 + Node 套件通过 |
 | 3 | `editor/lib/utils.js` 4965 行单 IIFE → 28 模块 | 已修复 | `0246ca5`；Node 252/252；`tests.test_editor_assets` 通过；差分测试无行为差异；`blank-editor.html` 已重生成并逐字节比对 |
-| 4 | Playwright 全量回归 | 进行中 | 本工作树 16 失败 / 273 通过；与 `7ce93a9` 对照 worktree 的失败集合逐项比对尚未收尾，见下节 |
+| 4 | Playwright 全量回归 | 进行中 | 基线 `7ce93a9` 16 失败 / 273 通过；`utils.js` 拆分后失败标题集合与基线逐条相同；`waveform/runtime.js` 拆分后 17 失败，多出的 1 条单独复跑通过且该 commit 未触碰相关代码路径（见下节）。`split/core.js` 及后续拆分并入一次累积全量回归 |
 | 5 | `editor/waveform/runtime.js` 5371 行拆解 | 已修复 | `0a39d8b`；30 模块（最大 526 行）；Node 252/252；`tests.test_editor_assets tests.test_waveform` 39/39；三层差分零差异；`blank-editor.html` 已重生成并由契约测试逐字节比对 |
-| 6 | `editor/split/core.js` 1852 / `shared/gap-remove-core.js` 1409 / `editor/ui/elements.js` 1200 / `editor/i18n/i18n.js` 1119 / `editor/text/timed-edit.js` 839 | 待处理 | 阈值以上，逐个独立处理 |
-| 7 | `editor/boot/entry.js` 423 条平铺接线语句按接线域分组 | 待处理 | — |
-| 8 | 文档同步（AGENTS.md 的 `web/` 树、`docs/DEVELOPMENT.md`、网站开发页、基线文档） | 已修复 | 目录树、`MaweLib` 规则、`MaweWaveform` 原型混入顺序规则均已写入 `AGENTS.md` 与 `docs/DEVELOPMENT.md`；网站开发页由 `scripts/sync-maw-docs.mjs` 重生成（只保留 `development.md`，其余 4 篇的既有漂移已还原，不夹带） |
+| 6 | `editor/split/core.js` 1852 行拆解 | 已修复 | `d874d73`；12 模块（最大 321 行）；Node 252/252；`tests.test_editor_assets tests.test_waveform` 40/40；三层差分零差异；仓库文件与 dryrun 产物 sha256 相同 |
+| 7 | `editor/text/timed-edit.js` 839 行拆解 | 已修复 | `e3d45ed`；7 模块（最大 218 行）；Node 252/252；`tests.test_editor_assets tests.test_waveform` 41/41；Python 全量 996 项仅 5 项既有环境错误；三层差分零差异（1568 次调用）；仓库文件与 dryrun 产物 sha256 相同；`blank-editor.html` 已重生成 |
+| 8 | `shared/gap-remove-core.js` 1409 / `editor/ui/elements.js` 1200 / `editor/i18n/i18n.js` 1119 | 待处理 | 阈值以上，逐个独立处理；`gap-remove-core.js` 还需同步改 `server-align/serve.py` 的单文件注入链 |
+| 9 | `editor/boot/entry.js` 423 条平铺接线语句按接线域分组 | 待处理 | — |
+| 10 | 文档同步（AGENTS.md 的 `web/` 树、`docs/DEVELOPMENT.md`、网站开发页、基线文档） | 已修复 | 目录树、`MaweLib` 规则、`MaweWaveform` 原型混入顺序规则均已写入 `AGENTS.md` 与 `docs/DEVELOPMENT.md`；网站开发页由 `scripts/sync-maw-docs.mjs` 重生成（只保留 `development.md`，其余 4 篇的既有漂移已还原，不夹带） |
 
 ## 验证记录（分层，不互相冒充）
 
 | 层次 | 命令 | 结果 |
 | --- | --- | --- |
-| 语法 | `node --test tests\test_editor_script_syntax.mjs` | 通过（133 条目，逐个编译） |
+| 语法 | `node --test tests\test_editor_script_syntax.mjs` | 通过（150 条目，逐个编译） |
 | 装配顺序/重名 | `node --test tests\test_editor_script_order.mjs` | 通过（含 `namespace.js` 首位、`compat-surface.js` 末位、跨模块重名检测） |
 | 波形块顺序契约 | `test_waveform_prototype_mixins_load_after_the_class_and_before_the_exit` | 通过（≥10 个混入模块全部落在 `core.js` 之后、出口之前） |
+| split 块顺序契约 | `test_split_block_builds_the_frozen_facade_after_every_module` | 通过（模块导出不重名，冻结门面键集合与模块导出集合完全相等） |
+| 整轨文本编辑块顺序契约 | `test_timed_edit_block_builds_the_frozen_facade_after_every_module` | 通过（目录内脚本连续装配、导出不重名、门面键集合相等） |
 | JS 单测 + lib/waveform 契约 | `node --test tests\test_editor_script_syntax.mjs tests\test_editor_script_order.mjs tests\test_editor_utils.mjs tests\test_waveform_js.mjs tests\test_editor_runtime.mjs` | 252/252 通过 |
-| Python 资产契约 | `uv run python -m unittest tests.test_editor_assets tests.test_waveform` | 39/39 通过 |
-| Python 全量 | `uv run python -m unittest discover -s tests -p "test_*.py"` | 994 项，5 错误全部为既有环境问题：子进程 `stdout` 为 `None`（`test_gui_workflow` ×2、`test_local_editor_server` ×1、`test_local_runtime` ×2；单独运行同样失败，与本改造无关） |
+| Python 资产契约 | `uv run python -m unittest tests.test_editor_assets tests.test_waveform` | 41/41 通过 |
+| Python 全量 | `uv run python -m unittest discover -s tests -p "test_*.py"` | 996 项，5 错误全部为既有环境问题：子进程 `stdout` 为 `None`，或其读取线程按 GBK 解码崩溃（`test_gui_workflow` ×2、`test_local_editor_server` ×1、`test_local_runtime` ×2；单独运行同样失败，与本改造无关） |
 | Lint | `uv run --frozen ruff check .` | 全部通过 |
 | 空白 | `git diff --check` | 干净 |
 | 产物一致性 | `test_committed_blank_editor_is_regenerated_from_web_sources` | 通过（提交内容与 `web/` 重新生成结果逐字节一致） |
@@ -178,7 +240,8 @@ status: in_progress
 
 - 对照基线 `7ce93a9`：16 失败 / 273 通过。
 - 拆完 `editor/lib/utils.js` 后：16 失败 / 273 通过，**失败标题集合与基线逐条相同**（0 项新增、0 项消失）。
-- 拆完 `editor/waveform/runtime.js` 后：同一套全量回归按同样方式比对，结果记在进度账本。
+- 拆完 `editor/waveform/runtime.js` 后：17 失败 / 272 通过。与基线逐条比对，**唯一新增**是 `tests/e2e/click-behavior.spec.mjs:365 › Escape exits inline cue editing without saving the text`。判定为加载抖动，证据两条：单独复跑该 spec 通过（1.2s，全量跑时它在 5.9s 超时）；`git show --name-only 0a39d8b` 在 `web/editor/waveform/` 之外只改了 `blank-editor.html`、两个测试文件和 `web/editor-scripts.txt`，inline cue 编辑与 Escape 路径一行未动。
+- `split/core.js` 及之后的拆分不再逐次跑全量：并入最后一次累积全量回归，失败归因依靠每块独立的三层差分证据 + 针对可疑 spec 的单独复跑。
 
 这 16 项在拆分之前就存在，集中在 launcher 交互、multi-subtitle 长流程、waveform 历史与两处 timing 敏感断言上，属分支既有状态，本轮不修（修 spec 或调超时属于另一件事，且会掩盖真实问题）。
 
