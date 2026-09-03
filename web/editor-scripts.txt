@@ -2,8 +2,8 @@
 # Paths are POSIX and relative to web/. Keep runtime/bootstrap modules before the
 # modules that consume their exports; this file is the only build order, the
 # directory layout below it is for navigation and carries no order semantics.
-# editor/playback/jkl.js owns JKL playback state; editor/boot/entry.js initializes
-# its UI at load and consumes it through the window.MaweJklPlayback facade.
+# editor/playback/jkl.js owns JKL playback state; editor/boot/settings-init.js
+# initializes its UI at load and consumes it through the window.MaweJklPlayback facade.
 # editor/lib/* publish internal symbols on window.MaweLib and read each other
 # lazily inside function bodies, so their mutual order is free; only load-time
 # initializers need their owner first. Within that block editor/lib/namespace.js
@@ -33,6 +33,13 @@
 # window.MAWE_I18N so `language` stays a live accessor, and repeats the three
 # load-time statements that used to follow the export, whose order relative to the
 # export decides whether startup can still read it.
+# editor/boot/entry.js and the chunks after it are the load-time DOM wiring: one flat
+# statement list cut into contiguous chunks, with no namespace and no facade. Assembly
+# concatenates the whole manifest into a single <script>, so a chunk may only start
+# between two top-level statements and the manifest order is the registration order --
+# listeners on the same target fire in registration order, so these entries must stay
+# contiguous and in this exact order. entry.js comes first because it declares the
+# MULTI_SUBTITLE_UTILS and EDITOR_SETTINGS_UTILS consts that later chunks read directly.
 editor/boot/data.js
 editor/boot/registry.js
 shared/gap-remove-core.js
@@ -205,4 +212,38 @@ editor/server/connection.js
 editor/input/drag-drop.js
 editor/export/sticker-otio.js
 editor/boot/entry.js
+editor/boot/settings-init.js
+editor/boot/settings-popovers.js
+editor/boot/help-and-theme.js
+editor/boot/settings-bindings.js
+editor/boot/playback-settings.js
+editor/boot/appearance-settings.js
+editor/boot/gap-remove-panel.js
+editor/boot/cue-panel.js
+editor/boot/cue-list-tools.js
+editor/boot/shortcuts/pointer-and-inline-edit.js
+editor/boot/media-controls.js
+editor/boot/shortcuts/seek-and-lane.js
+editor/boot/shortcuts/space-and-jkl.js
+editor/boot/shortcuts/cue-nav-and-select.js
+editor/boot/shortcuts/cue-edits.js
+editor/boot/shortcuts/tools-and-create.js
+editor/boot/shortcuts/binding-align.js
+editor/boot/shortcuts/split-key.js
+editor/boot/preview-overlays.js
+editor/boot/export-buttons.js
+editor/boot/project-media-modal.js
+editor/boot/load-media.js
+editor/boot/modals/multi-subtitle-import.js
+editor/boot/modals/split-modal.js
+editor/boot/load-media-file-input.js
+editor/boot/modals/sticker-root.js
+editor/boot/modals/find-replace.js
+editor/boot/modals/text-process.js
+editor/boot/modals/timed-edit-modal.js
+editor/boot/modals/sticker-picker.js
+editor/boot/global-events.js
+editor/boot/boot-sequence.js
+editor/boot/cue-list-filters.js
+editor/boot/leave-prompt.js
 editor/onboarding/tour.js

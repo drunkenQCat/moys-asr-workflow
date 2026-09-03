@@ -40520,6 +40520,9 @@ export default MawDynamicCaptions;
   });
 })(typeof window !== 'undefined' ? window : globalThis);
 
+// 启动前置：全局错误探针、两个共享工具绑定、DOM 契约自检、拆分移除符号同步、撤销/重做按钮。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来（本段是第一段）。
+// MULTI_SUBTITLE_UTILS 与 EDITOR_SETTINGS_UTILS 是这一层的顶层 const，后续段直接读取，本段必须最先装配。
 
 window.addEventListener('error', (event) => {
   const details = {
@@ -40555,6 +40558,9 @@ if (!Array.isArray(window.ASR_EDITOR_PALETTE) || !window.ASR_EDITOR_PALETTE.leng
 if (MaweHistory.undoBtn) MaweHistory.undoBtn.addEventListener('click', () => MaweHistory.performUndo());
 if (MaweHistory.redoBtn) MaweHistory.redoBtn.addEventListener('click', () => MaweHistory.performRedo());
 MaweHistory.updateUndoRedoButtons();
+
+// 设置面板初始值：把 EDITOR_SETTINGS 写回控件、刷新按键提示，以及多重字幕设置项的 change 绑定。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
 
 // 切换语言时 i18n 会重置动态文本节点，需重新套用当前拆分按键提示和目标轨道标签。
 document.addEventListener('mawe:languagechange', () => {
@@ -40690,6 +40696,9 @@ MaweDom.multiSubtitleAlignButton?.addEventListener('click', () => {
 });
 MaweAppearance.applySubtitleAppearance();
 MaweAppearance.applyExtensionSubtitleAppearance();
+
+// 设置浮层：各分区折叠开关、点击外部与 Esc 关闭、resize/scroll 时重新定位。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
 MaweDom.editorSettingsToggle?.addEventListener('click', () => MaweSettingsPanels.setEditorSettingsPanelOpen(MaweDom.editorSettingsPanel?.hidden));
 MaweDom.mergeJoinSettingsToggle?.addEventListener('click', (event) => {
   event.stopPropagation();
@@ -40793,6 +40802,9 @@ MaweDom.waveformSettings?.closest('.waveform-toolbar')?.addEventListener(
 MaweDom.cueEditorSettings?.closest('.cue-editor-toolbar')?.addEventListener(
   'scroll', MaweSettingsPanels.positionCueEditorSettingsPanel,
 );
+
+// 帮助浮窗（非模态）：打开入口、高级开关、分区标签、上下文帮助按钮、尺寸回钳；末尾是主题切换。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
 // 帮助是非模态浮窗；鼠标点击后的按钮焦点由统一的快捷键焦点处理释放。
 MaweDom.helpCloseButton?.addEventListener('click', () => MaweHelpPanel.helpFloatingPanel.close());
 MaweDom.helpOpenWaveformSettingsButtons.forEach((button) => {
@@ -40875,6 +40887,9 @@ MaweDom.themeToggle?.addEventListener('click', () => {
   MaweSettings.updateEditorSettings({ theme: next });
   MaweTheme.applyTheme(next);
 });
+
+// 设置面板绑定（上）：拆分模式与移除符号、自动合并、字幕延长、字幕列表/编辑区显示、导出与点击行为。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
 MaweDom.splitKeySel.addEventListener('change', () => {
   MaweSettings.updateEditorSettings({ splitKey: MaweDom.splitKeySel.value });
   MaweSplitMode.refreshSplitKeyHelp();
@@ -41015,6 +41030,9 @@ MaweDom.hoverSeekPreviewToggle?.addEventListener('change', () => {
   MaweSettings.updateEditorSettings({ hoverSeekPreview: MaweDom.hoverSeekPreviewToggle.checked });
 });
 
+// 设置面板绑定（中）：媒体跳转步长、字幕微调步长、相邻吸附、Esc 行为、忍者模式的音效与斩击参数。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
+
 MaweDom.mediaSeekStepInput?.addEventListener('keydown', (event) => {
   if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
   event.preventDefault();
@@ -41073,6 +41091,9 @@ MaweDom.subtitleFontSizeSelect?.addEventListener('change', () => {
   MaweHistory.pushPreviewUndo('调整字幕字号', MaweHistory.snapshotPreviewState());
   MaweAppearance.setSubtitleAppearance({ font_size: value === 'auto' ? null : Number(value) });
 });
+
+// 设置面板绑定（下）：主/副字幕字体、颜色与背景、字体扫描、点击与快捷键操作提示文案。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
 MaweDom.subtitleFontFamilySelect?.addEventListener('change', () => {
   MaweHistory.pushPreviewUndo('调整字幕字体', MaweHistory.snapshotPreviewState());
   MaweAppearance.setSubtitleAppearance({ font_family: MaweDom.subtitleFontFamilySelect.value });
@@ -41133,6 +41154,9 @@ MaweBehaviorHints.refreshClickBehaviorHint();
 document.addEventListener('mawe:languagechange', MaweBehaviorHints.refreshClickBehaviorHint);
 MaweBehaviorHints.refreshKeyboardOperationReferenceHint();
 document.addEventListener('mawe:languagechange', MaweBehaviorHints.refreshKeyboardOperationReferenceHint);
+
+// 空隙移除面板：拖拽把手、数值输入、扫描/收缩/清空、屏蔽项管理与播放跳过开关。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
 
 MaweDom.gapRemoveDragHandle?.addEventListener('pointerdown', (event) => {
   if (event.button !== 0 || event.target.closest('button')) return;
@@ -41214,6 +41238,9 @@ MaweDom.gapRemoveSkipPlayback?.addEventListener('change', () => {
   if (!state.skip_playback) MaweCuePanelState.gapPreviewRange = null;
 });
 
+// 右侧字幕详情面板：上一条/下一条、文本框输入与聚焦、起止时间、表情包槽位、拆分按钮。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
+
 MaweDom.cuePanelPrev?.addEventListener('click', () => MaweCuePanel.navigateCuePanel(-1));
 MaweDom.cuePanelNext?.addEventListener('click', () => MaweCuePanel.navigateCuePanel(1));
 MaweDom.cuePanelText?.addEventListener('focus', MaweCuePanel.captureCuePanelTextEditSnapshot);
@@ -41283,6 +41310,9 @@ MaweDom.cuePanelSticker?.addEventListener('contextmenu', (event) => {
 });
 MaweDom.cuePanelSplit?.addEventListener('click', MaweCuePanel.splitCuePanelAtCursor);
 
+// 字幕列表工具条：颜色筛选菜单与下拉、搜索框与清除按钮，末尾是视觉缓存失效探针。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
+
 MaweColorFilter.renderColorFilterMenu();
 MaweExportMenus.bindToolbarExportDropdown(
   'color-filter-dropdown', 'color-filter-btn', 'color-filter-menu',
@@ -41304,6 +41334,9 @@ document.addEventListener('pointerdown', MaweCueListAnchor.invalidateCueListVisu
 MaweCoreState.container.addEventListener('wheel', MaweCueListAnchor.invalidateCueListVisualAnchorRestore, { passive: true });
 MaweCoreState.container.addEventListener('touchstart', MaweCueListAnchor.invalidateCueListVisualAnchorRestore, { passive: true });
 document.addEventListener('keydown', MaweCueListAnchor.invalidateCueListVisualAnchorRestore, true);
+
+// 键盘与指针的前置处理：等待绑定时点击空白取消、导航区域归属、指针边界快捷键、内联编辑的 Enter/Esc 守卫、Esc 清除选择。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
 
 // 等待绑定时，点击主/副字幕本身交给各自的选择事件处理；其它空白或
 // 非字幕区域视为取消，避免用户进入等待状态后无从退出。
@@ -41408,6 +41441,9 @@ document.addEventListener('keydown', (e) => {
   MaweSelection.clearSelection();
 });
 
+// 媒体控制条：播放/暂停、前后跳转、进度条、音量、倍速、全屏。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
+
 MaweDom.mediaPlayToggle?.addEventListener('click', MaweMediaPlayback.togglePlayback);
 MaweDom.mediaStepBack?.addEventListener('click', () => MaweMediaPlayback.seekMediaBy(-MaweSettings.EDITOR_SETTINGS.mediaSeekStepMs / 1000));
 MaweDom.mediaStepForward?.addEventListener('click', () => MaweMediaPlayback.seekMediaBy(MaweSettings.EDITOR_SETTINGS.mediaSeekStepMs / 1000));
@@ -41441,6 +41477,9 @@ MaweDom.mediaFullscreen?.addEventListener('click', async () => {
   MaweMediaPlayback.syncMediaControls();
 });
 document.addEventListener('fullscreenchange', MaweMediaPlayback.syncMediaControls);
+
+// 方向键：←/→ 跳转或微调字幕边界、Home/End 跳首尾、↑/↓ 切换当前操作轨道。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
 
 // ←/→：无选中字幕时复用媒体控制条的跳转时长；选中字幕时改为按设置的
 // 微调幅度调整时间。Shift+方向键贴合前后边界；Ctrl(Cmd)+方向键调整左边界，
@@ -41535,6 +41574,9 @@ document.addEventListener('keydown', (e) => {
   e.stopPropagation();
 }, true);
 
+// 空格与 J/K/L：按钮焦点释放、空格拦截与播放切换、窗口失焦时复位被拦截的空格状态。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
+
 // 鼠标点击按钮后不保留按钮焦点，否则下一次空格会触发按钮自身的 click。
 // 键盘触发的 click detail 为 0，保留焦点以维持原生键盘可访问性。
 document.addEventListener('click', (event) => {
@@ -41618,6 +41660,9 @@ document.addEventListener('keydown', (e) => {
   MaweMediaPlayback.syncMediaControls();
   MaweHint.flashHint(`倍速: ${MaweShortcuts.fmtRate(r)}`);
 });
+
+// 选区快捷键：A/D（W/S）跳到上下条字幕、Shift 追加选择、Ctrl+Shift+A/D 粘合、Ctrl+A 全选、Ctrl+D 取消选中。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
 
 // A/D（或 W/S）：跳转到上一条/下一条字幕的句首并单选。W/S 与 A/D 等价，对应上下方向。
 // Shift+A/D（或 Shift+W/S）：保留当前选择，并向前/后追加选择一条字幕。
@@ -41785,6 +41830,9 @@ document.addEventListener('keydown', (e) => {
   MaweSelection.clearSelection();
 });
 
+// 编辑类快捷键：T 分配表情包、0-5 标记颜色、Enter 进入编辑区、C 合并、撤销/重做、Delete 删除。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
+
 // T：给选中字幕分配表情包。单选直接分配本条，多选统一分配（与右键菜单一致）。
 document.addEventListener('keydown', (e) => {
   if (e.key !== 't' && e.key !== 'T') return;
@@ -41939,6 +41987,9 @@ document.addEventListener('keydown', (e) => {
   MaweSegmentOps.deleteSegments([...MaweSelection.selectedIdxs]);
 });
 
+// 波形工具与创建：V/R 切换选择与剃刀、F 跳转并播放选中字幕、N 在指针音频位置创建字幕。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
+
 // 波形工具切换：V=选择（默认），R=剃刀，Esc=切回选择。与 J/K/L 一样只在
 // 非输入/非模态/非编辑态下触发，避免抢占文本编辑与弹窗按键。
 document.addEventListener('keydown', (e) => {
@@ -42028,6 +42079,9 @@ document.addEventListener('keydown', (e) => {
     MaweAddCue.addCueAtWaveformTime(reference.timeMs, MaweNavPreview.lastPointerPos?.x || 0, MaweNavPreview.lastPointerPos?.y || 0);
   }
 });
+
+// 绑定与对齐：G 把单选副字幕绑到主字幕、H 把选中副字幕批量对齐到各自绑定的主字幕时间轴。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
 
 // G：绑定当前单选的副字幕。若同时选中一条主字幕则直接绑定，否则沿用
 // 右键「绑定到主字幕」的自动匹配/等待选择流程。
@@ -42126,6 +42180,9 @@ document.addEventListener('keydown', (e) => {
   e.stopPropagation();
   MaweBindingAlign.alignSelectedExtensionSubtitleRanges();
 });
+
+// B 键拆分：按键盘时间基准、列表行文字位置或波形指针音频位置分发，含时间基准确定与拆分弹窗调用。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
 
 // B：按当前键盘时间基准与指针所在区域分发——
 // 1) 鼠标悬停在已单选的字幕列表行上：按指针对应的文字位置拆分；
@@ -42295,6 +42352,9 @@ document.addEventListener('keydown', (e) => {
   MaweHint.flashHint('播放头位置没有可拆分字幕', 'invalid');
 });
 
+// 预览浮层：点击外部完成内联编辑、字幕与表情包预览框几何与控制点、播放器事件与叠加显示开关。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
+
 // 点击输入框外 -> 完成内联编辑。使用 pointerdown 捕获阶段，确保字幕行、
 // 波形或其它控件的 pointerdown 处理/重绘发生前，当前文字已经写回 DATA。
 // 双列时编辑行的容器同时包含主/副两列，因此只判断当前 contenteditable。
@@ -42378,6 +42438,9 @@ if (MaweProjectSave.jsonNameEl && !MaweProjectSave.jsonNameEl.classList.contains
     if (name) MaweExportTimeline.copyText(name, `已复制：${name}`);
   });
 }
+
+// 导出接线：FCP7/Lottie/OGraf 弹窗、各类 SRT/JSON/OTIO(T)/ffconcat 导出按钮、保存快捷键与工具栏下拉。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
 
 document.getElementById('download-fcp7-export')?.addEventListener('click', MaweDynamicExports.openFcp7ExportModal);
 MaweDom.fcp7ExportCancel?.addEventListener('click', MaweDynamicExports.closeFcp7ExportModal);
@@ -42585,6 +42648,9 @@ MaweExportMenus.bindToolbarExportDropdown(
   MaweExportMenus.positionBatchOperationsMenu,
 );
 
+// 工程与媒体选择弹窗：立即选择/稍后、新建工程、打开工程文件输入。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
+
 MaweDom.projectMediaSelectButton.addEventListener('click', () => {
   MaweProjectMediaInputs.closeProjectMediaModal(false);
   MaweProjectMediaInputs.loadMediaFileInput.value = '';
@@ -42630,6 +42696,9 @@ MaweProjectMediaInputs.openProjectFileInput.addEventListener('change', async (e)
   await MaweMultiImport.openProjectFile(file);
 });
 
+// 加载媒体：本地媒体选择入口、SRT 导入入口与其文件输入。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
+
 // === 加载媒体 ===
 // 通过浏览器文件选择器选本地媒体（视频/音频），用 blob URL 替换播放器源。
 // 如果媒体类型与当前播放器标签不一致（video<->audio），会原地替换整个 <video>/<audio> 元素。
@@ -42662,6 +42731,9 @@ MaweProjectMediaInputs.loadSrtFileInput.addEventListener('change', async (event)
   }
   await MaweMultiImport.openSrtFile(file);
 });
+
+// 多重字幕导入结果弹窗：取消、作为副语言导入、替换、合并导入。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
 
 MaweDom.multiSubtitleImportResultCancel?.addEventListener('click', MaweMultiImport.closeMultiSubtitleImportModal);
 MaweDom.multiSubtitleImportExtension?.addEventListener('click', MaweMultiImport.prepareMultiSubtitleImport);
@@ -42709,6 +42781,9 @@ MaweDom.multiSubtitleImportResultConfirm?.addEventListener('click', async () => 
 MaweDom.multiSubtitleImportModal?.addEventListener('click', (event) => {
   if (event.target === MaweDom.multiSubtitleImportModal) MaweMultiImport.closeMultiSubtitleImportModal();
 });
+
+// 拆分弹窗：主/副 lane 聚焦同步、Esc 关闭，以及 Tab/WASD/方向键/空格组成的键盘流。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
 MaweDom.multiSubtitleSplitCancel?.addEventListener('click', MaweSplitCore.closeLinkedSplitModal);
 MaweDom.multiSubtitleSplitConfirm?.addEventListener('click', MaweSplitCore.confirmLinkedSplit);
 MaweDom.multiSubtitleSplitModal?.addEventListener('click', (event) => {
@@ -42794,6 +42869,9 @@ document.addEventListener('keydown', (event) => {
   MaweSplitCore.updateLinkedSplitPreview(nextOffset, lane);
 }, true);
 
+// 本地媒体文件输入的 change/cancel 处理。它在原文件里就排在拆分弹窗之后：事件注册顺序不能重排，所以单独成段。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
+
 MaweProjectMediaInputs.loadMediaFileInput.addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -42809,6 +42887,9 @@ MaweProjectMediaInputs.loadMediaFileInput.addEventListener('change', async (e) =
 MaweProjectMediaInputs.loadMediaFileInput.addEventListener('cancel', () => {
   MaweProjectMediaInputs.pendingProjectMediaSelection = null;
 });
+
+// 表情包根目录弹窗：确认/取消、服务器模式提示、只读浏览与逐次授权。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
 
 document.getElementById('sticker-root-confirm')?.addEventListener('click', () => {
   const newRoot = MaweStickerRoot.stickerRootInput.value.trim().replace(/\\/g, '/').replace(/\/+$/, '');
@@ -42896,6 +42977,9 @@ MaweStickerRoot.stickerRootRead.addEventListener('click', async () => {
   }
 });
 
+// 查找替换弹窗：输入联动、大小写与正则开关、替换选中项、确认与取消。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
+
 [MaweFindReplace.findInput, MaweFindReplace.replaceInput].forEach(el => el.addEventListener('input', MaweFindReplace.updatePreview));
 [MaweFindReplace.caseSensitiveCb, MaweFindReplace.useRegexCb].forEach(el => el.addEventListener('change', MaweFindReplace.updatePreview));
 MaweFindReplace.replaceSelectedOnlyCb?.addEventListener('change', () => {
@@ -42933,6 +43017,9 @@ document.getElementById('replace-confirm')?.addEventListener('click', () => {
   MaweCuePanel.renderAll();
   MaweHint.flashHint(`已修改 ${changedRows} 行`, 'success');
 });
+
+// 文本处理弹窗：前后缀、去空白、首字母大写、去 Markdown 标记与确认执行。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
 
 MaweTextProcess.textProcessButton?.addEventListener('click', MaweTextProcess.openTextProcessModal);
 MaweTextProcess.textProcessSelectedOnlyCb?.addEventListener('change', () => {
@@ -43018,6 +43105,9 @@ MaweTextProcess.textProcessConfirm?.addEventListener('click', () => {
   MaweHistory.updateUndoRedoButtons();
   MaweHint.flashHint(`已应用文本处理：${result.changedCount} 条字幕`, 'success');
 });
+
+// 批量定时文本编辑弹窗：行内输入、视图切换、按轨道筛选、隐藏禁用项、应用与取消。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
 
 MaweDom.timedTextEditButton?.addEventListener('click', MaweTimedTextEdit.openTimedTextEdit);
 MaweDom.timedTextEditRows?.addEventListener('input', (event) => {
@@ -43167,6 +43257,9 @@ MaweDom.timedTextEditApply?.addEventListener('click', () => {
   );
 });
 
+// 表情包选择与预览弹窗：筛选、清除、取消、预览关闭/删除/替换。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
+
 document.getElementById('sticker-filter')?.addEventListener('input', (e) => {
   MaweStickerPicker.renderStickerGrid(e.target.value);
 });
@@ -43188,6 +43281,9 @@ document.getElementById('sticker-preview-replace')?.addEventListener('click', ()
   MaweDom.stickerPreviewModal.classList.remove('show');
   MaweStickerPicker.openStickerPicker([MaweStickerPicker.previewIdx], false);
 });
+
+// document/window 级事件：右键菜单外部关闭、波形缩放边界提示、页面可见与网络恢复、拖放加载媒体。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
 // 使用捕获阶段的 pointerdown：波形空白区自己的 pointerdown 可能阻止后续
 // click 事件，不能再依赖 mouseup 后才触发的 document.click 来关闭菜单。
 document.addEventListener('pointerdown', MaweContextMenus.closeContextMenuOnOutsidePointerDown, true);
@@ -43242,6 +43338,9 @@ window.addEventListener('drop', (e) => {
   MaweDragDrop.dragOverlay.classList.remove('show');
   void MaweDragDrop.handleDroppedFiles(Array.from(e.dataTransfer.files));
 });
+
+// 启动序列与新手引导桥：调试埋点、标点清理、服务端保存与工程设置、波形初始化、工作区库、首次渲染。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
 MaweBoot.maweDebug('boot:begin', {
   server: Boolean(MaweBoot.SERVER_CONFIG),
   segments: Array.isArray(MaweBoot.DATA.segments) ? MaweBoot.DATA.segments.length : null,
@@ -43293,6 +43392,9 @@ void MaweServerConnection.loadServerStartup();
 MaweServerConnection.startServerConnectionMonitor();
 if (MaweBoot.SERVER_CONFIG?.startupStatus !== 'loading') void MaweWaveformInit.loadDeferredReapeaks();
 
+// 字幕列表筛选：筛选重叠项开关、「隐藏禁用项」开关（含选中集清理与渲染锚点恢复）。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
+
 document.getElementById('filter-over')?.addEventListener('click', (e) => {
   e.currentTarget.classList.toggle('active');
   if (!e.currentTarget.classList.contains('active')) {
@@ -43328,6 +43430,8 @@ MaweDom.hideDisabledToggle?.addEventListener('change', () => {
   MaweCueListAnchor.restoreCueListRenderAnchor(cueListAnchor);
 });
 
+// 离开提示：有未保存工程改动时拦下 beforeunload。
+// 自 web/editor/boot/entry.js 的 423 条平铺接线语句按接线域连续切段而来。
 // 离开提示
 window.addEventListener('beforeunload', (e) => {
   if (MaweServerSave.hasUnsavedProjectChanges()) { e.preventDefault(); e.returnValue = ''; }

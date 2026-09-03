@@ -224,6 +224,40 @@ class EditorAssetContractTests(unittest.TestCase):
                 "editor/input/drag-drop.js",
                 "editor/export/sticker-otio.js",
                 "editor/boot/entry.js",
+                "editor/boot/settings-init.js",
+                "editor/boot/settings-popovers.js",
+                "editor/boot/help-and-theme.js",
+                "editor/boot/settings-bindings.js",
+                "editor/boot/playback-settings.js",
+                "editor/boot/appearance-settings.js",
+                "editor/boot/gap-remove-panel.js",
+                "editor/boot/cue-panel.js",
+                "editor/boot/cue-list-tools.js",
+                "editor/boot/shortcuts/pointer-and-inline-edit.js",
+                "editor/boot/media-controls.js",
+                "editor/boot/shortcuts/seek-and-lane.js",
+                "editor/boot/shortcuts/space-and-jkl.js",
+                "editor/boot/shortcuts/cue-nav-and-select.js",
+                "editor/boot/shortcuts/cue-edits.js",
+                "editor/boot/shortcuts/tools-and-create.js",
+                "editor/boot/shortcuts/binding-align.js",
+                "editor/boot/shortcuts/split-key.js",
+                "editor/boot/preview-overlays.js",
+                "editor/boot/export-buttons.js",
+                "editor/boot/project-media-modal.js",
+                "editor/boot/load-media.js",
+                "editor/boot/modals/multi-subtitle-import.js",
+                "editor/boot/modals/split-modal.js",
+                "editor/boot/load-media-file-input.js",
+                "editor/boot/modals/sticker-root.js",
+                "editor/boot/modals/find-replace.js",
+                "editor/boot/modals/text-process.js",
+                "editor/boot/modals/timed-edit-modal.js",
+                "editor/boot/modals/sticker-picker.js",
+                "editor/boot/global-events.js",
+                "editor/boot/boot-sequence.js",
+                "editor/boot/cue-list-filters.js",
+                "editor/boot/leave-prompt.js",
                 "editor/onboarding/tour.js",
             ),
         )
@@ -416,6 +450,56 @@ class EditorAssetContractTests(unittest.TestCase):
         start_at = surface.index("U.start()")
         self.assertLess(export_at, register_at, "MAWE 注册跑到了兼容出口的出口赋值之前")
         self.assertLess(register_at, start_at, "启动翻译的调用顺序与拆分前不一致")
+
+    def test_boot_wiring_is_cut_into_ordered_contiguous_chunks(self) -> None:
+        """editor/boot/entry.js 与其余几块不同：它不是 IIFE，而是 423 条平铺的顶层接线语句，
+        没有内部命名空间也没有兼容出口。装配把整份清单拼成同一个 <script>，因此**连续切段、
+        顺序不变**才有等价性；同一目标上的监听器按注册先后分发，段与段之间一旦重排就没有
+        任何等价保证。这里断言的正是这条约束，而不是某个具体文件的形状。"""
+        manifest = list(edit.read_editor_script_manifest())
+        start = manifest.index("editor/boot/entry.js")
+        chunks = [e for e in manifest[start:] if e.startswith("editor/boot/")]
+        self.assertGreaterEqual(len(chunks), 30, "启动接线块数量异常，疑似又被合并回单个大文件")
+        self.assertEqual(
+            chunks,
+            manifest[start : start + len(chunks)],
+            "editor/boot/ 的接线块必须连续装配，中间不能插入其他目录的脚本",
+        )
+        self.assertEqual(
+            {"/".join(entry.split("/")[:-1]) for entry in chunks} - {"editor/boot"},
+            {"editor/boot/shortcuts", "editor/boot/modals"},
+            "接线块的子目录归属被改动",
+        )
+
+        # 首段的两个顶层 const 住在共享的脚本作用域里，后面的段直接读它们，首段必须最先装配。
+        head = edit.editor_script_path(chunks[0]).read_text(encoding="utf-8")
+        for name in ("MULTI_SUBTITLE_UTILS", "EDITOR_SETTINGS_UTILS"):
+            self.assertIn(f"const {name} = window.AsrEditorUtils;", head, f"{name} 必须仍由 {chunks[0]} 声明")
+
+        # 每段都带来源标记：手工重写某一段、或往块里塞一段没有出处的接线，都会在这里暴露。
+        for entry in chunks:
+            source = edit.editor_script_path(entry).read_text(encoding="utf-8")
+            self.assertIn("自 web/editor/boot/entry.js", source, f"{entry} 缺少连续切段的来源标记")
+
+        # 启动序列在原文里就排在批量筛选和离开提示之前，块尾不是 boot-sequence：
+        # 谁按"启动收尾就该放最后"的直觉重排，这里会先失败。
+        self.assertEqual(chunks[-1], "editor/boot/leave-prompt.js")
+        self.assertNotEqual(chunks[-2], "editor/boot/boot-sequence.js")
+
+        payload = edit.read_editor_scripts_under("editor/boot/")
+        previous = -1
+        for landmark in (
+            "MaweBoot.maweDomContractCheck()",
+            "MaweTheme.applyTheme(",
+            "MaweColorFilter.renderColorFilterMenu()",
+            "MaweShortcuts.interceptedSpace = true",
+            "MaweWaveformInit.initWaveformEditor()",
+            "window.MAWE_EDITOR_BRIDGE =",
+            "MaweServerConnection.startServerConnectionMonitor()",
+        ):
+            found = payload.find(landmark)
+            self.assertGreater(found, previous, f"装配结果里 {landmark} 的相对顺序被改动")
+            previous = found
 
     def test_waveform_gap_display_type_uses_shared_core_and_subtle_protected_style(self) -> None:
         waveform = edit.read_editor_scripts_under("editor/waveform/")
