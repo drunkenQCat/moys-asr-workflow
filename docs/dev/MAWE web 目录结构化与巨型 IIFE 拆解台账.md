@@ -49,7 +49,7 @@ status: in_progress
 | --- | ---: | ---: | ---: | --- |
 | `editor/waveform/runtime.js` | 5371 | 5368 | 1 | 已拆（见下节） |
 | `editor/split/core.js` | 1852 | 1847 | 1 | 已拆（见下节） |
-| `shared/gap-remove-core.js` | 1409 | 1406 | 1 | 待处理 |
+| `shared/gap-remove-core.js` | 1409 | 1406 | 1 | 已拆（见下节） |
 | `editor/ui/elements.js` | 1200 | 1195 | 1 | 已拆（见下节） |
 | `editor/i18n/i18n.js` | 1119 | 1118 | 1 | 已拆（见下节） |
 | `editor/text/timed-edit.js` | 839 | 834 | 1 | 已拆（见下节） |
@@ -79,7 +79,7 @@ status: in_progress
 
 `namespace.js`、`json-value.js`、`audio-metadata.js`、`text-processing.js`、`cue-metrics.js`、`cue-timings.js`、`duration-format.js`、`split-candidates.js`、`cue-navigation.js`、`split-trim-symbols.js`、`settings-normalize.js`、`gap-remove-bridge.js`、`history-record.js`、`subtitles/normalize.js`、`subtitles/word-split.js`、`subtitles/bindings.js`、`timed-text/core.js`、`timed-text/structure.js`、`timed-text/boundary.js`、`export/srt-payload.js`、`export/plan.js`、`export/fcp7.js`、`export/artifacts.js`、`platform.js`、`preview-geometry.js`、`graphics/lottie.js`、`graphics/ograf.js`、`compat-surface.js`。最大 651 行，最小 17 行。
 
-块内顺序自由（模块只在函数体内惰性读 `U.x`），只有两条硬约束写在清单头部：`namespace.js` 必须第一，`compat-surface.js` 必须最后。唯一的加载期跨块依赖是 `shared/gap-remove-core.js` 必须先于 `editor/lib/gap-remove-bridge.js`，由 `tests/test_editor_utils.mjs` 的顺序测试守住。
+块内顺序自由（模块只在函数体内惰性读 `U.x`），只有两条硬约束写在清单头部：`namespace.js` 必须第一，`compat-surface.js` 必须最后。唯一的加载期跨块依赖是 `shared/gap-remove/` 整块必须先于 `editor/lib/gap-remove-bridge.js`（后者在加载期就 `const GAP_REMOVE_CORE = window.AsrGapRemoveCore` 并判空抛错），由 `tests/test_editor_utils.mjs` 的顺序测试守住。
 
 ### 验证方式：差异测试，而不是"看起来一样"
 
@@ -347,6 +347,65 @@ status: in_progress
 - Node 252/252（数量与拆分前相同，覆盖面未缩水）；`tests.test_editor_assets` 27/27；Python 全量 **999** 项，仅 5 项既有环境错误；ruff 通过；`git diff --check` 干净；`uv run python edit.py --blank` 已重跑并由产物契约逐字节比对。
 - 未验证边界照旧：Node/Python 都在无 DOM 环境里跑，事件注册顺序、快捷键互抢、弹窗键盘流这些只能由浏览器证明，并入待做的累积 Playwright 回归。
 
+## `shared/gap-remove-core.js`：1409 行单 IIFE → 13 个模块（已修复）
+
+### 这块与前几块的两点不同
+
+1. **它有两个注入方，第二个不在清单里。** 编辑器侧经 `editor/lib/gap-remove-bridge.js` 读出口；`server-align`（对齐页）在 `serve.py` 里按**文件路径**把整个文件读进页面。拆块后若注入源仍写死单个路径，页面里就只会出现切出来的第一小截，而 Node/Python 都不加载对齐页，只有浏览器打开时才报 `AsrGapRemoveCore must load before the alignment UI`。所以注入方式必须跟着一起改，不能只动 `web/`。
+2. **出口只是内部面的一小部分。** 历史出口 `window.AsrGapRemoveCore` 冻结后暴露 **44 个键**，块内顶层声明有 **82 个**。`editor/split/*` 那几块的契约是"门面键集合 == 模块发布集合"，在这里天然不成立，只能单向断言"出口键是发布集合的子集、且键名与键序逐项相等"，再额外断言发布集合**更大**（防止有人把内部符号整体倒进出口）。
+
+### 模块划分
+
+按空隙数据流的依赖方向排布（规范化 → 来源还原 → 投影与显示 → 区间/来源写回 → 只读查询），职责即各模块头部注释：
+
+| 模块 | 行数 | 职责 |
+| --- | ---: | --- |
+| `namespace.js` | 12 | 内部命名空间 `window.MaweGapRemove` 的唯一所有者，重复初始化直接抛错 |
+| `constants.js` | 50 | 空隙模式、来源枚举与各类取值上下限（含投影缓存 `GAP_DISPLAY_PROJECTION_CACHE` 这个 WeakMap） |
+| `limits.js` | 61 | JSON 深拷贝、整数钳制、禁用阈值换算与空隙拖拽模式判定 |
+| `normalize.js` | 290 | 空隙列表与来源记录的规范化，以及整个 `gap_remove` 数据的入口规范化 |
+| `state-apply.js` | 194 | 把区间写进空隙投影：置为移除/恢复、清理某段、并查合并，以及移动与边界调整记录的落地 |
+| `provenance-ranges.js` | 111 | 从来源记录还原可见空隙区间，以及来源整体替换与手工恢复项追加 |
+| `display.js` | 114 | 空隙的显示分类：来源优先级、受保护判定与按端点切片后的投影（带 WeakMap 缓存） |
+| `provenance-edit.js` | 177 | 从来源记录里挖掉/清掉区间，以及吸收区间（absorb）的减法 |
+| `range-edit.js` | 180 | 空隙整体平移/复制与边界拖拽的取值、覆盖区间、落地记录 |
+| `provenance-move.js` | 197 | 移动与边界调整写回来源记录：去重、目标区间拆分与吸收 |
+| `audio-detect.js` | 70 | 按波形峰值做静音检测（带滞回与前/后端预留） |
+| `gap-queries.js` | 115 | 只读查询与播放跳转：已移除区间、禁用匹配、命中查找、跳过区间与时间映射 |
+| `compat-surface.js` | 55 | 块尾门面：按历史键名与键序重建冻结出口 `window.AsrGapRemoveCore` |
+
+原文件 84 个顶层分块，搬运 82 个，丢弃 2 个：`'use strict'`（提升为各模块头部）与 L1361-1407 的出口字面量（改由 `compat-surface.js` 重建）。加载期跨模块引用 44 条，顺序违规 0 条。
+
+### 装配与注入
+
+- `web/editor-scripts.txt`：`shared/gap-remove-core.js` 一条换成 13 条，清单 **207 → 219** 条。头部补一段说明：整块必须排在 `editor/lib/gap-remove-bridge.js` 之前（它在加载期就取出口并判空抛错）。
+- `server-align/serve.py`：删掉 `GAP_REMOVE_CORE_PATH` 单文件常量，改为 `read_editor_scripts_under(GAP_REMOVE_CORE_AREA)`——注入源变成"清单里 `shared/gap-remove/` 前缀那一段按清单顺序拼接"，与 `edit.py` 装配编辑器用的是同一个函数、同一条 `\n\n` + `rstrip` 规则。外加占位符唯一性校验：`PAGE_CORE_PLACEHOLDER` 在页面里不是恰好出现一次就直接抛错，宁可炸也不静默注入半截。
+- `server-align/index.html` 的占位注释同步改成"由 `server-align/serve.py` 注入，来源是 `web/shared/gap-remove/` 整块，按 `web/editor-scripts.txt` 顺序拼接"。
+
+### 验证
+
+差异测试（临时脚本，不入库；dryrun 产物与入库文件 13 个 `git hash-object` 全相同，所以验的确实是入库内容）：
+
+- **vm 结构层**：出口 44 个键，键名与键序完全一致；非函数导出值逐个 JSON 深度比对通过（证明常量确实跨模块可见，不是各模块各留一份）。
+- **源码层（AST）**：旧 IIFE 的 82 个顶层声明在新块里各恰好出现一次，剥掉 `U.` 前缀后逐字节一致，声明种类不变。
+- **行为层**：用真实空隙/来源记录/波形夹具在出口面上发起 **4658** 次调用（每次调用前深度复制入参，避免被测函数改动夹具造成假差异），返回值与抛错逐项比对，差异 **0**。另加 WeakMap 投影缓存探针：同一数组两次取投影必须返回同一对象——跨模块拆分会把缓存切成两份，这条专防它。
+- 结论 `NO DIFFERENCE DETECTED`。
+
+判据被反证过两次，证明它不是摆设：
+
+- 把一处**跨模块**引用从 `U.clampGapRemoveDisableCoverage(` 改成 `U.clampGapRemoveDisableRemaining(`，源码层与行为层同时报差异。（第一次尝试时改的是模块内部调用，没有 `U.` 前缀，差分如实保持沉默——它只覆盖跨模块边，跨模块边的改写正是被证的那部分。）
+- 从 `compat-surface.js` 删掉一个出口键 `mapGapRemovedTime`，契约测试立刻 `AssertionError: Lists differ ... mapGapRemovedTime` 失败；文件随后从备份还原。
+
+入库契约：
+
+- `test_gap_remove_block_builds_the_frozen_legacy_exit_after_every_module`：块在清单里连续、`namespace.js` 首位、`compat-surface.js` 末位、整块先于 `editor/lib/gap-remove-bridge.js`、发布符号不重名、门面键序列与历史 44 键逐项相等、门面的 setter 键 ⊆ 发布键、发布键数量大于门面键数量。
+- `test_alignment_page_injects_the_whole_gap_remove_block_in_order`：断言 `serve.py` 用 `read_editor_scripts_under(GAP_REMOVE_CORE_AREA)`，再按真实注入渲染页面，检查 `global.MaweGapRemove = {};` 先于 `global.AsrGapRemoveCore = Object.freeze({` 出现——"命名空间先建、出口后建"这条顺序在对齐页里同样成立。
+- `tests/test_editor_utils.mjs` 与 `tests/test_waveform_js.mjs` 原本按单文件路径读 `shared/gap-remove-core.js` 再 `vm` 执行，删掉单文件后在加载期 ENOENT、整份 Node 套件一起挂。改为按清单加载整块（与 `editor/lib` 块一致的做法），断言对象变成装配结果。
+
+分层结果：Node **252/252**（数量不变，覆盖面未缩水）；`tests.test_editor_assets tests.test_waveform` **46/46**，加 `tests.test_server_align` **56/56**；`tests.test_editor_assets` 单项 **29/29**（27 + 本块新增 2）；Python 全量 **1001** 项，仍是 5 项既有环境错误（子进程 `stdout` 为 `None`，或其读取线程按 GBK 解码崩溃；单独运行同样失败）；ruff 通过；`git diff --check` 干净；`uv run python edit.py --blank` 已按 219 条清单重生成并由产物契约逐字节比对。
+
+未验证边界：对齐页在真实浏览器里的渲染与交互没跑过（本轮只证明注入的内容与顺序正确）；MAWE 侧空隙面板的拖动、边界调整、预览播放跳过，仍属待做的累积 Playwright 回归。
+
 ## 顺手挖出的重复与既有缺陷（仅说明）
 
 这些是 46 个共享名普查的结果，不属于本轮改动范围，记录以免丢失：
@@ -354,7 +413,7 @@ status: in_progress
 | 发现 | 现状 | 处理 |
 | --- | --- | --- |
 | `normalizeKeyboardOperationReferenceMode` 在原 `utils.js` 里**声明并导出两次** | 函数声明提升使后者覆盖前者；两个实现对任意输入结果相同，因此线上无差异。兼容出口只保留首次出现位置，并在 `compat-surface.js` 头部注明 | 已修复（消除重复声明，行为不变） |
-| `cloneJsonValue`、`clampInteger` 与 `shared/gap-remove-core.js` 中的同名实现逐字节相同 | 纯复制，两处会各自漂移 | 仅说明：合并会跨层引入依赖，等 Phase 3 再定 |
+| `cloneJsonValue`、`clampInteger` 与 `shared/gap-remove/limits.js` 中的同名实现逐字节相同 | 纯复制，两处会各自漂移 | 仅说明：合并会跨层引入依赖，等 Phase 3 再定（本轮拆块只将引用路径改到新位置，未合并） |
 | `editor/lib/settings.js` 与本块 `settings-normalize.js` 的钳制函数族**并不相同** | 同名近似、边界不同 | 仅说明：这是需要维护者判断的真实分歧，**没有**擅自统一 |
 | `gap-remove` 相关的几个别名 | 是有意的桥接垫片，不是重复 | 仅说明：保留 |
 
@@ -373,13 +432,13 @@ status: in_progress
 | 9 | `editor/i18n/i18n.js` 1119 行拆解 | 已修复 | `d259a21`；7 个文件（词典 540/210 行，逻辑模块最大 229 行）；Node 252/252；`tests.test_editor_assets tests.test_waveform` 43/43；Python 全量 998 项仅 5 项既有环境错误；三层差分零差异（出口面 196 次调用 + 每次调用后比对 `language` 状态）；仓库文件与 dryrun 产物 sha256 相同；改写回归四块 44 文件逐字节相同；`blank-editor.html` 已重生成 |
 | 10 | `editor/boot/entry.js` 423 条平铺接线语句按接线域分组 | 已修复 | `62e2c49`；35 个连续段（最大 206 行，`editor/boot/` 20 + `shortcuts/` 8 + `modals/` 7）；三层判据通过（无语句被切断、去头拼回逐字节相同、按真实清单拼接与 `HEAD` 逐语句相同）；Node 252/252；`tests.test_editor_assets` 27/27；Python 全量 999 项仅 5 项既有环境错误；`blank-editor.html` 已按 207 条清单重生成 |
 | 11 | 文档同步（AGENTS.md 的 `web/` 树、`docs/DEVELOPMENT.md`、网站开发页、基线文档） | 已修复 | 目录树、`MaweLib` 规则、`MaweWaveform` 原型混入顺序规则、门面 setter 硬性不变量、i18n 块"出口未冻结 + 内部面比出口大 + 导出后语句留在出口"这条例外、启动接线块"只能连续切段且段间顺序即注册顺序"这条硬约束，均已写入 `AGENTS.md` 与 `docs/DEVELOPMENT.md`；网站开发页由 `npm --prefix website run sync:docs` 重生成（只保留 `development.md`，其余 4 篇的既有漂移已还原，不夹带） |
-| 12 | `shared/gap-remove-core.js` 1409 行拆解 | 待处理 | 阈值以上；还需同步把 `server-align/serve.py:44 GAP_REMOVE_CORE_PATH` 的单文件注入改为目录拼接，并更新 Align 页与契约测试 |
+| 12 | `shared/gap-remove-core.js` 1409 行拆解 | 已修复 | 13 模块（最大 290 行，最小 12 行）；`server-align/serve.py` 的单文件注入同步改为 `read_editor_scripts_under("shared/gap-remove/")` 按清单拼接，并加占位符唯一性校验；清单 207→219；三层差分零差异（出口 44 键键序一致、82 个声明逐字节一致、4658 次调用差异 0、WeakMap 投影缓存探针通过），且判据本身被两次注入故障反证；Node 252/252；`tests.test_editor_assets tests.test_waveform` 46/46（含 `tests.test_server_align` 为 56/56）；Python 全量 1001 项仅 5 项既有环境错误；dryrun 产物与入库文件 `git hash-object` 全相同；`blank-editor.html` 已按 219 条清单重生成 |
 
 ## 验证记录（分层，不互相冒充）
 
 | 层次 | 命令 | 结果 |
 | --- | --- | --- |
-| 语法 | `node --test tests\test_editor_script_syntax.mjs` | 通过（207 条目，逐个编译） |
+| 语法 | `node --test tests\test_editor_script_syntax.mjs` | 通过（219 条目，逐个编译） |
 | 装配顺序/重名 | `node --test tests\test_editor_script_order.mjs` | 通过（含 `namespace.js` 首位、`compat-surface.js` 末位、跨模块重名检测） |
 | 波形块顺序契约 | `test_waveform_prototype_mixins_load_after_the_class_and_before_the_exit` | 通过（≥10 个混入模块全部落在 `core.js` 之后、出口之前） |
 | split 块顺序契约 | `test_split_block_builds_the_frozen_facade_after_every_module` | 通过（模块导出不重名，冻结门面键集合与模块导出集合完全相等） |
@@ -387,13 +446,15 @@ status: in_progress
 | DOM 引用块契约 | `test_dom_elements_block_is_split_by_ui_region_and_stays_contiguous` | 通过（连续装配、门面键集合相等、发布符号 ≥280、5 个访问器键成对存在、区域模块 ≤200 行） |
 | i18n 块契约 | `test_i18n_block_keeps_unfrozen_language_accessor` | 通过（连续装配、兼容出口未冻结、出口 5 个键恰为历史键且都取得到内部符号、`language` 由 owner 以 get/set 发布且其余模块不再持有、导出后的注册与启动调用顺序未变） |
 | 启动接线块契约 | `test_boot_wiring_is_cut_into_ordered_contiguous_chunks` | 通过（块内各段在清单里连续、子目录归属为 `shortcuts/` 与 `modals/`、`entry.js` 仍声明两个顶层 `const`、逐段带来源标记、块尾是 `leave-prompt.js` 且不是 `boot-sequence.js`、7 个地标的相对顺序不变） |
+| 空隙核心块契约 | `test_gap_remove_block_builds_the_frozen_legacy_exit_after_every_module` | 通过（块连续、`namespace.js` 首位、`compat-surface.js` 末位、整块先于 `editor/lib/gap-remove-bridge.js`、发布符号不重名、门面 44 键逐项等序、setter 键 ⊆ 发布键、发布键多于门面键） |
+| 对齐页注入契约 | `test_alignment_page_injects_the_whole_gap_remove_block_in_order` | 通过（`serve.py` 用 `read_editor_scripts_under(GAP_REMOVE_CORE_AREA)` 注入；按真实注入渲染后，`MaweGapRemove` 的创建先于 `AsrGapRemoveCore` 的冻结出口） |
 | JS 单测 + lib/waveform 契约 | `node --test tests\test_editor_script_syntax.mjs tests\test_editor_script_order.mjs tests\test_editor_utils.mjs tests\test_waveform_js.mjs tests\test_editor_runtime.mjs` | 252/252 通过 |
-| Python 资产契约 | `uv run python -m unittest tests.test_editor_assets tests.test_waveform` | 44/44 通过 |
-| Python 全量 | `uv run python -m unittest discover -s tests -p "test_*.py"` | 999 项，5 错误全部为既有环境问题：子进程 `stdout` 为 `None`，或其读取线程按 GBK 解码崩溃（`test_gui_workflow` ×2、`test_local_editor_server` ×1、`test_local_runtime` ×2；单独运行同样失败，与本改造无关） |
+| Python 资产契约 | `uv run python -m unittest tests.test_editor_assets tests.test_waveform` | 46/46 通过（加 `tests.test_server_align` 为 56/56；`tests.test_editor_assets` 单项 29/29） |
+| Python 全量 | `uv run python -m unittest discover -s tests -p "test_*.py"` | 1001 项，5 错误全部为既有环境问题：子进程 `stdout` 为 `None`，或其读取线程按 GBK 解码崩溃（`test_gui_workflow` ×2、`test_local_editor_server` ×1、`test_local_runtime` ×2；单独运行同样失败，与本改造无关） |
 | Lint | `uv run --frozen ruff check .` | 全部通过 |
 | 空白 | `git diff --check` | 干净 |
 | 产物一致性 | `test_committed_blank_editor_is_regenerated_from_web_sources` | 通过（提交内容与 `web/` 重新生成结果逐字节一致） |
-| 浏览器交互 | `npx playwright test`（workers=1，必须串行） | 全量 289 项：累积 `f26d153` 17 失败 / 272 通过，对照基线 `7ce93a9` 16 失败 / 273 通过；标题集合差 = 0 消失 + 1 新增（`click-behavior.spec.mjs:365`），该差项已逐状态归因为既有测试隔离缺陷撞上既有产品行为，非本轮引入（见下两节）|
+| 浏览器交互 | `npx playwright test`（workers=1，必须串行） | 全量 289 项：累积 `f26d153` 17 失败 / 272 通过，对照基线 `7ce93a9` 16 失败 / 273 通过；标题集合差 = 0 消失 + 1 新增（`click-behavior.spec.mjs:365`），该差项已逐状态归因为既有测试隔离缺陷撞上既有产品行为，非本轮引入（见下两节）。`shared/gap-remove/` 拆块发生在这次回归之后，未被它覆盖，缺口记在该节「未验证边界」 |
 
 `test_editor_script_payload_follows_manifest_order` 不再维护一张与清单 1:1 的"标记表"（拆细模块会让它错位），改为从每个脚本源码取第一行非注释行作为标记，在整包里顺序查找。
 
