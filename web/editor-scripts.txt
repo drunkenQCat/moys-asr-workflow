@@ -22,6 +22,10 @@
 # editor/text/timed-edit/* follows the same rule on window.MaweText: namespace.js
 # first, editor/text/timed-edit/compat-surface.js last, which rebuilds the frozen
 # window.MaweTimedTextEdit facade.
+# editor/ui/elements/* follows the same rule on window.MaweElements and must stay
+# contiguous: every module runs getElementById at load time and the last one
+# rebuilds the frozen window.MaweDom facade, whose 5 accessor keys keep their
+# setter so external assignments still reach the owning module.
 editor/boot/data.js
 editor/boot/registry.js
 shared/gap-remove-core.js
@@ -92,7 +96,24 @@ editor/lib/colors.js
 editor/gap/data.js
 editor/state/core.js
 editor/state/history.js
-editor/ui/elements.js
+editor/ui/elements/namespace.js
+editor/ui/elements/shell.js
+editor/ui/elements/subtitle-appearance.js
+editor/ui/elements/player.js
+editor/ui/elements/behavior-settings.js
+editor/ui/elements/ninja.js
+editor/ui/elements/help-panel.js
+editor/ui/elements/interaction-settings.js
+editor/ui/elements/timed-edit-refs.js
+editor/ui/elements/media-export-modals.js
+editor/ui/elements/cue-panel.js
+editor/ui/elements/project-actions.js
+editor/ui/elements/multi-subtitle.js
+editor/ui/elements/settings-panels.js
+editor/ui/elements/gap-remove-panel.js
+editor/ui/elements/auto-merge-panel.js
+editor/ui/elements/subtitle-extend-panel.js
+editor/ui/elements/compat-surface.js
 editor/state/cue-panel.js
 editor/stickers/ninja.js
 editor/ui/settings-panels.js

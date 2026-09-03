@@ -21798,12 +21798,26 @@ export default MawDynamicCaptions;
   });
 })(typeof window !== 'undefined' ? window : globalThis);
 
-// 编辑器全部 DOM 元素引用（getElementById 集中管理）。
-// 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
-// window.MaweDom 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
-// 清单位置在 editor.js 之前；editor.js 全局仅在延迟执行的回调中访问。
-(function initMaweDom(global) {
+// editor/ui/elements/ 的内部命名空间：各模块把自己的符号发布到这里，
+// 可变状态用 get/set 访问器发布，因此跨模块读到、写到的都是同一份最新值。
+// 对外的兼容出口是 window.MaweDom，由 editor/ui/elements/compat-surface.js 最后组装；
+// 新增内部 helper 只进 MaweElements，不要加进兼容出口。
+(function initMaweElementsNamespace(global) {
   'use strict';
+
+  if (global.MaweElements) {
+    throw new Error('MaweElements 必须在 editor/ui/elements/ 所有模块之前初始化且只初始化一次');
+  }
+  global.MaweElements = {};
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// 顶部计数、搜索框、遮罩文本与遮罩开关。
+// 自 web/editor/ui/elements.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweElements；
+// 兼容出口 window.MaweDom 仍由 editor/ui/elements/compat-surface.js 统一组装。
+(function initMaweElementsShell(global) {
+  'use strict';
+
+  const U = global.MaweElements;
 
 
   const nowEl = document.getElementById('now');
@@ -21840,6 +21854,30 @@ export default MawDynamicCaptions;
 
 
   const stickerOverlayToggle = document.getElementById('sticker-overlay-toggle');
+
+  Object.assign(U, {
+    nowEl,
+    searchEl,
+    visibleCountEl,
+    totalCountEl,
+    selCountEl,
+    overlayEl,
+    overlayTextEl,
+    overlayExtensionTextEl,
+    overlayToggle,
+    extensionOverlayToggleWrap,
+    extensionOverlayToggle,
+    stickerOverlayToggle,
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// 主/副字幕预览的外观控件（字号、字体、颜色、底色与透明度）。
+// 自 web/editor/ui/elements.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweElements；
+// 兼容出口 window.MaweDom 仍由 editor/ui/elements/compat-surface.js 统一组装。
+(function initMaweElementsSubtitleAppearance(global) {
+  'use strict';
+
+  const U = global.MaweElements;
 
 
   const subtitleFontSizeSelect = document.getElementById('subtitle-font-size');
@@ -21889,6 +21927,34 @@ export default MawDynamicCaptions;
 
   const extensionSubtitleBackgroundAlphaValue = document.getElementById('extension-subtitle-background-alpha-value');
 
+  Object.assign(U, {
+    subtitleFontSizeSelect,
+    subtitleFontFamilySelect,
+    subtitleFontFamilyScanButton,
+    subtitleFontFamilyStatus,
+    subtitleBackgroundColorInput,
+    subtitleBackgroundAlphaInput,
+    subtitleBackgroundAlphaValue,
+    subtitleColorInput,
+    subtitleColorUnderlineInput,
+    extensionSubtitlePreviewSettings,
+    extensionSubtitleFontSizeSelect,
+    extensionSubtitleFontFamilySelect,
+    extensionSubtitleColorInput,
+    extensionSubtitleBackgroundColorInput,
+    extensionSubtitleBackgroundAlphaInput,
+    extensionSubtitleBackgroundAlphaValue,
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// 播放器容器、进度与音量倍速控件。
+// 自 web/editor/ui/elements.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweElements；
+// 兼容出口 window.MaweDom 仍由 editor/ui/elements/compat-surface.js 统一组装。
+(function initMaweElementsPlayer(global) {
+  'use strict';
+
+  const U = global.MaweElements;
+
 
   const playerEmpty = document.getElementById('player-empty');
 
@@ -21931,6 +21997,35 @@ export default MawDynamicCaptions;
 
   // 预览层（字幕/表情包）的定位与几何测量都以 stage 为基准，不含顶部媒体工具栏。
   const playerStage = playerWrap?.querySelector('.player-stage') || playerWrap;
+
+  Object.assign(U, {
+    playerEmpty,
+    playerWrap,
+    mediaPlayToggle,
+    mediaStepBack,
+    mediaStepForward,
+    mediaSeekStepInput,
+    mediaCurrentTime,
+    mediaDuration,
+    mediaSeek,
+    mediaVolume,
+    mediaPlaybackRate,
+    mediaFullscreen,
+    playerStage,
+  });
+  // mediaSeekInputLastValue 是本模块可变状态且兼容出口为它提供 setter（外部经出口赋值）：以 get/set 访问器发布，
+  // 语义与拆分前整个闭包共享同一个 let 完全一致。
+  Object.defineProperty(U, 'mediaSeekInputLastValue', { enumerable: true, configurable: true,
+    get: () => mediaSeekInputLastValue, set: (value) => { mediaSeekInputLastValue = value; } });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// 切分、合并、字幕列表与编辑面板的行为开关。
+// 自 web/editor/ui/elements.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweElements；
+// 兼容出口 window.MaweDom 仍由 editor/ui/elements/compat-surface.js 统一组装。
+(function initMaweElementsBehaviorSettings(global) {
+  'use strict';
+
+  const U = global.MaweElements;
 
 
   const splitKeySel = document.getElementById('split-key');
@@ -21995,6 +22090,42 @@ export default MawDynamicCaptions;
 
   const selectGroupMembersToggle = document.getElementById('select-group-members');
 
+  Object.assign(U, {
+    splitKeySel,
+    splitUseWordTimestampsToggle,
+    mergeJoinTextContinuousInput,
+    mergeJoinTextWordInput,
+    cueListShowIndexToggle,
+    cueListShowTimeToggle,
+    cueListShowStickerToggle,
+    cueListShowCharcountToggle,
+    cueListAutoScrollOnClickToggle,
+    cueListKeepSplitVisibleToggle,
+    cueListCharcountThresholdInput,
+    cueListSettings,
+    cueListSettingsToggle,
+    cueListSettingsPanel,
+    hideDisabledToggle,
+    cueEditorShowNavigationToggle,
+    cueEditorShowTimeActionsToggle,
+    cueEditorShowStickerToggle,
+    cueEditorCancelOnEscapeToggle,
+    selectGroupMembersToggle,
+  });
+  // hideDisabled 是本模块可变状态且兼容出口为它提供 setter（外部经出口赋值）：以 get/set 访问器发布，
+  // 语义与拆分前整个闭包共享同一个 let 完全一致。
+  Object.defineProperty(U, 'hideDisabled', { enumerable: true, configurable: true,
+    get: () => hideDisabled, set: (value) => { hideDisabled = value; } });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// 忍者模式、剃刀工具与斜杠特效控件。
+// 自 web/editor/ui/elements.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweElements；
+// 兼容出口 window.MaweDom 仍由 editor/ui/elements/compat-surface.js 统一组装。
+(function initMaweElementsNinja(global) {
+  'use strict';
+
+  const U = global.MaweElements;
+
 
   const ninjaModeToggle = document.getElementById('ninja-mode');
 
@@ -22033,6 +22164,31 @@ export default MawDynamicCaptions;
 
 
   const exportColorUnifiedToggle = document.getElementById('export-color-unified');
+
+  Object.assign(U, {
+    ninjaModeToggle,
+    ninjaSoundToggle,
+    ninjaSoundField,
+    ninjaSlashEffectToggle,
+    ninjaSlashEffectField,
+    ninjaSlashParamsField,
+    ninjaSlashLengthInput,
+    ninjaSlashRotateInput,
+    razorToolButton,
+    razorToolSvg,
+    ninjaRazorIcon,
+    ninjaSlashFlash,
+    exportColorUnifiedToggle,
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// 帮助面板（含主题开关、页签与拖拽定位键）。
+// 自 web/editor/ui/elements.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweElements；
+// 兼容出口 window.MaweDom 仍由 editor/ui/elements/compat-surface.js 统一组装。
+(function initMaweElementsHelpPanel(global) {
+  'use strict';
+
+  const U = global.MaweElements;
 
 
   const helpToggle = document.getElementById('help-toggle');
@@ -22089,6 +22245,44 @@ export default MawDynamicCaptions;
   const helpMediaSeekStep = document.getElementById('help-media-seek-step');
 
 
+  const HELP_PANEL_POSITION_KEY = 'moy.asr.help.panel.v1';
+
+
+  const HELP_PANEL_SIZE_KEY = 'moy.asr.help.panel.size.v1';
+
+  Object.assign(U, {
+    helpToggle,
+    themeToggle,
+    helpPanel,
+    helpDragHandle,
+    helpCloseButton,
+    helpSplitKey,
+    cueEditorSplitKey,
+    cueEditorConfirmKey,
+    helpTabButtons,
+    helpTabPanels,
+    helpAdvancedToggle,
+    helpAdvancedTabs,
+    helpAdvancedTabButtons,
+    helpOpenWaveformSettingsButtons,
+    helpOpenMediaSettingsButtons,
+    helpOpenGapRemovePanelButton,
+    contextualHelpButtons,
+    helpMediaSeekStep,
+    HELP_PANEL_POSITION_KEY,
+    HELP_PANEL_SIZE_KEY,
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// 点击行为、键盘参照、悬停预览、吸附，以及查找替换与文本处理弹窗。
+// 自 web/editor/ui/elements.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweElements；
+// 兼容出口 window.MaweDom 仍由 editor/ui/elements/compat-surface.js 统一组装。
+(function initMaweElementsInteractionSettings(global) {
+  'use strict';
+
+  const U = global.MaweElements;
+
+
 
   const clickBehaviorSelect = document.getElementById('click-behavior');
 
@@ -22118,6 +22312,28 @@ export default MawDynamicCaptions;
 
 
   const textProcessModal = document.getElementById('text-process-modal');
+
+  Object.assign(U, {
+    clickBehaviorSelect,
+    clickTargetField,
+    clickTargetSelect,
+    keyboardOperationReferenceSelect,
+    keyboardOperationReferenceHint,
+    hoverSeekPreviewToggle,
+    cueMoveStepInput,
+    autoSnapAdjacentCuesToggle,
+    replaceModal,
+    textProcessModal,
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// 整轨文本编辑面板的 DOM 引用与草稿/报告状态。
+// 自 web/editor/ui/elements.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweElements；
+// 兼容出口 window.MaweDom 仍由 editor/ui/elements/compat-surface.js 统一组装。
+(function initMaweElementsTimedEditRefs(global) {
+  'use strict';
+
+  const U = global.MaweElements;
 
 
   const timedTextEditButton = document.getElementById('timed-text-edit-btn');
@@ -22196,6 +22412,53 @@ export default MawDynamicCaptions;
 
 
   let timedTextEditReportTimer = null;
+
+  Object.assign(U, {
+    timedTextEditButton,
+    timedTextEditModal,
+    timedTextEditClose,
+    timedTextEditCancel,
+    timedTextEditApply,
+    timedTextEditTrackControl,
+    timedTextEditTrack,
+    timedTextEditView,
+    timedTextEditSourceInfo,
+    timedTextEditCharcountThresholdControl,
+    timedTextEditCharcountThresholdInput,
+    timedTextEditShowDisabledToggle,
+    timedTextEditRows,
+    timedTextEditSingleEditor,
+    timedTextEditSingleTextarea,
+    timedTextEditSingleHint,
+    timedTextEditReportSummary,
+    timedTextEditReportMapping,
+    timedTextEditShowAll,
+    timedTextEditReportHint,
+    timedTextEditChangeDetails,
+    timedTextEditChangeList,
+    TIMED_TEXT_EDIT_REPORT_DEBOUNCE_MS,
+  });
+  // timedTextEditDraft 是本模块可变状态且兼容出口为它提供 setter（外部经出口赋值）：以 get/set 访问器发布，
+  // 语义与拆分前整个闭包共享同一个 let 完全一致。
+  Object.defineProperty(U, 'timedTextEditDraft', { enumerable: true, configurable: true,
+    get: () => timedTextEditDraft, set: (value) => { timedTextEditDraft = value; } });
+  // timedTextEditReturnFocus 是本模块可变状态且兼容出口为它提供 setter（外部经出口赋值）：以 get/set 访问器发布，
+  // 语义与拆分前整个闭包共享同一个 let 完全一致。
+  Object.defineProperty(U, 'timedTextEditReturnFocus', { enumerable: true, configurable: true,
+    get: () => timedTextEditReturnFocus, set: (value) => { timedTextEditReturnFocus = value; } });
+  // timedTextEditReportTimer 是本模块可变状态且兼容出口为它提供 setter（外部经出口赋值）：以 get/set 访问器发布，
+  // 语义与拆分前整个闭包共享同一个 let 完全一致。
+  Object.defineProperty(U, 'timedTextEditReportTimer', { enumerable: true, configurable: true,
+    get: () => timedTextEditReportTimer, set: (value) => { timedTextEditReportTimer = value; } });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// 贴纸、工程媒体与 FCP7/Lottie/Ograf 导出弹窗。
+// 自 web/editor/ui/elements.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweElements；
+// 兼容出口 window.MaweDom 仍由 editor/ui/elements/compat-surface.js 统一组装。
+(function initMaweElementsMediaExportModals(global) {
+  'use strict';
+
+  const U = global.MaweElements;
 
 
   const stickerModal = document.getElementById('sticker-modal');
@@ -22278,6 +22541,45 @@ export default MawDynamicCaptions;
 
   const ografExportConfirm = document.getElementById('ograf-export-confirm');
 
+  Object.assign(U, {
+    stickerModal,
+    stickerPreviewModal,
+    projectMediaModal,
+    projectMediaSelectButton,
+    projectMediaLaterButton,
+    fcp7ExportModal,
+    fcp7ExportTimelineMode,
+    fcp7ExportFps,
+    fcp7ExportSubtitleTracks,
+    fcp7ExportNativeText,
+    fcp7ExportCancel,
+    fcp7ExportConfirm,
+    lottieExportModal,
+    lottieExportTrack,
+    lottieExportGapRemoved,
+    lottieExportResolution,
+    lottieExportFps,
+    lottieExportRenderMode,
+    lottieExportCancel,
+    lottieExportConfirm,
+    ografExportModal,
+    ografExportTrack,
+    ografExportGapRemoved,
+    ografExportResolution,
+    ografExportFps,
+    ografExportCancel,
+    ografExportConfirm,
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// 右键菜单与字幕详情面板。
+// 自 web/editor/ui/elements.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweElements；
+// 兼容出口 window.MaweDom 仍由 editor/ui/elements/compat-surface.js 统一组装。
+(function initMaweElementsCuePanel(global) {
+  'use strict';
+
+  const U = global.MaweElements;
+
 
   const ctxmenu = document.getElementById('ctxmenu');
 
@@ -22323,6 +22625,33 @@ export default MawDynamicCaptions;
 
   const cuesEmpty = document.getElementById('cues-empty');
 
+  Object.assign(U, {
+    ctxmenu,
+    cuePanel,
+    cuePanelPrev,
+    cuePanelNext,
+    cuePanelStart,
+    cuePanelDuration,
+    cuePanelText,
+    cuePanelTarget,
+    cuePanelTotalLength,
+    cuePanelCharsPerSecond,
+    cuePanelSticker,
+    cuePanelAddSticker,
+    cuePanelSplit,
+    cuePanelSplitKey,
+    cuesEmpty,
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// 保存工程按钮与各导出下拉入口。
+// 自 web/editor/ui/elements.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweElements；
+// 兼容出口 window.MaweDom 仍由 editor/ui/elements/compat-surface.js 统一组装。
+(function initMaweElementsProjectActions(global) {
+  'use strict';
+
+  const U = global.MaweElements;
+
 
   const saveProjectButton = document.getElementById('save-project');
 
@@ -22349,6 +22678,27 @@ export default MawDynamicCaptions;
 
 
   const multiSubtitleControls = document.getElementById('multi-subtitle-controls');
+
+  Object.assign(U, {
+    saveProjectButton,
+    saveProjectAsButton,
+    saveProjectDropdown,
+    gapRemovedExportDropdown,
+    downloadMultiSrtButton,
+    subtitleExportDropdown,
+    downloadColorSrtItem,
+    downloadGapRemovedColorSrtItem,
+    multiSubtitleControls,
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// 多字幕轨道开关、设置与导入/拆分弹窗。
+// 自 web/editor/ui/elements.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweElements；
+// 兼容出口 window.MaweDom 仍由 editor/ui/elements/compat-surface.js 统一组装。
+(function initMaweElementsMultiSubtitle(global) {
+  'use strict';
+
+  const U = global.MaweElements;
 
 
   const multiSubtitleToggleLabel = document.getElementById('multi-subtitle-toggle-label');
@@ -22465,6 +22815,56 @@ export default MawDynamicCaptions;
 
   const multiSubtitleSplitAutoSubmit = document.getElementById('multi-subtitle-split-auto-submit');
 
+  Object.assign(U, {
+    multiSubtitleToggleLabel,
+    multiSubtitleSettingsDropdown,
+    multiSubtitleEmptyHint,
+    multiSubtitleSwapButton,
+    multiSubtitleCrossTrackSnapToggle,
+    multiSubtitleSelectBoundPairToggle,
+    multiSubtitleAutoSyncDurationToggle,
+    multiSubtitleShowTrackBadgesToggle,
+    multiSubtitleWaveformControls,
+    multiSubtitleToggle,
+    multiSubtitleDisplayMode,
+    multiSubtitleMainLanguageMode,
+    multiSubtitleExtensionLanguageMode,
+    multiSubtitleExtensionRowHeightSetting,
+    multiSubtitleExtensionRowHeight,
+    multiSubtitleAlignButton,
+    multiSubtitleImportModal,
+    multiSubtitleImportDescription,
+    multiSubtitleImportPreview,
+    multiSubtitleImportChoiceActions,
+    multiSubtitleImportResultActions,
+    multiSubtitleImportReplace,
+    multiSubtitleImportExtension,
+    multiSubtitleImportResultCancel,
+    multiSubtitleImportResultConfirm,
+    multiSubtitleSplitModal,
+    multiSubtitleSplitTitle,
+    multiSubtitleSplitMeta,
+    multiSubtitleSplitMainLane,
+    multiSubtitleSplitMainText,
+    multiSubtitleSplitExtensionLane,
+    multiSubtitleSplitText,
+    multiSubtitleSplitTimestampHint,
+    multiSubtitleSplitPreview,
+    multiSubtitleSplitError,
+    multiSubtitleSplitCancel,
+    multiSubtitleSplitConfirm,
+    multiSubtitleSplitAutoSubmit,
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// 编辑器设置分组面板、自动保存与最近工程菜单。
+// 自 web/editor/ui/elements.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweElements；
+// 兼容出口 window.MaweDom 仍由 editor/ui/elements/compat-surface.js 统一组装。
+(function initMaweElementsSettingsPanels(global) {
+  'use strict';
+
+  const U = global.MaweElements;
+
 
   const editorSettingsToggle = document.getElementById('editor-settings-toggle');
 
@@ -22553,6 +22953,51 @@ export default MawDynamicCaptions;
   const autoOpenLastProjectToggle = document.getElementById('auto-open-last-project');
 
 
+  const waveformShapeSourceSelect = document.getElementById('waveform-shape-source');
+
+  Object.assign(U, {
+    editorSettingsToggle,
+    editorSettingsPanel,
+    mergeJoinSettings,
+    mergeJoinSettingsToggle,
+    mergeJoinSettingsPanel,
+    splitTrimSettings,
+    splitTrimSettingsToggle,
+    splitTrimSettingsPanel,
+    subtitlePreviewSettings,
+    subtitlePreviewSettingsToggle,
+    subtitlePreviewSettingsPanel,
+    cueEditorSettings,
+    cueEditorSettingsToggle,
+    cueEditorSettingsPanel,
+    waveformSettings,
+    waveformSettingsToggle,
+    waveformSettingsPanel,
+    exportStartAtZeroToggle,
+    serverAutoSaveSettings,
+    autoSaveProjectToggle,
+    autoSaveIntervalField,
+    autoSaveIntervalInput,
+    recentProjectsEl,
+    recentProjectsToggle,
+    recentProjectsMenu,
+    recentProjectsList,
+    recentProjectsSeparator,
+    serverProjectSettingsEl,
+    autoOpenLastProjectToggle,
+    waveformShapeSourceSelect,
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// 去空隙面板（含其定位存储键）。
+// 自 web/editor/ui/elements.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweElements；
+// 兼容出口 window.MaweDom 仍由 editor/ui/elements/compat-surface.js 统一组装。
+(function initMaweElementsGapRemovePanel(global) {
+  'use strict';
+
+  const U = global.MaweElements;
+
+
   const GAP_REMOVE_PANEL_POSITION_KEY = 'moy.asr.gap_remove.panel.v1';
 
 
@@ -22627,11 +23072,42 @@ export default MawDynamicCaptions;
 
   const gapRemoveClearAllButton = document.getElementById('gap-remove-clear-all');
 
+  Object.assign(U, {
+    GAP_REMOVE_PANEL_POSITION_KEY,
+    gapRemovePanel,
+    gapRemoveDragHandle,
+    gapRemoveCloseButton,
+    gapRemoveManageButton,
+    gapRemoveThreshold,
+    gapRemoveVolumeThreshold,
+    gapRemoveHysteresis,
+    gapRemoveHysteresisHint,
+    gapRemoveLeadIn,
+    gapRemoveLeadOut,
+    gapRemoveShrinkButton,
+    gapRemoveAdvancedToggle,
+    gapRemoveAdvancedBody,
+    gapRemoveDisableToggle,
+    gapRemoveDisableBody,
+    gapRemoveDisableCoverage,
+    gapRemoveDisableRemaining,
+    gapRemoveDisableButton,
+    gapRemoveDisableHint,
+    gapRemoveOperationMode,
+    gapRemoveScanButton,
+    gapRemoveSkipPlayback,
+    gapRemoveList,
+    gapRemoveClearAllButton,
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
 
-  const HELP_PANEL_POSITION_KEY = 'moy.asr.help.panel.v1';
+// 自动合并面板（含其定位存储键）。
+// 自 web/editor/ui/elements.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweElements；
+// 兼容出口 window.MaweDom 仍由 editor/ui/elements/compat-surface.js 统一组装。
+(function initMaweElementsAutoMergePanel(global) {
+  'use strict';
 
-
-  const HELP_PANEL_SIZE_KEY = 'moy.asr.help.panel.size.v1';
+  const U = global.MaweElements;
 
 
 
@@ -22667,6 +23143,29 @@ export default MawDynamicCaptions;
 
   const autoMergeAbsorbDirectionSelect = document.getElementById('auto-merge-absorb-direction');
 
+  Object.assign(U, {
+    AUTO_MERGE_PANEL_POSITION_KEY,
+    autoMergePanel,
+    autoMergeDragHandle,
+    autoMergeCloseButton,
+    autoMergeManageButton,
+    autoMergeRunButton,
+    autoMergeGapMsInput,
+    autoMergeSnapDirectionSelect,
+    autoMergeAbsorbShortToggle,
+    autoMergeShortCountInput,
+    autoMergeAbsorbDirectionSelect,
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// 字幕延展面板（含其定位存储键）。
+// 自 web/editor/ui/elements.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweElements；
+// 兼容出口 window.MaweDom 仍由 editor/ui/elements/compat-surface.js 统一组装。
+(function initMaweElementsSubtitleExtendPanel(global) {
+  'use strict';
+
+  const U = global.MaweElements;
+
 
   const SUBTITLE_EXTEND_PANEL_POSITION_KEY = 'moy.asr.subtitle_extend.panel.v1';
 
@@ -22691,302 +23190,7 @@ export default MawDynamicCaptions;
 
   const subtitleExtendBackwardInput = document.getElementById('subtitle-extend-backward-ms');
 
-
-  const waveformShapeSourceSelect = document.getElementById('waveform-shape-source');
-
-  global.MaweDom = Object.freeze({
-    waveformShapeSourceSelect,
-    nowEl,
-    searchEl,
-    visibleCountEl,
-    totalCountEl,
-    selCountEl,
-    overlayEl,
-    overlayTextEl,
-    overlayExtensionTextEl,
-    overlayToggle,
-    extensionOverlayToggleWrap,
-    extensionOverlayToggle,
-    stickerOverlayToggle,
-    subtitleFontSizeSelect,
-    subtitleFontFamilySelect,
-    subtitleFontFamilyScanButton,
-    subtitleFontFamilyStatus,
-    subtitleBackgroundColorInput,
-    subtitleBackgroundAlphaInput,
-    subtitleBackgroundAlphaValue,
-    subtitleColorInput,
-    subtitleColorUnderlineInput,
-    extensionSubtitlePreviewSettings,
-    extensionSubtitleFontSizeSelect,
-    extensionSubtitleFontFamilySelect,
-    extensionSubtitleColorInput,
-    extensionSubtitleBackgroundColorInput,
-    extensionSubtitleBackgroundAlphaInput,
-    extensionSubtitleBackgroundAlphaValue,
-    playerEmpty,
-    playerWrap,
-    mediaPlayToggle,
-    mediaStepBack,
-    mediaStepForward,
-    mediaSeekStepInput,
-    get mediaSeekInputLastValue() { return mediaSeekInputLastValue; },
-    set mediaSeekInputLastValue(v) { mediaSeekInputLastValue = v; },
-    mediaCurrentTime,
-    mediaDuration,
-    mediaSeek,
-    mediaVolume,
-    mediaPlaybackRate,
-    mediaFullscreen,
-    playerStage,
-    splitKeySel,
-    splitUseWordTimestampsToggle,
-    mergeJoinTextContinuousInput,
-    mergeJoinTextWordInput,
-    cueListShowIndexToggle,
-    cueListShowTimeToggle,
-    cueListShowStickerToggle,
-    cueListShowCharcountToggle,
-    cueListAutoScrollOnClickToggle,
-    cueListKeepSplitVisibleToggle,
-    cueListCharcountThresholdInput,
-    cueListSettings,
-    cueListSettingsToggle,
-    cueListSettingsPanel,
-    hideDisabledToggle,
-    get hideDisabled() { return hideDisabled; },
-    set hideDisabled(v) { hideDisabled = v; },
-    cueEditorShowNavigationToggle,
-    cueEditorShowTimeActionsToggle,
-    cueEditorShowStickerToggle,
-    cueEditorCancelOnEscapeToggle,
-    selectGroupMembersToggle,
-    ninjaModeToggle,
-    ninjaSoundToggle,
-    ninjaSoundField,
-    ninjaSlashEffectToggle,
-    ninjaSlashEffectField,
-    ninjaSlashParamsField,
-    ninjaSlashLengthInput,
-    ninjaSlashRotateInput,
-    razorToolButton,
-    razorToolSvg,
-    ninjaRazorIcon,
-    ninjaSlashFlash,
-    exportColorUnifiedToggle,
-    helpToggle,
-    themeToggle,
-    helpPanel,
-    helpDragHandle,
-    helpCloseButton,
-    helpSplitKey,
-    cueEditorSplitKey,
-    cueEditorConfirmKey,
-    helpTabButtons,
-    helpTabPanels,
-    helpAdvancedToggle,
-    helpAdvancedTabs,
-    helpAdvancedTabButtons,
-    helpOpenWaveformSettingsButtons,
-    helpOpenMediaSettingsButtons,
-    helpOpenGapRemovePanelButton,
-    contextualHelpButtons,
-    helpMediaSeekStep,
-    clickBehaviorSelect,
-    clickTargetField,
-    clickTargetSelect,
-    keyboardOperationReferenceSelect,
-    keyboardOperationReferenceHint,
-    hoverSeekPreviewToggle,
-    cueMoveStepInput,
-    autoSnapAdjacentCuesToggle,
-    replaceModal,
-    textProcessModal,
-    timedTextEditButton,
-    timedTextEditModal,
-    timedTextEditClose,
-    timedTextEditCancel,
-    timedTextEditApply,
-    timedTextEditTrackControl,
-    timedTextEditTrack,
-    timedTextEditView,
-    timedTextEditSourceInfo,
-    timedTextEditCharcountThresholdControl,
-    timedTextEditCharcountThresholdInput,
-    timedTextEditShowDisabledToggle,
-    timedTextEditRows,
-    timedTextEditSingleEditor,
-    timedTextEditSingleTextarea,
-    timedTextEditSingleHint,
-    timedTextEditReportSummary,
-    timedTextEditReportMapping,
-    timedTextEditShowAll,
-    timedTextEditReportHint,
-    timedTextEditChangeDetails,
-    timedTextEditChangeList,
-    TIMED_TEXT_EDIT_REPORT_DEBOUNCE_MS,
-    get timedTextEditDraft() { return timedTextEditDraft; },
-    set timedTextEditDraft(v) { timedTextEditDraft = v; },
-    get timedTextEditReturnFocus() { return timedTextEditReturnFocus; },
-    set timedTextEditReturnFocus(v) { timedTextEditReturnFocus = v; },
-    get timedTextEditReportTimer() { return timedTextEditReportTimer; },
-    set timedTextEditReportTimer(v) { timedTextEditReportTimer = v; },
-    stickerModal,
-    stickerPreviewModal,
-    projectMediaModal,
-    projectMediaSelectButton,
-    projectMediaLaterButton,
-    fcp7ExportModal,
-    fcp7ExportTimelineMode,
-    fcp7ExportFps,
-    fcp7ExportSubtitleTracks,
-    fcp7ExportNativeText,
-    fcp7ExportCancel,
-    fcp7ExportConfirm,
-    lottieExportModal,
-    lottieExportTrack,
-    lottieExportGapRemoved,
-    lottieExportResolution,
-    lottieExportFps,
-    lottieExportRenderMode,
-    lottieExportCancel,
-    lottieExportConfirm,
-    ografExportModal,
-    ografExportTrack,
-    ografExportGapRemoved,
-    ografExportResolution,
-    ografExportFps,
-    ografExportCancel,
-    ografExportConfirm,
-    ctxmenu,
-    cuePanel,
-    cuePanelPrev,
-    cuePanelNext,
-    cuePanelStart,
-    cuePanelDuration,
-    cuePanelText,
-    cuePanelTarget,
-    cuePanelTotalLength,
-    cuePanelCharsPerSecond,
-    cuePanelSticker,
-    cuePanelAddSticker,
-    cuePanelSplit,
-    cuePanelSplitKey,
-    cuesEmpty,
-    saveProjectButton,
-    saveProjectAsButton,
-    saveProjectDropdown,
-    gapRemovedExportDropdown,
-    downloadMultiSrtButton,
-    subtitleExportDropdown,
-    downloadColorSrtItem,
-    downloadGapRemovedColorSrtItem,
-    multiSubtitleControls,
-    multiSubtitleToggleLabel,
-    multiSubtitleSettingsDropdown,
-    multiSubtitleEmptyHint,
-    multiSubtitleSwapButton,
-    multiSubtitleCrossTrackSnapToggle,
-    multiSubtitleSelectBoundPairToggle,
-    multiSubtitleAutoSyncDurationToggle,
-    multiSubtitleShowTrackBadgesToggle,
-    multiSubtitleWaveformControls,
-    multiSubtitleToggle,
-    multiSubtitleDisplayMode,
-    multiSubtitleMainLanguageMode,
-    multiSubtitleExtensionLanguageMode,
-    multiSubtitleExtensionRowHeightSetting,
-    multiSubtitleExtensionRowHeight,
-    multiSubtitleAlignButton,
-    multiSubtitleImportModal,
-    multiSubtitleImportDescription,
-    multiSubtitleImportPreview,
-    multiSubtitleImportChoiceActions,
-    multiSubtitleImportResultActions,
-    multiSubtitleImportReplace,
-    multiSubtitleImportExtension,
-    multiSubtitleImportResultCancel,
-    multiSubtitleImportResultConfirm,
-    multiSubtitleSplitModal,
-    multiSubtitleSplitTitle,
-    multiSubtitleSplitMeta,
-    multiSubtitleSplitMainLane,
-    multiSubtitleSplitMainText,
-    multiSubtitleSplitExtensionLane,
-    multiSubtitleSplitText,
-    multiSubtitleSplitTimestampHint,
-    multiSubtitleSplitPreview,
-    multiSubtitleSplitError,
-    multiSubtitleSplitCancel,
-    multiSubtitleSplitConfirm,
-    multiSubtitleSplitAutoSubmit,
-    editorSettingsToggle,
-    editorSettingsPanel,
-    mergeJoinSettings,
-    mergeJoinSettingsToggle,
-    mergeJoinSettingsPanel,
-    splitTrimSettings,
-    splitTrimSettingsToggle,
-    splitTrimSettingsPanel,
-    subtitlePreviewSettings,
-    subtitlePreviewSettingsToggle,
-    subtitlePreviewSettingsPanel,
-    cueEditorSettings,
-    cueEditorSettingsToggle,
-    cueEditorSettingsPanel,
-    waveformSettings,
-    waveformSettingsToggle,
-    waveformSettingsPanel,
-    exportStartAtZeroToggle,
-    serverAutoSaveSettings,
-    autoSaveProjectToggle,
-    autoSaveIntervalField,
-    autoSaveIntervalInput,
-    recentProjectsEl,
-    recentProjectsToggle,
-    recentProjectsMenu,
-    recentProjectsList,
-    recentProjectsSeparator,
-    serverProjectSettingsEl,
-    autoOpenLastProjectToggle,
-    GAP_REMOVE_PANEL_POSITION_KEY,
-    gapRemovePanel,
-    gapRemoveDragHandle,
-    gapRemoveCloseButton,
-    gapRemoveManageButton,
-    gapRemoveThreshold,
-    gapRemoveVolumeThreshold,
-    gapRemoveHysteresis,
-    gapRemoveHysteresisHint,
-    gapRemoveLeadIn,
-    gapRemoveLeadOut,
-    gapRemoveShrinkButton,
-    gapRemoveAdvancedToggle,
-    gapRemoveAdvancedBody,
-    gapRemoveDisableToggle,
-    gapRemoveDisableBody,
-    gapRemoveDisableCoverage,
-    gapRemoveDisableRemaining,
-    gapRemoveDisableButton,
-    gapRemoveDisableHint,
-    gapRemoveOperationMode,
-    gapRemoveScanButton,
-    gapRemoveSkipPlayback,
-    gapRemoveList,
-    gapRemoveClearAllButton,
-    HELP_PANEL_POSITION_KEY,
-    HELP_PANEL_SIZE_KEY,
-    AUTO_MERGE_PANEL_POSITION_KEY,
-    autoMergePanel,
-    autoMergeDragHandle,
-    autoMergeCloseButton,
-    autoMergeManageButton,
-    autoMergeRunButton,
-    autoMergeGapMsInput,
-    autoMergeSnapDirectionSelect,
-    autoMergeAbsorbShortToggle,
-    autoMergeShortCountInput,
-    autoMergeAbsorbDirectionSelect,
+  Object.assign(U, {
     SUBTITLE_EXTEND_PANEL_POSITION_KEY,
     subtitleExtendPanel,
     subtitleExtendDragHandle,
@@ -22994,7 +23198,319 @@ export default MawDynamicCaptions;
     subtitleExtendManageButton,
     subtitleExtendRunButton,
     subtitleExtendForwardInput,
-    subtitleExtendBackwardInput
+    subtitleExtendBackwardInput,
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// window.MaweDom 兼容出口：结构、键名与键序与拆分前完全一致（契约测试逐项比对），
+// 取值来自 editor/ui/elements/ 各模块发布到 window.MaweElements 的内部符号。内部 helper 不要往这里加。
+// 必须在 editor/ui/elements/ 全部模块之后加载。
+(function initMaweElementsCompatSurface(global) {
+  'use strict';
+
+  const U = global.MaweElements;
+
+  global.MaweDom = Object.freeze({
+    waveformShapeSourceSelect: U.waveformShapeSourceSelect,
+    nowEl: U.nowEl,
+    searchEl: U.searchEl,
+    visibleCountEl: U.visibleCountEl,
+    totalCountEl: U.totalCountEl,
+    selCountEl: U.selCountEl,
+    overlayEl: U.overlayEl,
+    overlayTextEl: U.overlayTextEl,
+    overlayExtensionTextEl: U.overlayExtensionTextEl,
+    overlayToggle: U.overlayToggle,
+    extensionOverlayToggleWrap: U.extensionOverlayToggleWrap,
+    extensionOverlayToggle: U.extensionOverlayToggle,
+    stickerOverlayToggle: U.stickerOverlayToggle,
+    subtitleFontSizeSelect: U.subtitleFontSizeSelect,
+    subtitleFontFamilySelect: U.subtitleFontFamilySelect,
+    subtitleFontFamilyScanButton: U.subtitleFontFamilyScanButton,
+    subtitleFontFamilyStatus: U.subtitleFontFamilyStatus,
+    subtitleBackgroundColorInput: U.subtitleBackgroundColorInput,
+    subtitleBackgroundAlphaInput: U.subtitleBackgroundAlphaInput,
+    subtitleBackgroundAlphaValue: U.subtitleBackgroundAlphaValue,
+    subtitleColorInput: U.subtitleColorInput,
+    subtitleColorUnderlineInput: U.subtitleColorUnderlineInput,
+    extensionSubtitlePreviewSettings: U.extensionSubtitlePreviewSettings,
+    extensionSubtitleFontSizeSelect: U.extensionSubtitleFontSizeSelect,
+    extensionSubtitleFontFamilySelect: U.extensionSubtitleFontFamilySelect,
+    extensionSubtitleColorInput: U.extensionSubtitleColorInput,
+    extensionSubtitleBackgroundColorInput: U.extensionSubtitleBackgroundColorInput,
+    extensionSubtitleBackgroundAlphaInput: U.extensionSubtitleBackgroundAlphaInput,
+    extensionSubtitleBackgroundAlphaValue: U.extensionSubtitleBackgroundAlphaValue,
+    playerEmpty: U.playerEmpty,
+    playerWrap: U.playerWrap,
+    mediaPlayToggle: U.mediaPlayToggle,
+    mediaStepBack: U.mediaStepBack,
+    mediaStepForward: U.mediaStepForward,
+    mediaSeekStepInput: U.mediaSeekStepInput,
+    get mediaSeekInputLastValue() { return U.mediaSeekInputLastValue; },
+    set mediaSeekInputLastValue(v) { U.mediaSeekInputLastValue = v; },
+    mediaCurrentTime: U.mediaCurrentTime,
+    mediaDuration: U.mediaDuration,
+    mediaSeek: U.mediaSeek,
+    mediaVolume: U.mediaVolume,
+    mediaPlaybackRate: U.mediaPlaybackRate,
+    mediaFullscreen: U.mediaFullscreen,
+    playerStage: U.playerStage,
+    splitKeySel: U.splitKeySel,
+    splitUseWordTimestampsToggle: U.splitUseWordTimestampsToggle,
+    mergeJoinTextContinuousInput: U.mergeJoinTextContinuousInput,
+    mergeJoinTextWordInput: U.mergeJoinTextWordInput,
+    cueListShowIndexToggle: U.cueListShowIndexToggle,
+    cueListShowTimeToggle: U.cueListShowTimeToggle,
+    cueListShowStickerToggle: U.cueListShowStickerToggle,
+    cueListShowCharcountToggle: U.cueListShowCharcountToggle,
+    cueListAutoScrollOnClickToggle: U.cueListAutoScrollOnClickToggle,
+    cueListKeepSplitVisibleToggle: U.cueListKeepSplitVisibleToggle,
+    cueListCharcountThresholdInput: U.cueListCharcountThresholdInput,
+    cueListSettings: U.cueListSettings,
+    cueListSettingsToggle: U.cueListSettingsToggle,
+    cueListSettingsPanel: U.cueListSettingsPanel,
+    hideDisabledToggle: U.hideDisabledToggle,
+    get hideDisabled() { return U.hideDisabled; },
+    set hideDisabled(v) { U.hideDisabled = v; },
+    cueEditorShowNavigationToggle: U.cueEditorShowNavigationToggle,
+    cueEditorShowTimeActionsToggle: U.cueEditorShowTimeActionsToggle,
+    cueEditorShowStickerToggle: U.cueEditorShowStickerToggle,
+    cueEditorCancelOnEscapeToggle: U.cueEditorCancelOnEscapeToggle,
+    selectGroupMembersToggle: U.selectGroupMembersToggle,
+    ninjaModeToggle: U.ninjaModeToggle,
+    ninjaSoundToggle: U.ninjaSoundToggle,
+    ninjaSoundField: U.ninjaSoundField,
+    ninjaSlashEffectToggle: U.ninjaSlashEffectToggle,
+    ninjaSlashEffectField: U.ninjaSlashEffectField,
+    ninjaSlashParamsField: U.ninjaSlashParamsField,
+    ninjaSlashLengthInput: U.ninjaSlashLengthInput,
+    ninjaSlashRotateInput: U.ninjaSlashRotateInput,
+    razorToolButton: U.razorToolButton,
+    razorToolSvg: U.razorToolSvg,
+    ninjaRazorIcon: U.ninjaRazorIcon,
+    ninjaSlashFlash: U.ninjaSlashFlash,
+    exportColorUnifiedToggle: U.exportColorUnifiedToggle,
+    helpToggle: U.helpToggle,
+    themeToggle: U.themeToggle,
+    helpPanel: U.helpPanel,
+    helpDragHandle: U.helpDragHandle,
+    helpCloseButton: U.helpCloseButton,
+    helpSplitKey: U.helpSplitKey,
+    cueEditorSplitKey: U.cueEditorSplitKey,
+    cueEditorConfirmKey: U.cueEditorConfirmKey,
+    helpTabButtons: U.helpTabButtons,
+    helpTabPanels: U.helpTabPanels,
+    helpAdvancedToggle: U.helpAdvancedToggle,
+    helpAdvancedTabs: U.helpAdvancedTabs,
+    helpAdvancedTabButtons: U.helpAdvancedTabButtons,
+    helpOpenWaveformSettingsButtons: U.helpOpenWaveformSettingsButtons,
+    helpOpenMediaSettingsButtons: U.helpOpenMediaSettingsButtons,
+    helpOpenGapRemovePanelButton: U.helpOpenGapRemovePanelButton,
+    contextualHelpButtons: U.contextualHelpButtons,
+    helpMediaSeekStep: U.helpMediaSeekStep,
+    clickBehaviorSelect: U.clickBehaviorSelect,
+    clickTargetField: U.clickTargetField,
+    clickTargetSelect: U.clickTargetSelect,
+    keyboardOperationReferenceSelect: U.keyboardOperationReferenceSelect,
+    keyboardOperationReferenceHint: U.keyboardOperationReferenceHint,
+    hoverSeekPreviewToggle: U.hoverSeekPreviewToggle,
+    cueMoveStepInput: U.cueMoveStepInput,
+    autoSnapAdjacentCuesToggle: U.autoSnapAdjacentCuesToggle,
+    replaceModal: U.replaceModal,
+    textProcessModal: U.textProcessModal,
+    timedTextEditButton: U.timedTextEditButton,
+    timedTextEditModal: U.timedTextEditModal,
+    timedTextEditClose: U.timedTextEditClose,
+    timedTextEditCancel: U.timedTextEditCancel,
+    timedTextEditApply: U.timedTextEditApply,
+    timedTextEditTrackControl: U.timedTextEditTrackControl,
+    timedTextEditTrack: U.timedTextEditTrack,
+    timedTextEditView: U.timedTextEditView,
+    timedTextEditSourceInfo: U.timedTextEditSourceInfo,
+    timedTextEditCharcountThresholdControl: U.timedTextEditCharcountThresholdControl,
+    timedTextEditCharcountThresholdInput: U.timedTextEditCharcountThresholdInput,
+    timedTextEditShowDisabledToggle: U.timedTextEditShowDisabledToggle,
+    timedTextEditRows: U.timedTextEditRows,
+    timedTextEditSingleEditor: U.timedTextEditSingleEditor,
+    timedTextEditSingleTextarea: U.timedTextEditSingleTextarea,
+    timedTextEditSingleHint: U.timedTextEditSingleHint,
+    timedTextEditReportSummary: U.timedTextEditReportSummary,
+    timedTextEditReportMapping: U.timedTextEditReportMapping,
+    timedTextEditShowAll: U.timedTextEditShowAll,
+    timedTextEditReportHint: U.timedTextEditReportHint,
+    timedTextEditChangeDetails: U.timedTextEditChangeDetails,
+    timedTextEditChangeList: U.timedTextEditChangeList,
+    TIMED_TEXT_EDIT_REPORT_DEBOUNCE_MS: U.TIMED_TEXT_EDIT_REPORT_DEBOUNCE_MS,
+    get timedTextEditDraft() { return U.timedTextEditDraft; },
+    set timedTextEditDraft(v) { U.timedTextEditDraft = v; },
+    get timedTextEditReturnFocus() { return U.timedTextEditReturnFocus; },
+    set timedTextEditReturnFocus(v) { U.timedTextEditReturnFocus = v; },
+    get timedTextEditReportTimer() { return U.timedTextEditReportTimer; },
+    set timedTextEditReportTimer(v) { U.timedTextEditReportTimer = v; },
+    stickerModal: U.stickerModal,
+    stickerPreviewModal: U.stickerPreviewModal,
+    projectMediaModal: U.projectMediaModal,
+    projectMediaSelectButton: U.projectMediaSelectButton,
+    projectMediaLaterButton: U.projectMediaLaterButton,
+    fcp7ExportModal: U.fcp7ExportModal,
+    fcp7ExportTimelineMode: U.fcp7ExportTimelineMode,
+    fcp7ExportFps: U.fcp7ExportFps,
+    fcp7ExportSubtitleTracks: U.fcp7ExportSubtitleTracks,
+    fcp7ExportNativeText: U.fcp7ExportNativeText,
+    fcp7ExportCancel: U.fcp7ExportCancel,
+    fcp7ExportConfirm: U.fcp7ExportConfirm,
+    lottieExportModal: U.lottieExportModal,
+    lottieExportTrack: U.lottieExportTrack,
+    lottieExportGapRemoved: U.lottieExportGapRemoved,
+    lottieExportResolution: U.lottieExportResolution,
+    lottieExportFps: U.lottieExportFps,
+    lottieExportRenderMode: U.lottieExportRenderMode,
+    lottieExportCancel: U.lottieExportCancel,
+    lottieExportConfirm: U.lottieExportConfirm,
+    ografExportModal: U.ografExportModal,
+    ografExportTrack: U.ografExportTrack,
+    ografExportGapRemoved: U.ografExportGapRemoved,
+    ografExportResolution: U.ografExportResolution,
+    ografExportFps: U.ografExportFps,
+    ografExportCancel: U.ografExportCancel,
+    ografExportConfirm: U.ografExportConfirm,
+    ctxmenu: U.ctxmenu,
+    cuePanel: U.cuePanel,
+    cuePanelPrev: U.cuePanelPrev,
+    cuePanelNext: U.cuePanelNext,
+    cuePanelStart: U.cuePanelStart,
+    cuePanelDuration: U.cuePanelDuration,
+    cuePanelText: U.cuePanelText,
+    cuePanelTarget: U.cuePanelTarget,
+    cuePanelTotalLength: U.cuePanelTotalLength,
+    cuePanelCharsPerSecond: U.cuePanelCharsPerSecond,
+    cuePanelSticker: U.cuePanelSticker,
+    cuePanelAddSticker: U.cuePanelAddSticker,
+    cuePanelSplit: U.cuePanelSplit,
+    cuePanelSplitKey: U.cuePanelSplitKey,
+    cuesEmpty: U.cuesEmpty,
+    saveProjectButton: U.saveProjectButton,
+    saveProjectAsButton: U.saveProjectAsButton,
+    saveProjectDropdown: U.saveProjectDropdown,
+    gapRemovedExportDropdown: U.gapRemovedExportDropdown,
+    downloadMultiSrtButton: U.downloadMultiSrtButton,
+    subtitleExportDropdown: U.subtitleExportDropdown,
+    downloadColorSrtItem: U.downloadColorSrtItem,
+    downloadGapRemovedColorSrtItem: U.downloadGapRemovedColorSrtItem,
+    multiSubtitleControls: U.multiSubtitleControls,
+    multiSubtitleToggleLabel: U.multiSubtitleToggleLabel,
+    multiSubtitleSettingsDropdown: U.multiSubtitleSettingsDropdown,
+    multiSubtitleEmptyHint: U.multiSubtitleEmptyHint,
+    multiSubtitleSwapButton: U.multiSubtitleSwapButton,
+    multiSubtitleCrossTrackSnapToggle: U.multiSubtitleCrossTrackSnapToggle,
+    multiSubtitleSelectBoundPairToggle: U.multiSubtitleSelectBoundPairToggle,
+    multiSubtitleAutoSyncDurationToggle: U.multiSubtitleAutoSyncDurationToggle,
+    multiSubtitleShowTrackBadgesToggle: U.multiSubtitleShowTrackBadgesToggle,
+    multiSubtitleWaveformControls: U.multiSubtitleWaveformControls,
+    multiSubtitleToggle: U.multiSubtitleToggle,
+    multiSubtitleDisplayMode: U.multiSubtitleDisplayMode,
+    multiSubtitleMainLanguageMode: U.multiSubtitleMainLanguageMode,
+    multiSubtitleExtensionLanguageMode: U.multiSubtitleExtensionLanguageMode,
+    multiSubtitleExtensionRowHeightSetting: U.multiSubtitleExtensionRowHeightSetting,
+    multiSubtitleExtensionRowHeight: U.multiSubtitleExtensionRowHeight,
+    multiSubtitleAlignButton: U.multiSubtitleAlignButton,
+    multiSubtitleImportModal: U.multiSubtitleImportModal,
+    multiSubtitleImportDescription: U.multiSubtitleImportDescription,
+    multiSubtitleImportPreview: U.multiSubtitleImportPreview,
+    multiSubtitleImportChoiceActions: U.multiSubtitleImportChoiceActions,
+    multiSubtitleImportResultActions: U.multiSubtitleImportResultActions,
+    multiSubtitleImportReplace: U.multiSubtitleImportReplace,
+    multiSubtitleImportExtension: U.multiSubtitleImportExtension,
+    multiSubtitleImportResultCancel: U.multiSubtitleImportResultCancel,
+    multiSubtitleImportResultConfirm: U.multiSubtitleImportResultConfirm,
+    multiSubtitleSplitModal: U.multiSubtitleSplitModal,
+    multiSubtitleSplitTitle: U.multiSubtitleSplitTitle,
+    multiSubtitleSplitMeta: U.multiSubtitleSplitMeta,
+    multiSubtitleSplitMainLane: U.multiSubtitleSplitMainLane,
+    multiSubtitleSplitMainText: U.multiSubtitleSplitMainText,
+    multiSubtitleSplitExtensionLane: U.multiSubtitleSplitExtensionLane,
+    multiSubtitleSplitText: U.multiSubtitleSplitText,
+    multiSubtitleSplitTimestampHint: U.multiSubtitleSplitTimestampHint,
+    multiSubtitleSplitPreview: U.multiSubtitleSplitPreview,
+    multiSubtitleSplitError: U.multiSubtitleSplitError,
+    multiSubtitleSplitCancel: U.multiSubtitleSplitCancel,
+    multiSubtitleSplitConfirm: U.multiSubtitleSplitConfirm,
+    multiSubtitleSplitAutoSubmit: U.multiSubtitleSplitAutoSubmit,
+    editorSettingsToggle: U.editorSettingsToggle,
+    editorSettingsPanel: U.editorSettingsPanel,
+    mergeJoinSettings: U.mergeJoinSettings,
+    mergeJoinSettingsToggle: U.mergeJoinSettingsToggle,
+    mergeJoinSettingsPanel: U.mergeJoinSettingsPanel,
+    splitTrimSettings: U.splitTrimSettings,
+    splitTrimSettingsToggle: U.splitTrimSettingsToggle,
+    splitTrimSettingsPanel: U.splitTrimSettingsPanel,
+    subtitlePreviewSettings: U.subtitlePreviewSettings,
+    subtitlePreviewSettingsToggle: U.subtitlePreviewSettingsToggle,
+    subtitlePreviewSettingsPanel: U.subtitlePreviewSettingsPanel,
+    cueEditorSettings: U.cueEditorSettings,
+    cueEditorSettingsToggle: U.cueEditorSettingsToggle,
+    cueEditorSettingsPanel: U.cueEditorSettingsPanel,
+    waveformSettings: U.waveformSettings,
+    waveformSettingsToggle: U.waveformSettingsToggle,
+    waveformSettingsPanel: U.waveformSettingsPanel,
+    exportStartAtZeroToggle: U.exportStartAtZeroToggle,
+    serverAutoSaveSettings: U.serverAutoSaveSettings,
+    autoSaveProjectToggle: U.autoSaveProjectToggle,
+    autoSaveIntervalField: U.autoSaveIntervalField,
+    autoSaveIntervalInput: U.autoSaveIntervalInput,
+    recentProjectsEl: U.recentProjectsEl,
+    recentProjectsToggle: U.recentProjectsToggle,
+    recentProjectsMenu: U.recentProjectsMenu,
+    recentProjectsList: U.recentProjectsList,
+    recentProjectsSeparator: U.recentProjectsSeparator,
+    serverProjectSettingsEl: U.serverProjectSettingsEl,
+    autoOpenLastProjectToggle: U.autoOpenLastProjectToggle,
+    GAP_REMOVE_PANEL_POSITION_KEY: U.GAP_REMOVE_PANEL_POSITION_KEY,
+    gapRemovePanel: U.gapRemovePanel,
+    gapRemoveDragHandle: U.gapRemoveDragHandle,
+    gapRemoveCloseButton: U.gapRemoveCloseButton,
+    gapRemoveManageButton: U.gapRemoveManageButton,
+    gapRemoveThreshold: U.gapRemoveThreshold,
+    gapRemoveVolumeThreshold: U.gapRemoveVolumeThreshold,
+    gapRemoveHysteresis: U.gapRemoveHysteresis,
+    gapRemoveHysteresisHint: U.gapRemoveHysteresisHint,
+    gapRemoveLeadIn: U.gapRemoveLeadIn,
+    gapRemoveLeadOut: U.gapRemoveLeadOut,
+    gapRemoveShrinkButton: U.gapRemoveShrinkButton,
+    gapRemoveAdvancedToggle: U.gapRemoveAdvancedToggle,
+    gapRemoveAdvancedBody: U.gapRemoveAdvancedBody,
+    gapRemoveDisableToggle: U.gapRemoveDisableToggle,
+    gapRemoveDisableBody: U.gapRemoveDisableBody,
+    gapRemoveDisableCoverage: U.gapRemoveDisableCoverage,
+    gapRemoveDisableRemaining: U.gapRemoveDisableRemaining,
+    gapRemoveDisableButton: U.gapRemoveDisableButton,
+    gapRemoveDisableHint: U.gapRemoveDisableHint,
+    gapRemoveOperationMode: U.gapRemoveOperationMode,
+    gapRemoveScanButton: U.gapRemoveScanButton,
+    gapRemoveSkipPlayback: U.gapRemoveSkipPlayback,
+    gapRemoveList: U.gapRemoveList,
+    gapRemoveClearAllButton: U.gapRemoveClearAllButton,
+    HELP_PANEL_POSITION_KEY: U.HELP_PANEL_POSITION_KEY,
+    HELP_PANEL_SIZE_KEY: U.HELP_PANEL_SIZE_KEY,
+    AUTO_MERGE_PANEL_POSITION_KEY: U.AUTO_MERGE_PANEL_POSITION_KEY,
+    autoMergePanel: U.autoMergePanel,
+    autoMergeDragHandle: U.autoMergeDragHandle,
+    autoMergeCloseButton: U.autoMergeCloseButton,
+    autoMergeManageButton: U.autoMergeManageButton,
+    autoMergeRunButton: U.autoMergeRunButton,
+    autoMergeGapMsInput: U.autoMergeGapMsInput,
+    autoMergeSnapDirectionSelect: U.autoMergeSnapDirectionSelect,
+    autoMergeAbsorbShortToggle: U.autoMergeAbsorbShortToggle,
+    autoMergeShortCountInput: U.autoMergeShortCountInput,
+    autoMergeAbsorbDirectionSelect: U.autoMergeAbsorbDirectionSelect,
+    SUBTITLE_EXTEND_PANEL_POSITION_KEY: U.SUBTITLE_EXTEND_PANEL_POSITION_KEY,
+    subtitleExtendPanel: U.subtitleExtendPanel,
+    subtitleExtendDragHandle: U.subtitleExtendDragHandle,
+    subtitleExtendCloseButton: U.subtitleExtendCloseButton,
+    subtitleExtendManageButton: U.subtitleExtendManageButton,
+    subtitleExtendRunButton: U.subtitleExtendRunButton,
+    subtitleExtendForwardInput: U.subtitleExtendForwardInput,
+    subtitleExtendBackwardInput: U.subtitleExtendBackwardInput
   });
 })(typeof window !== 'undefined' ? window : globalThis);
 

@@ -122,7 +122,24 @@ class EditorAssetContractTests(unittest.TestCase):
                 "editor/gap/data.js",
                 "editor/state/core.js",
                 "editor/state/history.js",
-                "editor/ui/elements.js",
+                "editor/ui/elements/namespace.js",
+                "editor/ui/elements/shell.js",
+                "editor/ui/elements/subtitle-appearance.js",
+                "editor/ui/elements/player.js",
+                "editor/ui/elements/behavior-settings.js",
+                "editor/ui/elements/ninja.js",
+                "editor/ui/elements/help-panel.js",
+                "editor/ui/elements/interaction-settings.js",
+                "editor/ui/elements/timed-edit-refs.js",
+                "editor/ui/elements/media-export-modals.js",
+                "editor/ui/elements/cue-panel.js",
+                "editor/ui/elements/project-actions.js",
+                "editor/ui/elements/multi-subtitle.js",
+                "editor/ui/elements/settings-panels.js",
+                "editor/ui/elements/gap-remove-panel.js",
+                "editor/ui/elements/auto-merge-panel.js",
+                "editor/ui/elements/subtitle-extend-panel.js",
+                "editor/ui/elements/compat-surface.js",
                 "editor/state/cue-panel.js",
                 "editor/stickers/ninja.js",
                 "editor/ui/settings-panels.js",
@@ -238,6 +255,32 @@ class EditorAssetContractTests(unittest.TestCase):
         for entry in mixins:
             self.assertGreater(manifest.index(entry), manifest.index(class_owner), f"{entry} 在类声明之前加载")
 
+    def assert_facade_matches_modules(self, modules: list[str], surface: str, area: str) -> set[str]:
+        """按内部命名空间装配的块（editor/split、editor/text/timed-edit、
+        editor/ui/elements）共用这套比对：模块发布到 U 的符号不许重名，兼容出口的
+        门面键集合必须与发布集合完全相等——多一个键说明有人把内部 helper 漏进了
+        出口，少一个键说明出口重建时丢了线。"""
+        published: set[str] = set()
+        for entry in modules:
+            source = edit.editor_script_path(entry).read_text(encoding="utf-8")
+            names: set[str] = set()
+            for block_text in re.findall(r"Object\.assign\(U, \{\n(.*?)\n  \}\);", source, re.DOTALL):
+                names.update(re.findall(r"^    ([\w$]+),$", block_text, re.MULTILINE))
+            names.update(re.findall(r"Object\.defineProperty\(U, '([\w$]+)'", source))
+            overlap = names & published
+            self.assertFalse(overlap, f"{sorted(overlap)} 被 {area} 两个模块同时发布")
+            published |= names
+
+        facade_body = surface.split("Object.freeze({", 1)[1]
+        facade_keys = set(re.findall(r"^    (?:get |set )?([\w$]+)[:(]", facade_body, re.MULTILINE))
+        self.assertTrue(facade_keys, "兼容出口没有解析出任何键")
+        self.assertEqual(
+            sorted(facade_keys),
+            sorted(published),
+            f"兼容出口的门面键与 {area} 各模块发布的内部符号不一致",
+        )
+        return published
+
     def test_split_block_builds_the_frozen_facade_after_every_module(self) -> None:
         """editor/split/* 按 window.MaweSplit 装配：模块只在函数体内惰性互读，
         顺序本身自由；但 namespace 必须第一（它创建命名空间），兼容出口必须最后
@@ -262,26 +305,7 @@ class EditorAssetContractTests(unittest.TestCase):
         # 可变状态必须以访问器对通过门面读写，语义才与拆分前共享同一个 let 一致。
         self.assertIn("get pendingLinkedSplit() { return U.pendingLinkedSplit; },", surface)
         self.assertIn("set pendingLinkedSplit(v) { U.pendingLinkedSplit = v; },", surface)
-
-        published: set[str] = set()
-        for entry in modules:
-            source = edit.editor_script_path(entry).read_text(encoding="utf-8")
-            names: set[str] = set()
-            for block_text in re.findall(r"Object\.assign\(U, \{\n(.*?)\n  \}\);", source, re.DOTALL):
-                names.update(re.findall(r"^    ([\w$]+),$", block_text, re.MULTILINE))
-            names.update(re.findall(r"Object\.defineProperty\(U, '([\w$]+)'", source))
-            overlap = names & published
-            self.assertFalse(overlap, f"{sorted(overlap)} 被 editor/split/ 两个模块同时发布")
-            published |= names
-
-        facade_body = surface.split("Object.freeze({", 1)[1]
-        facade_keys = set(re.findall(r"^    (?:get |set )?([\w$]+)[:(]", facade_body, re.MULTILINE))
-        self.assertTrue(facade_keys, "兼容出口没有解析出任何键")
-        self.assertEqual(
-            sorted(facade_keys),
-            sorted(published),
-            "兼容出口的门面键与 editor/split/ 各模块发布的内部符号不一致",
-        )
+        self.assert_facade_matches_modules(modules, surface, "editor/split/")
 
     def test_timed_edit_block_builds_the_frozen_facade_after_every_module(self) -> None:
         """editor/text/timed-edit/* 按 window.MaweText 装配，规则与 editor/split/* 相同：
@@ -302,26 +326,41 @@ class EditorAssetContractTests(unittest.TestCase):
 
         surface = edit.editor_script_path("editor/text/timed-edit/compat-surface.js").read_text(encoding="utf-8")
         self.assertIn("global.MaweTimedTextEdit = Object.freeze({", surface)
+        self.assert_facade_matches_modules(modules, surface, "editor/text/timed-edit/")
 
-        published: set[str] = set()
+    def test_dom_elements_block_is_split_by_ui_region_and_stays_contiguous(self) -> None:
+        """editor/ui/elements/* 是编辑器全部 DOM 元素引用的装配块：每个模块在加载期
+        调 getElementById，最后一块把整张表快照成冻结的 window.MaweDom。外部有几百处
+        读 MaweDom.xxx、还有 5 处经门面 setter 写可变状态，所以键名、键序与访问器种类
+        都不许变；模块按 UI 区域划分，是为了让"这个界面需要哪些元素"能一眼定位。"""
+        manifest = list(edit.read_editor_script_manifest())
+        block = [e for e in manifest if e.startswith("editor/ui/elements/")]
+        self.assertEqual(block[0], "editor/ui/elements/namespace.js")
+        self.assertEqual(block[-1], "editor/ui/elements/compat-surface.js")
+        modules = block[1:-1]
+        self.assertGreaterEqual(len(modules), 12, "DOM 引用块模块数量异常，疑似装配方式被改动")
+
+        surface = edit.editor_script_path("editor/ui/elements/compat-surface.js").read_text(encoding="utf-8")
+        self.assertIn("global.MaweDom = Object.freeze({", surface)
+        published = self.assert_facade_matches_modules(modules, surface, "editor/ui/elements/")
+        self.assertGreaterEqual(len(published), 280, "DOM 引用数量异常减少，疑似有引用在搬运中丢失")
+
+        # 可变状态原来靠门面里的 setter 赋值；拆分后 owner 必须继续提供 setter，
+        # 否则 compat-surface 里的 `U.x = v` 会在严格模式下抛 TypeError。
+        for name in (
+            "mediaSeekInputLastValue",
+            "hideDisabled",
+            "timedTextEditDraft",
+            "timedTextEditReturnFocus",
+            "timedTextEditReportTimer",
+        ):
+            self.assertIn(f"get {name}() {{ return U.{name}; }},", surface)
+            self.assertIn(f"set {name}(v) {{ U.{name} = v; }},", surface)
+
+        # 拆这一块的目的是消灭千行文件；区域模块再长也不该回到原来的量级。
         for entry in modules:
-            source = edit.editor_script_path(entry).read_text(encoding="utf-8")
-            names: set[str] = set()
-            for block_text in re.findall(r"Object\.assign\(U, \{\n(.*?)\n  \}\);", source, re.DOTALL):
-                names.update(re.findall(r"^    ([\w$]+),$", block_text, re.MULTILINE))
-            names.update(re.findall(r"Object\.defineProperty\(U, '([\w$]+)'", source))
-            overlap = names & published
-            self.assertFalse(overlap, f"{sorted(overlap)} 被 editor/text/timed-edit/ 两个模块同时发布")
-            published |= names
-
-        facade_body = surface.split("Object.freeze({", 1)[1]
-        facade_keys = set(re.findall(r"^    (?:get |set )?([\w$]+)[:(]", facade_body, re.MULTILINE))
-        self.assertTrue(facade_keys, "兼容出口没有解析出任何键")
-        self.assertEqual(
-            sorted(facade_keys),
-            sorted(published),
-            "兼容出口的门面键与 editor/text/timed-edit/ 各模块发布的内部符号不一致",
-        )
+            lines = len(edit.editor_script_path(entry).read_text(encoding="utf-8").splitlines())
+            self.assertLessEqual(lines, 200, f"{entry} 有 {lines} 行，超出区域模块的量级")
 
     def test_waveform_gap_display_type_uses_shared_core_and_subtle_protected_style(self) -> None:
         waveform = edit.read_editor_scripts_under("editor/waveform/")
