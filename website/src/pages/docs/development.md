@@ -21,7 +21,23 @@ MAW（Moy's ASR Workflow）是一个收窄的本地工作流：本地媒体经�
 - `maw/gui_web.py`、`maw/gui_workflow.py` 与 `web/launcher/`：Launcher 图形界面及其后端桥接。
 - `edit.py`：读取 `.mosp` / `.json` 工程，渲染单文件 `.edit.html`；也生成 `blank-editor.html`。波形、ReaPeaks 和媒体缓存实现位于 `maw/waveform.py`、`maw/reapeaks.py`、`maw/reapeaks_generate.py`、`maw/media_cache.py`。
 - `server-editor/serve.py`：仅监听 `127.0.0.1` 的编辑器服务器，负责媒体 Range 响应、工程安全保存与本机设置。
-- `web/`：唯一前端源码。`editor-template.html` 组合 `editor.css`、`waveform.css` 与 `editor-scripts.txt` 中按顺序列出的脚本；禁止手改生成后的 `blank-editor.html`（契约测试会逐字节比对）。编辑器 JS 按层放在 `web/editor/` 下：`boot/` 注入数据与启动装配、`lib/` 纯逻辑、`state/` 状态与历史、`ui/` 界面基元、按域目录（playback / cues / split / gap / text / timeline / export / project / server / stickers / appearance / input）、`waveform/` 波形运行时、`i18n/` 多语言、`onboarding/` 新手引导；`web/shared/` 是 MAWE 与 server-align 共用的纯核心，`web/launcher/` 独立于编辑器清单。目录只负责导航，**装配顺序唯一由 `web/editor-scripts.txt` 决定**，新增脚本必须登记进该清单。
+- `web/`：唯一前端源码。`editor-template.html` 组合 `editor.css`、`waveform.css` 与 `editor-scripts.txt` 中按顺序列出的脚本；禁止手改生成后的 `blank-editor.html`（契约测试会逐字节比对）。编辑器 JS 按层放在 `web/editor/` 下：
+
+```text
+web/shared/          MAWE 与 server-align 共用的纯核心
+web/editor/boot/     注入数据、模块注册表、启动装配
+web/editor/lib/      纯逻辑与数据规范化（不碰 DOM，可在 Node vm 中加载）
+web/editor/state/    工程状态、字幕面板状态、历史栈
+web/editor/ui/       元素表、浮层、提示、右键菜单等界面基元
+web/editor/<域>/     playback / cues / split / gap / text / timeline / export /
+                     project / server / stickers / appearance / input
+web/editor/waveform/ 框架无关的波形运行时
+web/editor/i18n/     中英文字典与 DOM 文本
+web/editor/onboarding/ 新手引导
+web/launcher/        启动器前端（有自己的 <script src>，不在编辑器清单内）
+```
+
+  目录只负责导航，**装配顺序唯一由 `web/editor-scripts.txt` 决定**；新增脚本必须登记进该清单，否则契约测试失败。`editor/lib/*` 之间不用 `import`，而是把内部符号发布到 `window.MaweLib`（`namespace.js` 独占创建、`compat-surface.js` 最后组装兼容出口 `window.AsrEditorUtils`）；可变状态必须以访问器发布，新增 helper 不要往兼容出口加。`editor/waveform/*` 同构地使用 `window.MaweWaveform`，`WaveformEditor` 的其余成员按职责放在原型混入模块里，必须在 `core.js` 之后加载。大闭包的拆分判定与进度见 [`dev/MAWE web 目录结构化与巨型 IIFE 拆解台账.md`](https://github.com/Moyf/moys-asr-workflow/blob/main/docs/dev/MAWE%20web%20目录结构化与巨型%20IIFE%20拆解台账.md)。
 
 ### 当前编辑器维护重点
 

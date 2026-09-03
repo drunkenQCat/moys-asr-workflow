@@ -48,7 +48,13 @@ web/editor/onboarding/新手引导
 web/launcher/    启动器前端（独立于编辑器清单）
 ```
 
+`editor/lib/*` 之间不写 `import`，改用内部命名空间 `window.MaweLib`：`editor/lib/namespace.js` 是唯一所有者（重复初始化直接抛错），各模块 `Object.assign(U, {…})` 发布自己的符号，模块内的可变状态必须以 `Object.defineProperty(U, name, {get: …})` 访问器发布，否则外部永远读到加载期的旧值。块内顺序自由（只在函数体内惰性读），但 `namespace.js` 必须第一、`editor/lib/compat-surface.js` 必须最后；后者把整块逐个键快照回兼容出口 `window.AsrEditorUtils`。**新增内部 helper 只进 `MaweLib`，不要加进兼容出口**，兼容出口的键名与键序由 `tests/test_editor_utils.mjs` 逐项比对。
+
 契约测试优先断言 `edit.build_editor_scripts()`（整包）或 `edit.read_editor_scripts_under("editor/waveform/")`（按层），而不是单个文件路径，这样模块还能继续拆细而测试不失效。
+
+一个文件如果顶层只有一个 IIFE、闭包超过约 800 行，就应当继续拆；进度与判定记录在 [`docs/dev/MAWE web 目录结构化与巨型 IIFE 拆解台账.md`](docs/dev/MAWE%20web%20目录结构化与巨型%20IIFE%20拆解台账.md)。
+
+`editor/waveform/*` 用同一套命名空间（`window.MaweWaveform`），额外一层：`WaveformEditor` 的构造器留在 `core.js`，其余成员按职责放进同目录的原型混入模块，由 `U.defineMethods(U.WaveformEditor.prototype, {…})` 在加载期安装——它在加载期就要拿到类，所以必须排在 `core.js` 之后、`compat-surface.js` 之前（契约测试守住）。`defineMethods` 逐描述符复制，不能用 `Object.assign`，否则类里的访问器成员会被降级成数据属性。
 
 ## 开发与验证
 
