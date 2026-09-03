@@ -12,7 +12,23 @@ MAW（Moy's ASR Workflow）是一个收窄的本地工作流：本地媒体经�
 - `maw/gui_web.py`、`maw/gui_workflow.py` 与 `web/launcher/`：Launcher 图形界面及其后端桥接。
 - `edit.py`：读取 `.mosp` / `.json` 工程，渲染单文件 `.edit.html`；也生成 `blank-editor.html`。波形、ReaPeaks 和媒体缓存实现位于 `maw/waveform.py`、`maw/reapeaks.py`、`maw/reapeaks_generate.py`、`maw/media_cache.py`。
 - `server-editor/serve.py`：仅监听 `127.0.0.1` 的编辑器服务器，负责媒体 Range 响应、工程安全保存与本机设置。
-- `web/`：唯一前端源码。`editor-template.html` 组合 `editor.css`、`waveform.css` 与 `editor-scripts.txt` 中按顺序列出的脚本；禁止手改生成后的 `blank-editor.html`。
+- `web/`：唯一前端源码。`editor-template.html` 组合 `editor.css`、`waveform.css` 与 `editor-scripts.txt` 中按顺序列出的脚本；禁止手改生成后的 `blank-editor.html`（契约测试会逐字节比对）。编辑器 JS 按层放在 `web/editor/` 下：
+
+```text
+web/shared/          MAWE 与 server-align 共用的纯核心
+web/editor/boot/     注入数据、模块注册表、启动装配
+web/editor/lib/      纯逻辑与数据规范化（不碰 DOM，可在 Node vm 中加载）
+web/editor/state/    工程状态、字幕面板状态、历史栈
+web/editor/ui/       元素表、浮层、提示、右键菜单等界面基元
+web/editor/<域>/     playback / cues / split / gap / text / timeline / export /
+                     project / server / stickers / appearance / input
+web/editor/waveform/ 框架无关的波形运行时
+web/editor/i18n/     中英文字典与 DOM 文本
+web/editor/onboarding/ 新手引导
+web/launcher/        启动器前端（有自己的 <script src>，不在编辑器清单内）
+```
+
+  目录只负责导航，**装配顺序唯一由 `web/editor-scripts.txt` 决定**；新增脚本必须登记进该清单，否则契约测试失败。
 
 ### 当前编辑器维护重点
 
@@ -106,7 +122,7 @@ uv run python edit.py --blank
 - `rows`：左侧“视频 / 当前字幕 / 字幕列表”的相对高度，读取时会规范化。
 - `tree`：`custom` 渲染器的当前真源。二叉树叶子为 `{ "type": "module", "id": ... }`；分支为 `{ "type": "split", "direction": "row" | "column", "ratio": 20..80, "children": [leftOrTop, rightOrBottom] }`。有效树必须恰好包含四个模块各一次。
 
-`web/waveform.js:normalizeLayoutData()` 负责容错、范围限制和工作区格式迁移。新增模块或修改树规则时，必须同步更新该函数、工作区拖放逻辑、`JSON_SCHEMA.md`、相关 JS 测试和此文档。
+`web/editor/waveform/` 的 `normalizeLayoutData()` 负责容错、范围限制和工作区格式迁移。新增模块或修改树规则时，必须同步更新该函数、工作区拖放逻辑、`JSON_SCHEMA.md`、相关 JS 测试和此文档。
 
 ### 服务器工作区库行为
 
@@ -123,11 +139,13 @@ uv run python edit.py --blank
 
 ```powershell
 uv run --frozen ruff check
-node --check web\editor.js
-node --check web\waveform.js
+node --test tests\test_editor_script_syntax.mjs
+node --test tests\test_editor_script_order.mjs
 node --test tests\test_editor_utils.mjs tests\test_waveform_js.mjs
 uv run python -m unittest discover -s tests -p "test_*.py"
 git diff --check
 ```
+
+`test_editor_script_syntax.mjs` 会按清单逐个编译 `web/` 下全部脚本，取代此前只覆盖 `editor.js`、`waveform.js` 两个入口的 `node --check`；`test_editor_script_order.mjs` 需要 `npm install` 装上 acorn 才会生效，否则自动 skip。
 
 交互改动还应手动启动 `uv run python server-editor\serve.py --blank`，验证拖放、播放、Seek、工作区拖动及保存。所有文本保持 UTF-8 与 LF。

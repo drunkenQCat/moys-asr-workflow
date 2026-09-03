@@ -18,9 +18,9 @@ const context = {
   atob: (value) => Buffer.from(value, 'base64').toString('binary'),
   btoa: (value) => Buffer.from(value, 'binary').toString('base64'),
 };
-const gapCoreSource = fs.readFileSync(new URL('../web/gap-remove-core.js', import.meta.url), 'utf8');
+const gapCoreSource = fs.readFileSync(new URL('../web/shared/gap-remove-core.js', import.meta.url), 'utf8');
 vm.runInNewContext(gapCoreSource, context);
-const source = fs.readFileSync(new URL('../web/waveform.js', import.meta.url), 'utf8');
+const source = fs.readFileSync(new URL('../web/editor/waveform/runtime.js', import.meta.url), 'utf8');
 vm.runInNewContext(source, context);
 const helpers = context.window.AsrWaveform.testing;
 const builtinWorkspaces = context.window.AsrWaveform.builtinWorkspaces;

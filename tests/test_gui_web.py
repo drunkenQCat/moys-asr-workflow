@@ -18,6 +18,7 @@ from urllib.error import URLError
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+import edit  # noqa: E402
 from maw.gui_web import EventPump, LauncherApi, LauncherPaths, PreflightError, SERVER_START_TIMEOUT, _emoji_font_urls, _find_mose_executable, _is_ffmpeg_missing_failure, _is_ffmpeg_start_failure, _is_ffprobe_start_failure, _open_existing_path, _open_external, _port, _register_mosp_association, _request_from_payload, _route_dropped_path, _valid_emoji_font, default_paths, download_emoji_font, run_app  # noqa: E402
 from maw.gui_workflow import TranscriptionCancelledError, TranscriptionProcessError, TranscriptionRequest, TranscriptionResult  # noqa: E402
 from maw.ffmpeg import FfmpegTools  # noqa: E402
@@ -3166,7 +3167,7 @@ class LauncherAssetContractTests(unittest.TestCase):
         self.assertNotIn('state.serverRunning ? t("server_stop")', script)
 
     def test_workspace_requests_sync_server_config_from_response(self) -> None:
-        script = (ROOT / "web" / "editor-workspaces.js").read_text(encoding="utf-8")
+        script = edit.read_editor_scripts_under("editor/server/")
 
         self.assertIn('async function updateServerWorkspaceSettings(payload)', script)
         self.assertIn('body: JSON.stringify(payload)', script)
@@ -3175,22 +3176,22 @@ class LauncherAssetContractTests(unittest.TestCase):
         self.assertIn('SERVER_CONFIG.autoOpenLastProject = result.autoOpenLastProject !== false;', script)
 
     def test_saved_workspace_is_kept_in_the_current_select_list(self) -> None:
-        script = (ROOT / "web" / "editor-workspaces.js").read_text(encoding="utf-8")
+        script = edit.read_editor_scripts_under("editor/server/")
 
         self.assertIn("SERVER_CONFIG.savedWorkspaces = { ...getSavedServerWorkspaces(), [name]: workspace };", script)
         self.assertIn("workspacePresetSelect.querySelector('optgroup[data-saved-workspaces]')?.remove();", script)
         self.assertNotIn("当前服务器版本不支持保存布局", script)
 
     def test_workspace_select_is_owned_by_editor_not_waveform(self) -> None:
-        script = (ROOT / "web" / "editor-workspaces.js").read_text(encoding="utf-8")
-        waveform = (ROOT / "web" / "waveform.js").read_text(encoding="utf-8")
+        script = edit.read_editor_scripts_under("editor/server/")
+        waveform = edit.read_editor_scripts_under("editor/waveform/")
 
         self.assertNotIn('layoutPresetSelect', waveform)
         self.assertIn('const workspacePresetSelect = document.getElementById(\'workspace-preset\');', script)
         self.assertIn("workspacePresetSelect?.addEventListener('change', () => applyWorkspaceSelection(workspacePresetSelect.value));", script)
 
     def test_builtin_workspace_save_uses_its_visible_name(self) -> None:
-        script = (ROOT / "web" / "editor-workspaces.js").read_text(encoding="utf-8")
+        script = edit.read_editor_scripts_under("editor/server/")
 
         self.assertIn('function currentWorkspaceDisplayName()', script)
         self.assertIn('const displayName = saveAs ? name : currentWorkspaceDisplayName();', script)

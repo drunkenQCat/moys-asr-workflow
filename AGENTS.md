@@ -29,14 +29,33 @@ docs/LOCAL_ASR.md             # 实验性本地 Qwen3-ASR / FunASR CLI
 uv run python edit.py --blank
 ```
 
-不要手改 `blank-editor.html` 内联副本。所有文本文件必须保持 UTF-8 与 LF（`\n`）换行，包括 Windows 上编辑的 `.py`、`.js`、`.html`、`.md`、`.yml`、`.ps1` 等文件；禁止提交 CRLF（`\r\n`）。不要依赖开发者机器的 `core.autocrlf`，以仓库 `.gitattributes` 的 `eol=lf` 规则为准。
+不要手改 `blank-editor.html` 内联副本；`tests/test_editor_assets.py` 会逐字节比对仓库内的便携版与 `web/` 源码，忘记重生成会直接失败。所有文本文件必须保持 UTF-8 与 LF（`\n`）换行，包括 Windows 上编辑的 `.py`、`.js`、`.html`、`.md`、`.yml`、`.ps1` 等文件；禁止提交 CRLF（`\r\n`）。不要依赖开发者机器的 `core.autocrlf`，以仓库 `.gitattributes` 的 `eol=lf` 规则为准。
+
+### web/ 目录结构
+
+编辑器 JS 按层分目录存放；**唯一的装配顺序是 `web/editor-scripts.txt`**，目录只负责导航，不携带顺序语义。新增脚本必须登记进该清单（`test_every_editor_source_is_listed_in_the_manifest` 会拒绝未登记的孤儿文件）。
+
+```text
+web/shared/      MAWE 与 server-align 共用的纯核心（gap-remove-core）
+web/editor/boot/ 注入数据、模块注册表、启动装配
+web/editor/lib/  纯逻辑与数据规范化：不碰 DOM/媒体/localStorage，可在 Node vm 中加载
+web/editor/state/工程状态、字幕面板状态、历史栈
+web/editor/ui/   元素表、浮层、提示、右键菜单等界面基元
+web/editor/<域>/ 播放器、字幕、拆分、空隙、文本、时间线、导出、工程、服务器、表情包、外观
+web/editor/waveform/  框架无关的波形运行时
+web/editor/i18n/      中英文字典与 DOM 文本
+web/editor/onboarding/新手引导
+web/launcher/    启动器前端（独立于编辑器清单）
+```
+
+契约测试优先断言 `edit.build_editor_scripts()`（整包）或 `edit.read_editor_scripts_under("editor/waveform/")`（按层），而不是单个文件路径，这样模块还能继续拆细而测试不失效。
 
 ## 开发与验证
 
 ```powershell
 uv sync
-node --check web\editor.js
-node --check web\waveform.js
+node --test tests\test_editor_script_syntax.mjs
+node --test tests\test_editor_script_order.mjs
 node --test tests\test_editor_utils.mjs tests\test_waveform_js.mjs
 uv run python -m unittest discover -s tests -p "test_*.py"
 git diff --check

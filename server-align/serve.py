@@ -41,7 +41,7 @@ from maw.script_alignment import (  # noqa: E402
 
 
 PAGE_PATH = Path(__file__).with_name("index.html")
-GAP_REMOVE_CORE_PATH = ROOT / "web" / "gap-remove-core.js"
+GAP_REMOVE_CORE_PATH = ROOT / "web" / "shared" / "gap-remove-core.js"
 PAGE_CORE_PLACEHOLDER = "/* __GAP_REMOVE_CORE_JS__ */"
 MAX_REQUEST_BYTES = 2 * 1024 * 1024
 

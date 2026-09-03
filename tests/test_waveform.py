@@ -155,37 +155,33 @@ class WaveformExtractionTests(unittest.TestCase):
 
 
 class EditorAssetTests(unittest.TestCase):
+    # 断言对象统一取清单拼接后的完整脚本：符号可以随重构在模块间搬迁，
+    # 装配后的页面行为不变，测试不应随文件拆分而失效。
     def test_project_waveform_survives_loading_media(self) -> None:
-        editor = (ROOT / "web" / "editor.js").read_text(encoding="utf-8")
-        core_state = (ROOT / "web" / "editor-core-state.js").read_text(encoding="utf-8")
-        media_load = (ROOT / "web" / "editor-media-load.js").read_text(encoding="utf-8")
-        project_load = (ROOT / "web" / "editor-project-load.js").read_text(encoding="utf-8")
-        waveform = (ROOT / "web" / "waveform.js").read_text(encoding="utf-8")
-        self.assertIn("let waveformLoadedFromProject = false;", core_state)
+        script = edit.build_editor_scripts()
+        self.assertIn("let waveformLoadedFromProject = false;", script)
         self.assertIn(
             "MaweCoreState.waveformLoadedFromProject = MaweCoreState.waveformEditor.setPayload(MaweBoot.DATA.waveform, { render: false });",
-            project_load,
+            script,
         )
-        self.assertIn("const preserveProjectWaveform = MaweCoreState.waveformLoadedFromProject", media_load)
-        self.assertIn("if (MaweCoreState.waveformEditor && !preserveProjectWaveform)", media_load)
-        self.assertIn("getPayload()", waveform)
+        self.assertIn("const preserveProjectWaveform = MaweCoreState.waveformLoadedFromProject", script)
+        self.assertIn("if (MaweCoreState.waveformEditor && !preserveProjectWaveform)", script)
+        self.assertIn("getPayload()", script)
 
     def test_reapeaks_waveform_is_the_default_shape_source(self) -> None:
-        editor = (ROOT / "web" / "editor.js").read_text(encoding="utf-8")
-        settings = (ROOT / "web" / "editor-settings.js").read_text(encoding="utf-8")
+        script = edit.build_editor_scripts()
         template = (ROOT / "web" / "editor-template.html").read_text(encoding="utf-8")
-        waveform = (ROOT / "web" / "waveform.js").read_text(encoding="utf-8")
-        self.assertIn("waveShapeSource: 'reapeaks'", settings)
-        self.assertIn("getWaveShapeSource?.() || 'reapeaks'", waveform)
+        self.assertIn("waveShapeSource: 'reapeaks'", script)
+        self.assertIn("getWaveShapeSource?.() || 'reapeaks'", script)
         self.assertIn('<option value="reapeaks" selected>ReaPeaks 波形层</option>', template)
         self.assertNotIn('<option value="self" selected>', template)
-        self.assertIn("useReapeaksShape = shapeSource === 'reapeaks'", waveform)
+        self.assertIn("useReapeaksShape = shapeSource === 'reapeaks'", script)
 
     def test_long_media_waveform_hint_points_to_maw_gui(self) -> None:
-        waveform = (ROOT / "web" / "waveform.js").read_text(encoding="utf-8")
-        self.assertIn("请使用 MAW GUI 预生成波形", waveform)
-        self.assertIn("use the MAW GUI to pre-generate the waveform", waveform)
-        self.assertNotIn("请用 edit.py 预生成波形", waveform)
+        script = edit.build_editor_scripts()
+        self.assertIn("请使用 MAW GUI 预生成波形", script)
+        self.assertIn("use the MAW GUI to pre-generate the waveform", script)
+        self.assertNotIn("请用 edit.py 预生成波形", script)
         page = edit.build_blank_html()
         self.assertIn("请使用 MAW GUI 预生成波形", page)
 

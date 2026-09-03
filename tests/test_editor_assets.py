@@ -15,87 +15,119 @@ import edit  # noqa: E402
 
 
 class EditorAssetContractTests(unittest.TestCase):
+    def test_editor_script_path_accepts_subdirectories_and_rejects_escapes(self) -> None:
+        self.assertTrue(edit.editor_script_path("editor/lib/utils.js").is_file())
+        for entry, reason in (
+            ("../outside.js", "escape"),
+            ("sub/../outside.js", "escape"),
+            ("sub\\editor-utils.js", "backslash"),
+            ("/abs/editor-utils.js", "absolute"),
+            ("C:/abs/editor-utils.js", "drive"),
+            ("editor-utils.mjs", "suffix"),
+            ("nested/does-not-exist.js", "missing"),
+        ):
+            with self.subTest(entry=entry, reason=reason):
+                with self.assertRaises(ValueError):
+                    edit.editor_script_path(entry)
+
+    def test_committed_blank_editor_is_regenerated_from_web_sources(self) -> None:
+        # blank-editor.html 是纯生成产物；源码改动后忘记重生成会让仓库里的便携版
+        # 静默落后于 web/，而且没有任何自动化能发现。这里做逐字节对照。
+        committed = (ROOT / "blank-editor.html").read_text(encoding="utf-8")
+        self.assertEqual(committed, edit.build_blank_html())
+
+    def test_every_editor_source_is_listed_in_the_manifest(self) -> None:
+        # web/launcher/ 用自己的 <script src>，不属于编辑器装配清单。
+        listed = {str(edit.editor_script_path(entry)) for entry in edit.read_editor_script_manifest()}
+        orphan_scripts = []
+        for script in (ROOT / "web").rglob("*.js"):
+            if "launcher" in script.relative_to(ROOT / "web").parts:
+                continue
+            if str(script.resolve()) not in listed:
+                orphan_scripts.append(script.relative_to(ROOT / "web").as_posix())
+        self.assertEqual(orphan_scripts, [], "web/ 下存在未登记到 editor-scripts.txt 的脚本")
+
     def test_editor_script_manifest_is_ordered_and_complete(self) -> None:
         self.assertEqual(
             edit.read_editor_script_manifest(),
             (
-                "editor-boot.js",
-                "editor-runtime.js",
-                "gap-remove-core.js",
-                "editor-utils.js",
-                "editor-i18n.js",
-                "waveform.js",
-                "editor-jkl.js",
-                "editor-hint.js",
-                "editor-multi-subtitle-core.js",
-                "editor-settings.js",
-                "editor-colors.js",
-                "editor-gap-remove-data.js",
-                "editor-core-state.js",
-                "editor-history.js",
-                "editor-dom.js",
-                "editor-cue-panel-state.js",
-                "editor-ninja.js",
-                "editor-settings-panels.js",
-                "editor-display-settings.js",
-                "editor-split-mode.js",
-                "editor-split-trim.js",
-                "editor-segment-ops.js",
-                "editor-floating-panel.js",
-                "editor-gap-remove-ui.js",
-                "editor-selection.js",
-                "editor-binding-align.js",
-                "editor-cue-panel.js",
-                "editor-cue-elements.js",
-                "editor-color-filter.js",
-                "editor-search.js",
-                "editor-inline-edit.js",
-                "editor-split-core.js",
-                "editor-split-context.js",
-                "editor-cue-list-anchor.js",
-                "editor-nav-preview.js",
-                "editor-cue-events.js",
-                "editor-media-playback.js",
-                "editor-keyboard-targets.js",
-                "editor-shortcuts.js",
-                "editor-merge-adjacent.js",
-                "editor-appearance.js",
-                "editor-preview-geometry.js",
-                "editor-playback-loop.js",
-                "editor-sticker-overlay.js",
-                "editor-export-srt.js",
-                "editor-export-timeline.js",
-                "editor-server-save.js",
-                "editor-workspaces.js",
-                "editor-project-save.js",
-                "editor-dynamic-exports.js",
-                "editor-export-menus.js",
-                "editor-project-media-inputs.js",
-                "editor-json-repair.js",
-                "editor-project-load.js",
-                "editor-loading-progress.js",
-                "editor-multi-import.js",
-                "editor-media-load.js",
-                "editor-sticker-root.js",
-                "editor-find-replace.js",
-                "editor-text-process.js",
-                "editor-timed-text-edit.js",
-                "editor-sticker-picker.js",
-                "editor-add-cue.js",
-                "editor-bound-drag.js",
-                "editor-context-menus.js",
-                "editor-text-cleanup.js",
-                "editor-waveform-init.js",
-                "editor-help-panel.js",
-                "editor-theme.js",
-                "editor-media-step.js",
-                "editor-appearance-inputs.js",
-                "editor-behavior-hints.js",
-                "editor-server-connection.js",
-                "editor-drag-drop.js",
-                "editor-sticker-otio-export.js",
-                "editor.js",
-                "editor-onboarding.js",
+                "editor/boot/data.js",
+                "editor/boot/registry.js",
+                "shared/gap-remove-core.js",
+                "editor/lib/utils.js",
+                "editor/i18n/i18n.js",
+                "editor/waveform/runtime.js",
+                "editor/playback/jkl.js",
+                "editor/ui/hint.js",
+                "editor/lib/multi-subtitle-core.js",
+                "editor/lib/settings.js",
+                "editor/lib/colors.js",
+                "editor/gap/data.js",
+                "editor/state/core.js",
+                "editor/state/history.js",
+                "editor/ui/elements.js",
+                "editor/state/cue-panel.js",
+                "editor/stickers/ninja.js",
+                "editor/ui/settings-panels.js",
+                "editor/appearance/display-settings.js",
+                "editor/split/mode.js",
+                "editor/split/trim.js",
+                "editor/cues/segment-ops.js",
+                "editor/ui/floating-panel.js",
+                "editor/gap/ui.js",
+                "editor/cues/selection.js",
+                "editor/timeline/binding-align.js",
+                "editor/cues/panel.js",
+                "editor/ui/cue-elements.js",
+                "editor/cues/color-filter.js",
+                "editor/cues/search.js",
+                "editor/cues/inline-edit.js",
+                "editor/split/core.js",
+                "editor/split/context-menu.js",
+                "editor/cues/list-anchor.js",
+                "editor/timeline/nav-preview.js",
+                "editor/cues/events.js",
+                "editor/playback/media.js",
+                "editor/input/keyboard-targets.js",
+                "editor/input/shortcuts.js",
+                "editor/cues/merge-adjacent.js",
+                "editor/appearance/subtitle.js",
+                "editor/appearance/preview-geometry.js",
+                "editor/playback/loop.js",
+                "editor/stickers/overlay.js",
+                "editor/export/srt.js",
+                "editor/export/timeline.js",
+                "editor/server/save.js",
+                "editor/server/workspaces.js",
+                "editor/project/save.js",
+                "editor/export/dynamic.js",
+                "editor/ui/export-menus.js",
+                "editor/project/media-inputs.js",
+                "editor/lib/json-repair.js",
+                "editor/project/load.js",
+                "editor/ui/loading-progress.js",
+                "editor/project/multi-import.js",
+                "editor/project/media-load.js",
+                "editor/stickers/root.js",
+                "editor/text/find-replace.js",
+                "editor/text/process.js",
+                "editor/text/timed-edit.js",
+                "editor/stickers/picker.js",
+                "editor/cues/add.js",
+                "editor/timeline/boundary-drag.js",
+                "editor/ui/context-menus.js",
+                "editor/text/cleanup.js",
+                "editor/timeline/waveform-init.js",
+                "editor/ui/help-panel.js",
+                "editor/appearance/theme.js",
+                "editor/playback/step.js",
+                "editor/appearance/inputs.js",
+                "editor/ui/behavior-hints.js",
+                "editor/server/connection.js",
+                "editor/input/drag-drop.js",
+                "editor/export/sticker-otio.js",
+                "editor/boot/entry.js",
+                "editor/onboarding/tour.js",
             ),
         )
 
@@ -187,7 +219,7 @@ class EditorAssetContractTests(unittest.TestCase):
             previous_index = current_index
 
     def test_waveform_gap_display_type_uses_shared_core_and_subtle_protected_style(self) -> None:
-        waveform = edit.read_web_asset("waveform.js")
+        waveform = edit.read_web_asset("editor/waveform/runtime.js")
         styles = edit.read_web_asset("waveform.css")
         self.assertIn("getGapRemoveDisplayType", waveform)
         self.assertIn("isGapRemoveDisplayProtected", waveform)
@@ -197,7 +229,7 @@ class EditorAssetContractTests(unittest.TestCase):
         self.assertIn("this.options.getGapRemoveGaps?.() || []", waveform)
 
     def test_gap_state_labels_match_in_mawe_and_align(self) -> None:
-        waveform = edit.read_web_asset("waveform.js")
+        waveform = edit.read_web_asset("editor/waveform/runtime.js")
         align_page = (ROOT / "server-align" / "index.html").read_text(encoding="utf-8")
         label = "gap.removed === false ? '空隙（未激活）' : '空隙'"
         self.assertIn(label, waveform)
@@ -216,7 +248,7 @@ class EditorAssetContractTests(unittest.TestCase):
             self.assertIn("rgba(94", styles)
 
     def test_gap_core_exposes_restore_and_clear_semantics(self) -> None:
-        core = edit.read_web_asset("gap-remove-core.js")
+        core = edit.read_web_asset("shared/gap-remove-core.js")
         self.assertIn("function getGapRemoveDisplayGaps", core)
         self.assertIn("removed: false", core)
         self.assertIn("function removeGapRemoveProvenanceRange", core)
@@ -228,7 +260,7 @@ class EditorAssetContractTests(unittest.TestCase):
         self.assertNotIn("underlying", core)
 
     def test_editor_overall_gap_move_uses_shared_provenance_operation(self) -> None:
-        script = edit.read_web_asset("editor-gap-remove-ui.js")
+        script = edit.read_web_asset("editor/gap/ui.js")
         start = script.index("function translateManualGap(")
         end = script.index("function resizeManualGapBoundary(", start)
         section = script[start:end]
@@ -236,7 +268,7 @@ class EditorAssetContractTests(unittest.TestCase):
         self.assertNotIn("original.start, end: original.end, removed: false", section)
 
     def test_shrink_gaps_replaces_audio_source_without_manual_override(self) -> None:
-        script = edit.read_web_asset("editor-gap-remove-ui.js")
+        script = edit.read_web_asset("editor/gap/ui.js")
         start = script.index("function shrinkExistingGaps()")
         end = script.index("function readGapRemoveDisableSettings()", start)
         section = script[start:end]
