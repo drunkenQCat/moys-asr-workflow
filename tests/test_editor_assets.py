@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import sys
 import tempfile
 import unittest
@@ -138,7 +139,18 @@ class EditorAssetContractTests(unittest.TestCase):
                 "editor/cues/color-filter.js",
                 "editor/cues/search.js",
                 "editor/cues/inline-edit.js",
-                "editor/split/core.js",
+                "editor/split/namespace.js",
+                "editor/split/pending-state.js",
+                "editor/split/offset-timing.js",
+                "editor/split/item-cut.js",
+                "editor/split/lane-state.js",
+                "editor/split/lane-controls.js",
+                "editor/split/lane-render.js",
+                "editor/split/auto-submit.js",
+                "editor/split/modal.js",
+                "editor/split/commit.js",
+                "editor/split/cursor-split.js",
+                "editor/split/compat-surface.js",
                 "editor/split/context-menu.js",
                 "editor/cues/list-anchor.js",
                 "editor/timeline/nav-preview.js",
@@ -219,6 +231,51 @@ class EditorAssetContractTests(unittest.TestCase):
         self.assertGreaterEqual(len(mixins), 10, "原型混入模块数量异常，疑似装配方式被改动")
         for entry in mixins:
             self.assertGreater(manifest.index(entry), manifest.index(class_owner), f"{entry} 在类声明之前加载")
+
+    def test_split_block_builds_the_frozen_facade_after_every_module(self) -> None:
+        """editor/split/* 按 window.MaweSplit 装配：模块只在函数体内惰性互读，
+        顺序本身自由；但 namespace 必须第一（它创建命名空间），兼容出口必须最后
+        （它在加载期一次性读出全部符号并 Object.freeze）。"""
+        manifest = list(edit.read_editor_script_manifest())
+        # 同目录还有 mode.js / trim.js / context-menu.js 这些各自独立的模块，
+        # 块范围由 namespace 与兼容出口两个锚点决定，而不是整个目录。
+        start = manifest.index("editor/split/namespace.js")
+        end = manifest.index("editor/split/compat-surface.js")
+        self.assertGreater(end, start)
+        block = manifest[start : end + 1]
+        self.assertEqual(
+            {e for e in manifest if e.startswith("editor/split/") and e not in block},
+            {"editor/split/mode.js", "editor/split/trim.js", "editor/split/context-menu.js"},
+            "editor/split/ 目录里除本块之外还应只有这三个独立模块",
+        )
+        modules = block[1:-1]
+        self.assertGreaterEqual(len(modules), 8, "拆分块模块数量异常，疑似装配方式被改动")
+
+        surface = edit.editor_script_path("editor/split/compat-surface.js").read_text(encoding="utf-8")
+        self.assertIn("global.MaweSplitCore = Object.freeze({", surface)
+        # 可变状态必须以访问器对通过门面读写，语义才与拆分前共享同一个 let 一致。
+        self.assertIn("get pendingLinkedSplit() { return U.pendingLinkedSplit; },", surface)
+        self.assertIn("set pendingLinkedSplit(v) { U.pendingLinkedSplit = v; },", surface)
+
+        published: set[str] = set()
+        for entry in modules:
+            source = edit.editor_script_path(entry).read_text(encoding="utf-8")
+            names: set[str] = set()
+            for block_text in re.findall(r"Object\.assign\(U, \{\n(.*?)\n  \}\);", source, re.DOTALL):
+                names.update(re.findall(r"^    ([\w$]+),$", block_text, re.MULTILINE))
+            names.update(re.findall(r"Object\.defineProperty\(U, '([\w$]+)'", source))
+            overlap = names & published
+            self.assertFalse(overlap, f"{sorted(overlap)} 被 editor/split/ 两个模块同时发布")
+            published |= names
+
+        facade_body = surface.split("Object.freeze({", 1)[1]
+        facade_keys = set(re.findall(r"^    (?:get |set )?([\w$]+)[:(]", facade_body, re.MULTILINE))
+        self.assertTrue(facade_keys, "兼容出口没有解析出任何键")
+        self.assertEqual(
+            sorted(facade_keys),
+            sorted(published),
+            "兼容出口的门面键与 editor/split/ 各模块发布的内部符号不一致",
+        )
 
     def test_waveform_gap_display_type_uses_shared_core_and_subtle_protected_style(self) -> None:
         waveform = edit.read_editor_scripts_under("editor/waveform/")

@@ -1,0 +1,65 @@
+// window.MaweSplitCore 兼容出口：结构、键名与键序与拆分前完全一致（契约测试逐项比对），
+// 取值来自 editor/split/ 各模块发布到 window.MaweSplit 的内部符号。内部 helper 不要往这里加。
+// 必须在 editor/split/ 全部模块之后加载。
+(function initMaweSplitCompatSurface(global) {
+  'use strict';
+
+  const U = global.MaweSplit;
+
+  global.MaweSplitCore = Object.freeze({
+    get pendingLinkedSplit() { return U.pendingLinkedSplit; },
+    set pendingLinkedSplit(v) { U.pendingLinkedSplit = v; },
+    splitTimeForTextOffset: U.splitTimeForTextOffset,
+    shouldUseMainSplitTimestamps: U.shouldUseMainSplitTimestamps,
+    notifyMainSplitTimestampFallback: U.notifyMainSplitTimestampFallback,
+    splitOffsetNearTime: U.splitOffsetNearTime,
+    splitOffsetNearTextPosition: U.splitOffsetNearTextPosition,
+    cleanSplitItems: U.cleanSplitItems,
+    forceSplitCutForSegments: U.forceSplitCutForSegments,
+    forcedSplitRetryHint: U.forcedSplitRetryHint,
+    armForcedSplit: U.armForcedSplit,
+    splitItemsAtChar: U.splitItemsAtChar,
+    buildSplitPair: U.buildSplitPair,
+    linkedSplitState: U.linkedSplitState,
+    mainWaveformSplitState: U.mainWaveformSplitState,
+    extensionOnlySplitState: U.extensionOnlySplitState,
+    splitLaneElements: U.splitLaneElements,
+    splitLaneLocked: U.splitLaneLocked,
+    splitLaneUsesMainTimestamp: U.splitLaneUsesMainTimestamp,
+    splitLaneKeyboardInteractive: U.splitLaneKeyboardInteractive,
+    splitLaneSegment: U.splitLaneSegment,
+    stepSplitLaneOffset: U.stepSplitLaneOffset,
+    SPLIT_LANE_LINE_TOLERANCE_PX: U.SPLIT_LANE_LINE_TOLERANCE_PX,
+    splitLaneGapLines: U.splitLaneGapLines,
+    verticalSplitLaneOffset: U.verticalSplitLaneOffset,
+    splitKeyboardActiveLane: U.splitKeyboardActiveLane,
+    splitLaneVisible: U.splitLaneVisible,
+    focusSplitLane: U.focusSplitLane,
+    splitKeyboardSwitchLane: U.splitKeyboardSwitchLane,
+    toggleSplitLaneKeyboardLock: U.toggleSplitLaneKeyboardLock,
+    flashSplitLaneBlockedFeedback: U.flashSplitLaneBlockedFeedback,
+    syncLinkedSplitTime: U.syncLinkedSplitTime,
+    splitCutTime: U.splitCutTime,
+    setSplitPreviewLine: U.setSplitPreviewLine,
+    updateSplitLaneVisual: U.updateSplitLaneVisual,
+    renderSplitLane: U.renderSplitLane,
+    renderLinkedSplitText: U.renderLinkedSplitText,
+    updateLinkedSplitLockVisual: U.updateLinkedSplitLockVisual,
+    isSplitAutoSubmitEnabled: U.isSplitAutoSubmitEnabled,
+    splitAutoSubmitReady: U.splitAutoSubmitReady,
+    maybeAutoSubmitLinkedSplit: U.maybeAutoSubmitLinkedSplit,
+    splitCutSourceHint: U.splitCutSourceHint,
+    renderSplitMeta: U.renderSplitMeta,
+    updateLinkedSplitPreview: U.updateLinkedSplitPreview,
+    closeLinkedSplitModal: U.closeLinkedSplitModal,
+    openMainWaveformSplitModal: U.openMainWaveformSplitModal,
+    openExtensionSplitModal: U.openExtensionSplitModal,
+    commitMainWaveformSplit: U.commitMainWaveformSplit,
+    commitLinkedSplitMainOnly: U.commitLinkedSplitMainOnly,
+    commitExtensionSplit: U.commitExtensionSplit,
+    confirmLinkedSplit: U.confirmLinkedSplit,
+    splitAtCursor: U.splitAtCursor,
+    flashCueSplitAt: U.flashCueSplitAt,
+    flashSplitFeedback: U.flashSplitFeedback
+  });
+})(typeof window !== 'undefined' ? window : globalThis);

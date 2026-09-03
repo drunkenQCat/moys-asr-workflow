@@ -14,6 +14,11 @@
 # WaveformEditor.prototype while loading, so they must all come after
 # editor/waveform/core.js (which declares the class) and before
 # editor/waveform/compat-surface.js (which rebuilds window.AsrWaveform).
+# editor/split/* follows the same rule on window.MaweSplit: the modules only read
+# each other lazily inside function bodies, so their mutual order is free, but
+# editor/split/namespace.js must come first and editor/split/compat-surface.js
+# last, because that is where the frozen window.MaweSplitCore facade (including
+# the pendingLinkedSplit accessor pair) gets rebuilt.
 editor/boot/data.js
 editor/boot/registry.js
 shared/gap-remove-core.js
@@ -101,7 +106,18 @@ editor/ui/cue-elements.js
 editor/cues/color-filter.js
 editor/cues/search.js
 editor/cues/inline-edit.js
-editor/split/core.js
+editor/split/namespace.js
+editor/split/pending-state.js
+editor/split/offset-timing.js
+editor/split/item-cut.js
+editor/split/lane-state.js
+editor/split/lane-controls.js
+editor/split/lane-render.js
+editor/split/auto-submit.js
+editor/split/modal.js
+editor/split/commit.js
+editor/split/cursor-split.js
+editor/split/compat-surface.js
 editor/split/context-menu.js
 editor/cues/list-anchor.js
 editor/timeline/nav-preview.js
