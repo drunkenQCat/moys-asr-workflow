@@ -31,25 +31,39 @@ fn replace_all(page: &mut String, replacements: &[(&str, &str)]) {
     }
 }
 
-fn editor_script_manifest(web_dir: &Path) -> Vec<String> {
+fn editor_script_path(web_dir: &Path, entry: &str) -> PathBuf {
+    // 清单条目是 web/ 下的 POSIX 相对路径，允许子目录，禁止转义出 web/。
+    if entry.contains('\\') || entry.contains(':') || entry.starts_with('/') {
+        panic!("无效的编辑器脚本清单项（必须是 POSIX 相对路径）：{}", entry);
+    }
+    let path = Path::new(entry);
+    if path.extension().and_then(|value| value.to_str()) != Some("js") {
+        panic!("无效的编辑器脚本清单项（必须以 .js 结尾）：{}", entry);
+    }
+    let mut normalized = PathBuf::new();
+    for component in path.components() {
+        match component {
+            std::path::Component::Normal(name) => normalized.push(name),
+            _ => panic!("编辑器脚本清单项必须留在 web/ 内：{}", entry),
+        }
+    }
+    let resolved = web_dir.join(&normalized);
+    if !resolved.is_file() {
+        panic!("编辑器脚本清单项不存在：{}", entry);
+    }
+    resolved
+}
+
+fn editor_script_manifest(web_dir: &Path) -> Vec<(String, PathBuf)> {
     let manifest_path = web_dir.join("editor-scripts.txt");
-    let mut entries = Vec::new();
+    let mut entries: Vec<(String, PathBuf)> = Vec::new();
     let mut seen = HashSet::new();
     for (line_number, raw_line) in read(&manifest_path).lines().enumerate() {
         let entry = raw_line.split('#').next().unwrap_or("").trim();
         if entry.is_empty() {
             continue;
         }
-        let path = Path::new(entry);
-        if path.file_name().and_then(|value| value.to_str()) != Some(entry)
-            || path.extension().and_then(|value| value.to_str()) != Some("js")
-        {
-            panic!(
-                "无效的编辑器脚本清单项（第 {} 行）：{}",
-                line_number + 1,
-                entry
-            );
-        }
+        let resolved = editor_script_path(web_dir, entry);
         if !seen.insert(entry.to_string()) {
             panic!(
                 "编辑器脚本清单存在重复项（第 {} 行）：{}",
@@ -57,10 +71,7 @@ fn editor_script_manifest(web_dir: &Path) -> Vec<String> {
                 entry
             );
         }
-        if !web_dir.join(entry).is_file() {
-            panic!("编辑器脚本清单项不存在：{}", entry);
-        }
-        entries.push(entry.to_string());
+        entries.push((entry.to_string(), resolved));
     }
     if entries.is_empty() {
         panic!("编辑器脚本清单为空：{}", manifest_path.display());
@@ -71,7 +82,7 @@ fn editor_script_manifest(web_dir: &Path) -> Vec<String> {
 fn read_editor_scripts(web_dir: &Path) -> String {
     editor_script_manifest(web_dir)
         .into_iter()
-        .map(|entry| read(&web_dir.join(entry)))
+        .map(|(_, path)| read(&path))
         .collect::<Vec<_>>()
         .join("\n\n")
 }

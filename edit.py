@@ -30,7 +30,7 @@ import os
 import re
 import struct
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import NotRequired, TypedDict
 
 from maw.colors import COLOR_PALETTE
@@ -223,6 +223,30 @@ def read_web_asset(name: str) -> str:
     return (WEB_DIR / name).read_text(encoding="utf-8")
 
 
+def editor_script_path(entry: str) -> Path:
+    """Resolve a manifest entry to its source file, rejecting escapes from ``web/``.
+
+    Entries are POSIX relative paths so the same manifest text works for the
+    Python generator, the Tauri build script and every developer machine.
+    """
+    if not entry or entry != entry.strip():
+        raise ValueError(f"Editor script manifest entry is blank or untrimmed: {entry!r}")
+    if "\\" in entry or ":" in entry or entry.startswith("/"):
+        raise ValueError(f"Editor script manifest entry must be a POSIX relative path: {entry!r}")
+    path = PurePosixPath(entry)
+    if path.suffix.lower() != ".js":
+        raise ValueError(f"Editor script manifest entry must end with .js: {entry!r}")
+    if any(part in ("", ".", "..") for part in path.parts):
+        raise ValueError(f"Editor script manifest entry must stay inside web/: {entry!r}")
+    resolved = (WEB_DIR / Path(*path.parts)).resolve()
+    web_root = WEB_DIR.resolve()
+    if resolved.parent != web_root and web_root not in resolved.parents:
+        raise ValueError(f"Editor script manifest entry escapes web/: {entry!r}")
+    if not resolved.is_file():
+        raise ValueError(f"Editor script manifest entry does not exist: {entry!r}")
+    return resolved
+
+
 def read_editor_script_manifest() -> tuple[str, ...]:
     """Read and validate the ordered list of scripts in the editor page."""
     entries: list[str] = []
@@ -230,13 +254,12 @@ def read_editor_script_manifest() -> tuple[str, ...]:
         entry = raw_line.split("#", 1)[0].strip()
         if not entry:
             continue
-        path = Path(entry)
-        if path.name != entry or path.suffix.lower() != ".js":
-            raise ValueError(f"Invalid editor script manifest entry at line {line_number}: {entry!r}")
+        try:
+            editor_script_path(entry)
+        except ValueError as error:
+            raise ValueError(f"Invalid editor script manifest entry at line {line_number}: {error}") from error
         if entry in entries:
             raise ValueError(f"Duplicate editor script manifest entry at line {line_number}: {entry!r}")
-        if not (WEB_DIR / path).is_file():
-            raise ValueError(f"Editor script manifest entry does not exist: {entry!r}")
         entries.append(entry)
     if not entries:
         raise ValueError("Editor script manifest is empty")
@@ -245,7 +268,24 @@ def read_editor_script_manifest() -> tuple[str, ...]:
 
 def build_editor_scripts() -> str:
     """Inline editor scripts using the single shared source order."""
-    return "\n\n".join(read_web_asset(name).rstrip() for name in read_editor_script_manifest())
+    sources = [editor_script_path(name).read_text(encoding="utf-8") for name in read_editor_script_manifest()]
+    return "\n\n".join(source.rstrip() for source in sources)
+
+
+def read_editor_scripts_under(area: str) -> str:
+    """Concatenate the manifest sources inside one ``web/`` area, in build order.
+
+    Contract tests assert against an area instead of a single file so a module can
+    be split further without invalidating the assertion it satisfies.
+    """
+    sources = [
+        editor_script_path(name).read_text(encoding="utf-8")
+        for name in read_editor_script_manifest()
+        if name.startswith(area)
+    ]
+    if not sources:
+        raise ValueError(f"No editor script manifest entry starts with {area!r}")
+    return "\n\n".join(source.rstrip() for source in sources)
 
 
 def build_palette_json() -> str:
