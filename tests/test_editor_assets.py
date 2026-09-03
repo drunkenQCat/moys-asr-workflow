@@ -179,7 +179,13 @@ class EditorAssetContractTests(unittest.TestCase):
                 "editor/stickers/root.js",
                 "editor/text/find-replace.js",
                 "editor/text/process.js",
-                "editor/text/timed-edit.js",
+                "editor/text/timed-edit/namespace.js",
+                "editor/text/timed-edit/source-state.js",
+                "editor/text/timed-edit/row-diff.js",
+                "editor/text/timed-edit/view.js",
+                "editor/text/timed-edit/draft.js",
+                "editor/text/timed-edit/apply.js",
+                "editor/text/timed-edit/compat-surface.js",
                 "editor/stickers/picker.js",
                 "editor/cues/add.js",
                 "editor/timeline/boundary-drag.js",
@@ -275,6 +281,46 @@ class EditorAssetContractTests(unittest.TestCase):
             sorted(facade_keys),
             sorted(published),
             "兼容出口的门面键与 editor/split/ 各模块发布的内部符号不一致",
+        )
+
+    def test_timed_edit_block_builds_the_frozen_facade_after_every_module(self) -> None:
+        """editor/text/timed-edit/* 按 window.MaweText 装配，规则与 editor/split/* 相同：
+        namespace 第一，兼容出口最后，出口在加载期读出全部符号并 Object.freeze。
+        这块没有跨模块写入的可变状态，所以门面全是数据属性，不含访问器对。"""
+        manifest = list(edit.read_editor_script_manifest())
+        start = manifest.index("editor/text/timed-edit/namespace.js")
+        end = manifest.index("editor/text/timed-edit/compat-surface.js")
+        self.assertGreater(end, start)
+        block = manifest[start : end + 1]
+        self.assertEqual(
+            [e for e in manifest if e.startswith("editor/text/timed-edit/")],
+            block,
+            "editor/text/timed-edit/ 目录里的脚本必须连续装配",
+        )
+        modules = block[1:-1]
+        self.assertGreaterEqual(len(modules), 4, "拆分块模块数量异常，疑似装配方式被改动")
+
+        surface = edit.editor_script_path("editor/text/timed-edit/compat-surface.js").read_text(encoding="utf-8")
+        self.assertIn("global.MaweTimedTextEdit = Object.freeze({", surface)
+
+        published: set[str] = set()
+        for entry in modules:
+            source = edit.editor_script_path(entry).read_text(encoding="utf-8")
+            names: set[str] = set()
+            for block_text in re.findall(r"Object\.assign\(U, \{\n(.*?)\n  \}\);", source, re.DOTALL):
+                names.update(re.findall(r"^    ([\w$]+),$", block_text, re.MULTILINE))
+            names.update(re.findall(r"Object\.defineProperty\(U, '([\w$]+)'", source))
+            overlap = names & published
+            self.assertFalse(overlap, f"{sorted(overlap)} 被 editor/text/timed-edit/ 两个模块同时发布")
+            published |= names
+
+        facade_body = surface.split("Object.freeze({", 1)[1]
+        facade_keys = set(re.findall(r"^    (?:get |set )?([\w$]+)[:(]", facade_body, re.MULTILINE))
+        self.assertTrue(facade_keys, "兼容出口没有解析出任何键")
+        self.assertEqual(
+            sorted(facade_keys),
+            sorted(published),
+            "兼容出口的门面键与 editor/text/timed-edit/ 各模块发布的内部符号不一致",
         )
 
     def test_waveform_gap_display_type_uses_shared_core_and_subtle_protected_style(self) -> None:

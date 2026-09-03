@@ -19,6 +19,9 @@
 # editor/split/namespace.js must come first and editor/split/compat-surface.js
 # last, because that is where the frozen window.MaweSplitCore facade (including
 # the pendingLinkedSplit accessor pair) gets rebuilt.
+# editor/text/timed-edit/* follows the same rule on window.MaweText: namespace.js
+# first, editor/text/timed-edit/compat-surface.js last, which rebuilds the frozen
+# window.MaweTimedTextEdit facade.
 editor/boot/data.js
 editor/boot/registry.js
 shared/gap-remove-core.js
@@ -146,7 +149,13 @@ editor/project/media-load.js
 editor/stickers/root.js
 editor/text/find-replace.js
 editor/text/process.js
-editor/text/timed-edit.js
+editor/text/timed-edit/namespace.js
+editor/text/timed-edit/source-state.js
+editor/text/timed-edit/row-diff.js
+editor/text/timed-edit/view.js
+editor/text/timed-edit/draft.js
+editor/text/timed-edit/apply.js
+editor/text/timed-edit/compat-surface.js
 editor/stickers/picker.js
 editor/cues/add.js
 editor/timeline/boundary-drag.js
