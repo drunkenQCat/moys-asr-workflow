@@ -1,4 +1,4 @@
-// 空隙移除核心的桥接层：真正的算法在 web/shared/gap-remove-core.js，这里只做兼容别名与派生段重建。
+// 空隙移除核心的桥接层：真正的算法在 web/shared/gap-remove/，这里只做兼容别名与派生段重建。
 // 自 web/editor/lib/utils.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweLib；
 // 兼容出口 window.AsrEditorUtils 仍由 editor/lib/compat-surface.js 统一组装。
 (function initMaweLibGapRemoveBridge(global) {

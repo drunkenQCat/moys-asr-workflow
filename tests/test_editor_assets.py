@@ -15,6 +15,58 @@ sys.path.insert(0, str(ROOT))
 import edit  # noqa: E402
 
 
+# server-align 的页面模板与 serve.py 共用的注入占位符字面量。
+PAGE_CORE_PLACEHOLDER = "/* __GAP_REMOVE_CORE_JS__ */"
+
+# window.AsrGapRemoveCore 的历史键序。MAWE 与对齐页都按名字取值，键名与键序同属对外契约。
+GAP_REMOVE_CORE_EXIT_KEYS = (
+    "GAP_REMOVE_SCHEMA",
+    "GAP_PROVENANCE_SCHEMA",
+    "GAP_PROVENANCE_SOURCES",
+    "GAP_REMOVE_OPERATION_MODES",
+    "DEFAULT_GAP_REMOVE_OPERATION_MODE",
+    "GAP_REMOVE_MANUAL_OPERATION_BOUNDARY_RESIZE",
+    "GAP_REMOVE_MANUAL_OPERATION_MOVE",
+    "GAP_REMOVE_DISABLE_COVERAGE_DEFAULT",
+    "GAP_REMOVE_DISABLE_REMAINING_DEFAULT_MS",
+    "GAP_REMOVE_DISABLE_REMAINING_MAX_MS",
+    "clampGapRemoveDisableCoverage",
+    "clampGapRemoveDisableRemaining",
+    "normalizeGapOperationMode",
+    "gapOperationAllowsBoundary",
+    "gapOperationAllowsMiddle",
+    "normalizeGapRemoveData",
+    "normalizeGapRemoveGaps",
+    "normalizeGapRemoveProvenance",
+    "gapRangesFromProvenance",
+    "decorateGapRemoveGaps",
+    "replaceGapRemoveProvenanceSource",
+    "appendGapRemoveManualOverrides",
+    "coalesceGapRemoveGaps",
+    "getGapRemoveDisplayType",
+    "isGapRemoveDisplayProtected",
+    "removeGapRemoveProvenanceRange",
+    "getGapRemoveDisplayGaps",
+    "applyGapRemoveRange",
+    "shrinkGapRemoveGaps",
+    "overlayGapRemoveRange",
+    "translateGapRemoveRange",
+    "moveGapRemoveRange",
+    "copyGapRemoveRange",
+    "moveGapRemoveProvenance",
+    "resizeGapRemoveBoundary",
+    "resizeGapRemoveProvenanceBoundary",
+    "detectAudioGapRemoveGaps",
+    "getRemovedGapRanges",
+    "findGapRemoveDisableMatches",
+    "findGapRemoveAtTime",
+    "isGapPreviewActive",
+    "getGapPlaybackSkip",
+    "mapGapRemovedTime",
+    "buildGapRemovedIntervals",
+)
+
+
 class EditorAssetContractTests(unittest.TestCase):
     def test_editor_script_path_accepts_subdirectories_and_rejects_escapes(self) -> None:
         self.assertTrue(edit.editor_script_path("editor/lib/timed-text/core.js").is_file())
@@ -54,7 +106,19 @@ class EditorAssetContractTests(unittest.TestCase):
             (
                 "editor/boot/data.js",
                 "editor/boot/registry.js",
-                "shared/gap-remove-core.js",
+                "shared/gap-remove/namespace.js",
+                "shared/gap-remove/constants.js",
+                "shared/gap-remove/limits.js",
+                "shared/gap-remove/normalize.js",
+                "shared/gap-remove/state-apply.js",
+                "shared/gap-remove/provenance-ranges.js",
+                "shared/gap-remove/display.js",
+                "shared/gap-remove/provenance-edit.js",
+                "shared/gap-remove/range-edit.js",
+                "shared/gap-remove/provenance-move.js",
+                "shared/gap-remove/audio-detect.js",
+                "shared/gap-remove/gap-queries.js",
+                "shared/gap-remove/compat-surface.js",
                 "editor/lib/namespace.js",
                 "editor/lib/json-value.js",
                 "editor/lib/audio-metadata.js",
@@ -531,7 +595,7 @@ class EditorAssetContractTests(unittest.TestCase):
             self.assertIn("rgba(94", styles)
 
     def test_gap_core_exposes_restore_and_clear_semantics(self) -> None:
-        core = edit.read_web_asset("shared/gap-remove-core.js")
+        core = edit.read_editor_scripts_under("shared/gap-remove/")
         self.assertIn("function getGapRemoveDisplayGaps", core)
         self.assertIn("removed: false", core)
         self.assertIn("function removeGapRemoveProvenanceRange", core)
@@ -541,6 +605,48 @@ class EditorAssetContractTests(unittest.TestCase):
         self.assertIn("GAP_REMOVE_MANUAL_OPERATION_MOVE", core)
         self.assertIn("cleared_ranges", core)
         self.assertNotIn("underlying", core)
+
+    def test_gap_remove_block_builds_the_frozen_legacy_exit_after_every_module(self) -> None:
+        """shared/gap-remove/* 是 MAWE 与对齐页共用的纯空隙核心，按 window.MaweGapRemove 装配：
+        namespace 第一，兼容出口最后，出口在加载期读出全部符号并 Object.freeze。
+        它与 editor/split 那类块的区别是出口只重建 44 个历史键（键序也是契约），内部符号远多于此，
+        所以只能断言出口集合是发布集合的子集，不能要求相等。"""
+        manifest = list(edit.read_editor_script_manifest())
+        block = [e for e in manifest if e.startswith("shared/gap-remove/")]
+        self.assertEqual(block[0], "shared/gap-remove/namespace.js")
+        self.assertEqual(block[-1], "shared/gap-remove/compat-surface.js")
+        self.assertGreaterEqual(len(block), 10, "拆分块模块数量异常，疑似装配方式被改动")
+        self.assertLess(
+            manifest.index(block[-1]),
+            manifest.index("editor/lib/gap-remove-bridge.js"),
+            "桥接层在加载期就读 window.AsrGapRemoveCore，整块必须排在它之前",
+        )
+
+        published = self.assert_published_symbols_disjoint(block[1:-1], "shared/gap-remove/")
+        surface = edit.editor_script_path("shared/gap-remove/compat-surface.js").read_text(encoding="utf-8")
+        self.assertIn("global.AsrGapRemoveCore = Object.freeze({", surface)
+        facade_body = surface.split("Object.freeze({", 1)[1]
+        facade_keys = re.findall(r"^    (?:get |set )?([\w$]+)[:(]", facade_body, re.MULTILINE)
+        self.assertEqual(
+            facade_keys,
+            list(GAP_REMOVE_CORE_EXIT_KEYS),
+            "window.AsrGapRemoveCore 的键名或键序变了：它是 MAWE 与对齐页共用的对外契约",
+        )
+        self.assertTrue(set(facade_keys) <= published, "兼容出口取不到某个历史键的符号")
+        self.assertGreater(len(published), len(facade_keys), "内部符号应多于出口，否则说明 helper 被误并进出口")
+
+    def test_alignment_page_injects_the_whole_gap_remove_block_in_order(self) -> None:
+        """对齐页不是清单的消费者，它由 serve.py 注入核心。改成按清单顺序拼接后，
+        这里守住两件事：注入源确实是清单里的那一段，且首尾两个锚点都真的进了页面并按序出现。"""
+        serve_source = (ROOT / "server-align" / "serve.py").read_text(encoding="utf-8")
+        self.assertIn('GAP_REMOVE_CORE_AREA = "shared/gap-remove/"', serve_source)
+        self.assertIn("read_editor_scripts_under(GAP_REMOVE_CORE_AREA)", serve_source)
+        page = (ROOT / "server-align" / "index.html").read_text(encoding="utf-8")
+        page = page.replace(PAGE_CORE_PLACEHOLDER, edit.read_editor_scripts_under("shared/gap-remove/"))
+        self.assertNotIn(PAGE_CORE_PLACEHOLDER, page)
+        anchors = ("global.MaweGapRemove = {};", "global.AsrGapRemoveCore = Object.freeze({")
+        indices = [page.index(anchor) for anchor in anchors]
+        self.assertEqual(indices, sorted(indices), "对齐页必须同时拿到命名空间与兼容出口，且顺序正确")
 
     def test_editor_overall_gap_move_uses_shared_provenance_operation(self) -> None:
         script = edit.read_web_asset("editor/gap/ui.js")

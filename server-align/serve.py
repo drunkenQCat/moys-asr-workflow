@@ -38,10 +38,11 @@ from maw.script_alignment import (  # noqa: E402
     make_selection_manifest,
     normalize_gap_remove_settings,
 )
+from edit import read_editor_scripts_under  # noqa: E402
 
 
 PAGE_PATH = Path(__file__).with_name("index.html")
-GAP_REMOVE_CORE_PATH = ROOT / "web" / "shared" / "gap-remove-core.js"
+GAP_REMOVE_CORE_AREA = "shared/gap-remove/"
 PAGE_CORE_PLACEHOLDER = "/* __GAP_REMOVE_CORE_JS__ */"
 MAX_REQUEST_BYTES = 2 * 1024 * 1024
 
@@ -397,7 +398,7 @@ def write_project(project_path: Path, payload: dict[str, object]) -> Path:
 def render_page() -> bytes:
     """Inline the shared gap-remove core into the standalone alignment page."""
     page = PAGE_PATH.read_text(encoding="utf-8")
-    core = GAP_REMOVE_CORE_PATH.read_text(encoding="utf-8").rstrip()
+    core = read_editor_scripts_under(GAP_REMOVE_CORE_AREA)
     if page.count(PAGE_CORE_PLACEHOLDER) != 1:
         raise ValueError("对齐页面缺少唯一的 Gap Core 注入占位符")
     return page.replace(PAGE_CORE_PLACEHOLDER, core).encode("utf-8")

@@ -18,8 +18,6 @@ const context = {
   atob: (value) => Buffer.from(value, 'base64').toString('binary'),
   btoa: (value) => Buffer.from(value, 'binary').toString('base64'),
 };
-const gapCoreSource = fs.readFileSync(new URL('../web/shared/gap-remove-core.js', import.meta.url), 'utf8');
-
 // editor/waveform/runtime.js 已按职责拆成 namespace.js 到 compat-surface.js 的连续模块块。
 // 这里按 editor-scripts.txt 的顺序整块加载并共享同一个上下文，断言对象是装配结果而不是
 // 某个文件，模块日后继续拆细也不会让本测试失效。
@@ -33,8 +31,17 @@ assert.ok(
   blockStart >= 0 && blockEnd > blockStart,
   '清单应包含 editor/waveform 的 namespace.js … compat-surface.js 模块块',
 );
+// shared/gap-remove/ 同样是 namespace.js … compat-surface.js 的连续块，整块按清单顺序加载。
+const gapCoreEntries = manifest.filter((entry) => entry.startsWith('shared/gap-remove/'));
+assert.ok(
+  gapCoreEntries[0] === 'shared/gap-remove/namespace.js'
+    && gapCoreEntries[gapCoreEntries.length - 1] === 'shared/gap-remove/compat-surface.js',
+  '清单应包含 shared/gap-remove 的 namespace.js … compat-surface.js 模块块',
+);
 vm.createContext(context);
-vm.runInContext(gapCoreSource, context, { filename: 'shared/gap-remove-core.js' });
+for (const entry of gapCoreEntries) {
+  vm.runInContext(fs.readFileSync(new URL(`../web/${entry}`, import.meta.url), 'utf8'), context, { filename: entry });
+}
 for (const entry of manifest.slice(blockStart, blockEnd + 1)) {
   vm.runInContext(fs.readFileSync(new URL(`../web/${entry}`, import.meta.url), 'utf8'), context, { filename: entry });
 }

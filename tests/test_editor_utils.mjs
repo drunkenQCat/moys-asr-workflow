@@ -25,7 +25,10 @@ const manifest = editorScriptManifest();
 const blockStart = manifest.indexOf('editor/lib/namespace.js');
 const blockEnd = manifest.indexOf('editor/lib/compat-surface.js');
 assert.ok(blockStart >= 0 && blockEnd > blockStart, '清单应包含 editor/lib 的 namespace.js … compat-surface.js 模块块');
-const libEntries = ['shared/gap-remove-core.js', ...manifest.slice(blockStart, blockEnd + 1)];
+// shared/gap-remove/ 同样是 namespace.js … compat-surface.js 的连续块，整块按清单顺序加载。
+const gapCoreEntries = manifest.filter((entry) => entry.startsWith('shared/gap-remove/'));
+assert.ok(gapCoreEntries.length >= 2, '清单应包含 shared/gap-remove 的 namespace.js … compat-surface.js 模块块');
+const libEntries = [...gapCoreEntries, ...manifest.slice(blockStart, blockEnd + 1)];
 for (const entry of libEntries) {
   vm.runInNewContext(fs.readFileSync(new URL(`../web/${entry}`, import.meta.url), 'utf8'), context);
 }
@@ -84,7 +87,9 @@ test('AsrEditorUtils 兼容出口的键名与键序保持不变', () => {
 });
 
 test('拆分后的模块顺序满足加载期依赖（gap-remove core 必须先于桥接层）', () => {
-  assert.ok(libEntries.indexOf('shared/gap-remove-core.js') < libEntries.indexOf('editor/lib/gap-remove-bridge.js'));
+  assert.equal(gapCoreEntries[0], 'shared/gap-remove/namespace.js');
+  assert.equal(gapCoreEntries[gapCoreEntries.length - 1], 'shared/gap-remove/compat-surface.js');
+  assert.ok(libEntries.indexOf('shared/gap-remove/compat-surface.js') < libEntries.indexOf('editor/lib/gap-remove-bridge.js'));
   assert.ok(libEntries.includes('editor/lib/compat-surface.js'));
   assert.ok(
     libEntries.indexOf('editor/lib/compat-surface.js') > libEntries.lastIndexOf('editor/lib/graphics/ograf.js'),

@@ -5981,10 +5981,26 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
   });
 })(window);
 
-// Shared gap-remove data and playback helpers used by MAWE and the alignment UI.
-// Keep this module free of DOM, media elements, editor history, and rendering.
-(function initAsrGapRemoveCore(global) {
+// shared/gap-remove/ 的内部命名空间：各模块把自己的符号发布到这里，
+// 可变状态用 get/set 访问器发布，因此跨模块读到、写到的都是同一份最新值。
+// 对外的兼容出口是 window.AsrGapRemoveCore，由 shared/gap-remove/compat-surface.js 最后组装；
+// 新增内部 helper 只进 MaweGapRemove，不要加进兼容出口。
+(function initMaweGapRemoveNamespace(global) {
   'use strict';
+
+  if (global.MaweGapRemove) {
+    throw new Error('MaweGapRemove 必须在 shared/gap-remove/ 所有模块之前初始化且只初始化一次');
+  }
+  global.MaweGapRemove = {};
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// 空隙模式、来源枚举与各类取值上下限。
+// 自 web/shared/gap-remove-core.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweGapRemove；
+// 兼容出口 window.AsrGapRemoveCore 仍由 shared/gap-remove/compat-surface.js 统一组装。
+(function initMaweGapRemoveConstants(global) {
+  'use strict';
+
+  const U = global.MaweGapRemove;
 
   const GAP_REMOVE_SCHEMA = 'moy.asr.gap_remove.v1';
   const GAP_PROVENANCE_SCHEMA = 'moy.asr.gap_provenance.v1';
@@ -6011,6 +6027,32 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
   const GAP_REMOVE_DISABLE_REMAINING_MAX_MS = 60000;
   const GAP_DISPLAY_PROJECTION_CACHE = new WeakMap();
 
+  Object.assign(U, {
+    GAP_REMOVE_SCHEMA,
+    GAP_PROVENANCE_SCHEMA,
+    GAP_PROVENANCE_SOURCES,
+    GAP_PROVENANCE_SOURCE_SET,
+    GAP_REMOVE_OPERATION_MODES,
+    GAP_REMOVE_OPERATION_MODE_SET,
+    DEFAULT_GAP_REMOVE_OPERATION_MODE,
+    GAP_REMOVE_MANUAL_OPERATION_BOUNDARY_RESIZE,
+    GAP_REMOVE_MANUAL_OPERATION_MOVE,
+    GAP_REMOVE_BOUNDARY_EDGES,
+    GAP_REMOVE_DISABLE_COVERAGE_DEFAULT,
+    GAP_REMOVE_DISABLE_REMAINING_DEFAULT_MS,
+    GAP_REMOVE_DISABLE_REMAINING_MAX_MS,
+    GAP_DISPLAY_PROJECTION_CACHE,
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// JSON 深拷贝、整数钳制、禁用阈值换算与空隙拖拽模式判定。
+// 自 web/shared/gap-remove-core.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweGapRemove；
+// 兼容出口 window.AsrGapRemoveCore 仍由 shared/gap-remove/compat-surface.js 统一组装。
+(function initMaweGapRemoveLimits(global) {
+  'use strict';
+
+  const U = global.MaweGapRemove;
+
   function cloneJsonValue(value) {
     return value == null ? null : JSON.parse(JSON.stringify(value));
   }
@@ -6023,22 +6065,22 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
   function clampGapRemoveDisableCoverage(value) {
     const numeric = typeof value === 'string' && !value.trim() ? NaN : Number(value);
     return Math.min(100, Math.max(0, Number.isFinite(numeric)
-      ? numeric : GAP_REMOVE_DISABLE_COVERAGE_DEFAULT));
+      ? numeric : U.GAP_REMOVE_DISABLE_COVERAGE_DEFAULT));
   }
 
   function clampGapRemoveDisableRemaining(value) {
     const numeric = typeof value === 'string' && !value.trim() ? NaN : value;
     return clampInteger(
       numeric,
-      GAP_REMOVE_DISABLE_REMAINING_DEFAULT_MS,
+      U.GAP_REMOVE_DISABLE_REMAINING_DEFAULT_MS,
       0,
-      GAP_REMOVE_DISABLE_REMAINING_MAX_MS,
+      U.GAP_REMOVE_DISABLE_REMAINING_MAX_MS,
     );
   }
 
   function normalizeGapOperationMode(value) {
-    return typeof value === 'string' && GAP_REMOVE_OPERATION_MODE_SET.has(value)
-      ? value : DEFAULT_GAP_REMOVE_OPERATION_MODE;
+    return typeof value === 'string' && U.GAP_REMOVE_OPERATION_MODE_SET.has(value)
+      ? value : U.DEFAULT_GAP_REMOVE_OPERATION_MODE;
   }
 
   function gapOperationAllowsBoundary(mode) {
@@ -6053,6 +6095,26 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
     return `${Math.round(Number(gap.start))}:${Math.round(Number(gap.end))}`;
   }
 
+  Object.assign(U, {
+    cloneJsonValue,
+    clampInteger,
+    clampGapRemoveDisableCoverage,
+    clampGapRemoveDisableRemaining,
+    normalizeGapOperationMode,
+    gapOperationAllowsBoundary,
+    gapOperationAllowsMiddle,
+    gapKey,
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// 空隙列表与来源记录的规范化，以及整个 gap_remove 数据的入口规范化。
+// 自 web/shared/gap-remove-core.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweGapRemove；
+// 兼容出口 window.AsrGapRemoveCore 仍由 shared/gap-remove/compat-surface.js 统一组装。
+(function initMaweGapRemoveNormalize(global) {
+  'use strict';
+
+  const U = global.MaweGapRemove;
+
   function normalizeGapRemoveGaps(gaps) {
     if (!Array.isArray(gaps)) return [];
     const seen = new Set();
@@ -6065,7 +6127,7 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
       .filter((gap) => Number.isFinite(gap.start) && Number.isFinite(gap.end) && gap.end > gap.start)
       .sort((left, right) => left.start - right.start || left.end - right.end)
       .filter((gap) => {
-        const key = gapKey(gap);
+        const key = U.gapKey(gap);
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
@@ -6111,8 +6173,8 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
 
   function isBoundaryResizeRecord(item) {
     return item?.source === 'manual'
-      && item?.operation === GAP_REMOVE_MANUAL_OPERATION_BOUNDARY_RESIZE
-      && GAP_REMOVE_BOUNDARY_EDGES.includes(item?.edge)
+      && item?.operation === U.GAP_REMOVE_MANUAL_OPERATION_BOUNDARY_RESIZE
+      && U.GAP_REMOVE_BOUNDARY_EDGES.includes(item?.edge)
       && Number.isFinite(Number(item?.base))
       && Number.isFinite(Number(item?.boundary))
        && (
@@ -6172,7 +6234,7 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
       start: Math.min(...bounds.map((range) => range.start)),
       end: Math.max(...bounds.map((range) => range.end)),
       removed: removed !== false,
-      operation: GAP_REMOVE_MANUAL_OPERATION_MOVE,
+      operation: U.GAP_REMOVE_MANUAL_OPERATION_MOVE,
       base_start: baseStart,
       base_end: baseEnd,
     };
@@ -6187,7 +6249,7 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
 
   function isGapMoveRecord(item) {
     return item?.source === 'manual'
-      && item?.operation === GAP_REMOVE_MANUAL_OPERATION_MOVE
+      && item?.operation === U.GAP_REMOVE_MANUAL_OPERATION_MOVE
       && Number.isFinite(Number(item?.base_start))
       && Number.isFinite(Number(item?.base_end))
       && Number(item.base_end) > Number(item.base_start)
@@ -6195,7 +6257,7 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
   }
 
   function normalizeProvenanceRange(item, source, index, used) {
-    if (!item || typeof item !== 'object' || !GAP_PROVENANCE_SOURCE_SET.has(source)) return null;
+    if (!item || typeof item !== 'object' || !U.GAP_PROVENANCE_SOURCE_SET.has(source)) return null;
     const start = Math.max(0, Math.round(Number(item.start)));
     const end = Math.max(0, Math.round(Number(item.end)));
     if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
@@ -6207,15 +6269,15 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
     };
     if (source === 'manual' || source === 'legacy') result.removed = item.removed !== false;
     else result.removed = true;
-    if (source === 'manual' && item.operation === GAP_REMOVE_MANUAL_OPERATION_BOUNDARY_RESIZE) {
+    if (source === 'manual' && item.operation === U.GAP_REMOVE_MANUAL_OPERATION_BOUNDARY_RESIZE) {
       const edge = item.edge;
       const base = Math.max(0, Math.round(Number(item.base)));
       const boundary = Math.max(0, Math.round(Number(item.boundary)));
       const clearedRanges = gapBoundaryClearedRanges(item);
-      if (GAP_REMOVE_BOUNDARY_EDGES.includes(edge)
+      if (U.GAP_REMOVE_BOUNDARY_EDGES.includes(edge)
           && Number.isFinite(base) && Number.isFinite(boundary)
           && (base !== boundary || clearedRanges.length)) {
-        result.operation = GAP_REMOVE_MANUAL_OPERATION_BOUNDARY_RESIZE;
+        result.operation = U.GAP_REMOVE_MANUAL_OPERATION_BOUNDARY_RESIZE;
         result.edge = edge;
         result.base = base;
         result.boundary = boundary;
@@ -6224,7 +6286,7 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
         result.end = Math.max(base, boundary, ...clearedRanges.map((range) => range.end));
       }
     }
-    if (source === 'manual' && item.operation === GAP_REMOVE_MANUAL_OPERATION_MOVE) {
+    if (source === 'manual' && item.operation === U.GAP_REMOVE_MANUAL_OPERATION_MOVE) {
       const baseStart = Math.max(0, Math.round(Number(item.base_start)));
       const baseEnd = Math.max(0, Math.round(Number(item.base_end)));
       const targets = gapMoveTargetRanges(item);
@@ -6233,7 +6295,7 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
         && targets[0].start === baseStart && targets[0].end === baseEnd;
       if (Number.isFinite(baseStart) && Number.isFinite(baseEnd)
           && baseEnd > baseStart && hasTargets && !returnedToBase) {
-        result.operation = GAP_REMOVE_MANUAL_OPERATION_MOVE;
+        result.operation = U.GAP_REMOVE_MANUAL_OPERATION_MOVE;
         result.base_start = baseStart;
         result.base_end = baseEnd;
         result.start = Math.min(baseStart, ...targets.map((range) => range.start));
@@ -6274,7 +6336,7 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
     const legacyAudioGaps = legacy.filter((item) => item.removed !== false);
     const legacyManualOverrides = legacy.filter((item) => item.removed === false);
     return {
-      schema: GAP_PROVENANCE_SCHEMA,
+      schema: U.GAP_PROVENANCE_SCHEMA,
       sources: {
         script_alignment: normalizeProvenanceRangeList(rawSources.script_alignment, 'script_alignment', {sort: true}),
         audio_gate: normalizeProvenanceRangeList(
@@ -6290,6 +6352,59 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
       legacy: [],
     };
   }
+
+  function normalizeGapRemoveData(value) {
+    const source = value && typeof value === 'object' ? value : {};
+    const rawGaps = normalizeGapRemoveGaps(source.gaps);
+    const hasProvenance = Boolean(source.provenance && typeof source.provenance === 'object');
+    const provenance = normalizeGapRemoveProvenance(source.provenance, rawGaps);
+    const computedGaps = hasProvenance ? U.gapRangesFromProvenance(provenance) : rawGaps;
+    const gaps = U.cloneJsonValue(U.decorateGapRemoveGaps(computedGaps, provenance)) || [];
+    return {
+      schema: U.GAP_REMOVE_SCHEMA,
+      // Older gap lists came from the same audio-gate workflow but did not
+      // carry a provenance layer. Normalize them into the current detector so
+      // their display, shrinking, clearing, and rescanning stay consistent.
+      detector: 'audio_gate',
+      minimum_ms: U.clampInteger(source.minimum_ms, 400, 100, 60000),
+      threshold_db: Math.min(0, Math.max(-96, Number.isFinite(Number(source.threshold_db)) ? Number(source.threshold_db) : -28)),
+      hysteresis_db: Math.min(30, Math.max(0, Number.isFinite(Number(source.hysteresis_db)) ? Number(source.hysteresis_db) : 2)),
+      lead_in_ms: U.clampInteger(source.lead_in_ms, 120, 0, 2000),
+      lead_out_ms: U.clampInteger(source.lead_out_ms, 80, 0, 2000),
+      skip_playback: source.skip_playback !== false,
+      manual_corrections: source.manual_corrections === true || provenance.manual_overrides.length > 0,
+      operation_mode: U.normalizeGapOperationMode(source.operation_mode),
+      disable_coverage_percent: U.clampGapRemoveDisableCoverage(source.disable_coverage_percent),
+      disable_remaining_ms: U.clampGapRemoveDisableRemaining(source.disable_remaining_ms),
+      gaps,
+      provenance,
+    };
+  }
+
+  Object.assign(U, {
+    normalizeGapRemoveGaps,
+    provenanceId,
+    normalizeGapRangeList,
+    gapBoundaryClearedRanges,
+    isBoundaryResizeRecord,
+    gapMoveTargetRanges,
+    hasGapMoveTargetRanges,
+    createGapMoveRecord,
+    isGapMoveRecord,
+    normalizeProvenanceRange,
+    normalizeProvenanceRangeList,
+    normalizeGapRemoveProvenance,
+    normalizeGapRemoveData,
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// 把区间写进空隙投影：置为移除/恢复、清理某段、并查合并，以及移动与边界调整记录的落地。
+// 自 web/shared/gap-remove-core.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweGapRemove；
+// 兼容出口 window.AsrGapRemoveCore 仍由 shared/gap-remove/compat-surface.js 统一组装。
+(function initMaweGapRemoveStateApply(global) {
+  'use strict';
+
+  const U = global.MaweGapRemove;
 
   function applyGapStateRange(gaps, startMs, endMs, removed, preserveUncovered = false) {
     const source = coalesceGapRemoveGaps(gaps);
@@ -6341,7 +6456,7 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
   }
 
   function applyGapMoveRecord(gaps, record) {
-    if (!isGapMoveRecord(record)) return gaps;
+    if (!U.isGapMoveRecord(record)) return gaps;
     const removed = record.removed !== false;
     let result = clearGapStateRange(
       gaps,
@@ -6349,7 +6464,7 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
       record.base_end,
       removed,
     );
-    gapMoveTargetRanges(record).forEach((target) => {
+    U.gapMoveTargetRanges(record).forEach((target) => {
       result = applyGapStateRange(
         result,
         target.start,
@@ -6362,12 +6477,12 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
   }
 
   function applyBoundaryResizeRecord(gaps, record) {
-    if (!isBoundaryResizeRecord(record)) return gaps;
+    if (!U.isBoundaryResizeRecord(record)) return gaps;
     const base = Math.round(Number(record.base));
     const boundary = Math.round(Number(record.boundary));
     const removed = record.removed !== false;
     let result = gaps;
-    gapBoundaryClearedRanges(record).forEach((range) => {
+    U.gapBoundaryClearedRanges(record).forEach((range) => {
       result = clearGapStateRange(result, range.start, range.end);
     });
     if (record.edge === 'start') {
@@ -6389,41 +6504,138 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
       : applyGapStateRange(result, base, boundary, false, true);
   }
 
+  function coalesceGapRemoveGaps(gaps) {
+    const result = [];
+    U.normalizeGapRemoveGaps(gaps).forEach((gap) => {
+      const previous = result[result.length - 1];
+      if (!previous) {
+        result.push({ ...gap });
+        return;
+      }
+      if (gap.start <= previous.end && gap.removed === previous.removed) {
+        previous.end = Math.max(previous.end, gap.end);
+        return;
+      }
+      const start = Math.max(gap.start, previous.end);
+      if (gap.end > start) result.push({ ...gap, start });
+    });
+    return result;
+  }
+
+  function applyGapRemoveRange(gaps, startMs, endMs, removed) {
+    const source = coalesceGapRemoveGaps(gaps);
+    const start = Math.max(0, Math.round(Math.min(Number(startMs), Number(endMs))));
+    const end = Math.max(0, Math.round(Math.max(Number(startMs), Number(endMs))));
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return source;
+
+    const next = [];
+    source.forEach((gap) => {
+      if (gap.end <= start || gap.start >= end) {
+        next.push({ ...gap });
+        return;
+      }
+      if (gap.start < start) next.push({ ...gap, end: start });
+      if (!removed) {
+        next.push({
+          start: Math.max(gap.start, start),
+          end: Math.min(gap.end, end),
+          removed: false,
+        });
+      }
+      if (gap.end > end) next.push({ ...gap, start: end });
+    });
+    if (removed) next.push({ start, end, removed: true });
+    return coalesceGapRemoveGaps(next);
+  }
+
+  function shrinkGapRemoveGaps(gaps, leadInMs, leadOutMs) {
+    const source = coalesceGapRemoveGaps(gaps);
+    const leadIn = U.clampInteger(leadInMs, 40, 0, 2000);
+    const leadOut = U.clampInteger(leadOutMs, 80, 0, 2000);
+    return coalesceGapRemoveGaps(source
+      .map((gap) => ({
+        ...gap,
+        start: gap.start + leadIn,
+        end: gap.end - leadOut,
+      }))
+      .filter((gap) => gap.end > gap.start));
+  }
+
+  // 将一个已有区段作为整体平移或复制到目标位置。与人工“范围移除”不同，
+  // 这里保留区段的 removed 状态，因此恢复区段也可以被整体拖动/复制。
+  function overlayGapRemoveRange(gaps, startMs, endMs, removed) {
+    const source = coalesceGapRemoveGaps(gaps);
+    const start = Math.max(0, Math.round(Math.min(Number(startMs), Number(endMs))));
+    const end = Math.max(0, Math.round(Math.max(Number(startMs), Number(endMs))));
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return source;
+    const next = [];
+    source.forEach((gap) => {
+      if (gap.end <= start || gap.start >= end) {
+        next.push({ ...gap });
+        return;
+      }
+      if (gap.start < start) next.push({ ...gap, end: start });
+      if (gap.end > end) next.push({ ...gap, start: end });
+    });
+    next.push({ start, end, removed: removed !== false });
+    return coalesceGapRemoveGaps(next);
+  }
+
+  Object.assign(U, {
+    applyGapStateRange,
+    clearGapStateRange,
+    applyGapMoveRecord,
+    applyBoundaryResizeRecord,
+    coalesceGapRemoveGaps,
+    applyGapRemoveRange,
+    shrinkGapRemoveGaps,
+    overlayGapRemoveRange,
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// 从来源记录还原可见空隙区间，以及来源整体替换与手工恢复项追加。
+// 自 web/shared/gap-remove-core.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweGapRemove；
+// 兼容出口 window.AsrGapRemoveCore 仍由 shared/gap-remove/compat-surface.js 统一组装。
+(function initMaweGapRemoveProvenanceRanges(global) {
+  'use strict';
+
+  const U = global.MaweGapRemove;
+
   function gapRangesFromProvenance(value, fallbackGaps = []) {
-    const provenance = normalizeGapRemoveProvenance(value, fallbackGaps);
+    const provenance = U.normalizeGapRemoveProvenance(value, fallbackGaps);
     let result = [];
     provenance.sources.script_alignment.forEach((gap) => {
-      result = applyGapStateRange(result, gap.start, gap.end, true);
+      result = U.applyGapStateRange(result, gap.start, gap.end, true);
     });
     provenance.sources.audio_gate.forEach((gap) => {
-      result = applyGapStateRange(result, gap.start, gap.end, true);
+      result = U.applyGapStateRange(result, gap.start, gap.end, true);
     });
     provenance.legacy.forEach((gap) => {
-      result = applyGapStateRange(result, gap.start, gap.end, gap.removed, gap.removed === false);
+      result = U.applyGapStateRange(result, gap.start, gap.end, gap.removed, gap.removed === false);
     });
     provenance.manual_overrides.forEach((gap) => {
-      result = isBoundaryResizeRecord(gap)
-        ? applyBoundaryResizeRecord(result, gap)
-        : isGapMoveRecord(gap)
-          ? applyGapMoveRecord(result, gap)
-        : applyGapStateRange(result, gap.start, gap.end, gap.removed, gap.removed === false);
+      result = U.isBoundaryResizeRecord(gap)
+        ? U.applyBoundaryResizeRecord(result, gap)
+        : U.isGapMoveRecord(gap)
+          ? U.applyGapMoveRecord(result, gap)
+        : U.applyGapStateRange(result, gap.start, gap.end, gap.removed, gap.removed === false);
     });
-    return coalesceGapRemoveGaps(result);
+    return U.coalesceGapRemoveGaps(result);
   }
 
   function decorateGapRemoveGaps(gaps, value) {
-    const finalGaps = normalizeGapRemoveGaps(gaps);
-    const provenance = normalizeGapRemoveProvenance(value, finalGaps);
+    const finalGaps = U.normalizeGapRemoveGaps(gaps);
+    const provenance = U.normalizeGapRemoveProvenance(value, finalGaps);
     const records = [
       ...provenance.sources.script_alignment,
       ...provenance.sources.audio_gate,
       ...provenance.manual_overrides.filter((record) => (
-        !isBoundaryResizeRecord(record) && !isGapMoveRecord(record)
+        !U.isBoundaryResizeRecord(record) && !U.isGapMoveRecord(record)
       )),
       ...provenance.legacy,
     ];
-    const boundaryRecords = provenance.manual_overrides.filter(isBoundaryResizeRecord);
-    const moveRecords = provenance.manual_overrides.filter(isGapMoveRecord);
+    const boundaryRecords = provenance.manual_overrides.filter(U.isBoundaryResizeRecord);
+    const moveRecords = provenance.manual_overrides.filter(U.isGapMoveRecord);
     return finalGaps.flatMap((gap) => {
       const boundaries = new Set([gap.start, gap.end]);
       records.forEach((record) => {
@@ -6438,12 +6650,12 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
         const start = points[index];
         const end = points[index + 1];
         if (end <= start) continue;
-        const origins = GAP_PROVENANCE_SOURCES.filter((source) => {
+        const origins = U.GAP_PROVENANCE_SOURCES.filter((source) => {
           if (source === 'manual' && boundaryRecords.some((record) => (
             record.boundary === start || record.boundary === end
           ))) return true;
           if (source === 'manual' && moveRecords.some((record) => (
-            gapMoveTargetRanges(record).some((target) => (
+            U.gapMoveTargetRanges(record).some((target) => (
               target.start < end && target.end > start
             ))
           ))) return true;
@@ -6467,50 +6679,48 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
   }
 
   function replaceGapRemoveProvenanceSource(value, source, ranges, fallbackGaps = []) {
-    const next = normalizeGapRemoveProvenance(value, fallbackGaps);
+    const next = U.normalizeGapRemoveProvenance(value, fallbackGaps);
     if (source === 'script_alignment' || source === 'audio_gate') {
-      next.sources[source] = normalizeProvenanceRangeList(ranges, source, {sort: true});
+      next.sources[source] = U.normalizeProvenanceRangeList(ranges, source, {sort: true});
     }
     return next;
   }
 
   function appendGapRemoveManualOverrides(value, overrides, fallbackGaps = []) {
-    const next = normalizeGapRemoveProvenance(value, fallbackGaps);
+    const next = U.normalizeGapRemoveProvenance(value, fallbackGaps);
     const additions = Array.isArray(overrides) ? overrides : [overrides];
     const used = new Set(next.manual_overrides.map((item) => item.id));
     additions.forEach((item, index) => {
-      const normalized = normalizeProvenanceRange(item, 'manual', next.manual_overrides.length + index, used);
+      const normalized = U.normalizeProvenanceRange(item, 'manual', next.manual_overrides.length + index, used);
       if (normalized) next.manual_overrides.push(normalized);
     });
     return next;
   }
 
-  function coalesceGapRemoveGaps(gaps) {
-    const result = [];
-    normalizeGapRemoveGaps(gaps).forEach((gap) => {
-      const previous = result[result.length - 1];
-      if (!previous) {
-        result.push({ ...gap });
-        return;
-      }
-      if (gap.start <= previous.end && gap.removed === previous.removed) {
-        previous.end = Math.max(previous.end, gap.end);
-        return;
-      }
-      const start = Math.max(gap.start, previous.end);
-      if (gap.end > start) result.push({ ...gap, start });
-    });
-    return result;
-  }
+  Object.assign(U, {
+    gapRangesFromProvenance,
+    decorateGapRemoveGaps,
+    replaceGapRemoveProvenanceSource,
+    appendGapRemoveManualOverrides,
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// 空隙的显示分类：来源优先级、受保护判定与按端点切片后的投影（带 WeakMap 缓存）。
+// 自 web/shared/gap-remove-core.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweGapRemove；
+// 兼容出口 window.AsrGapRemoveCore 仍由 shared/gap-remove/compat-surface.js 统一组装。
+(function initMaweGapRemoveDisplay(global) {
+  'use strict';
+
+  const U = global.MaweGapRemove;
 
   function gapRemoveDisplayOrigins(gap) {
     const normalizeOrigin = (source) => source === 'legacy' ? 'audio_gate' : source;
     const origins = Array.isArray(gap?.origins)
-      ? gap.origins.map(normalizeOrigin).filter((source) => GAP_PROVENANCE_SOURCE_SET.has(source))
+      ? gap.origins.map(normalizeOrigin).filter((source) => U.GAP_PROVENANCE_SOURCE_SET.has(source))
       : [];
     const source = normalizeOrigin(gap?.source);
-    if (!origins.length && GAP_PROVENANCE_SOURCE_SET.has(source)) origins.push(source);
-    return GAP_PROVENANCE_SOURCES.filter((item) => item !== 'legacy' && origins.includes(item));
+    if (!origins.length && U.GAP_PROVENANCE_SOURCE_SET.has(source)) origins.push(source);
+    return U.GAP_PROVENANCE_SOURCES.filter((item) => item !== 'legacy' && origins.includes(item));
   }
 
   function gapRemoveDisplaySource(origins) {
@@ -6542,173 +6752,12 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
     return origins.length > 0 && origins.some((source) => source !== 'audio_gate');
   }
 
-  function removeGapRemoveProvenanceRange(value, startMs, endMs, fallbackGaps = []) {
-    const provenance = normalizeGapRemoveProvenance(value, fallbackGaps);
-    const start = Math.max(0, Math.round(Math.min(Number(startMs), Number(endMs))));
-    const end = Math.max(0, Math.round(Math.max(Number(startMs), Number(endMs))));
-    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return provenance;
-
-    const baseRangesToClear = provenance.manual_overrides.flatMap((record) => (
-      isGapMoveRecord(record) && gapMoveTargetRanges(record).some((target) => (
-        target.start < end && target.end > start
-      ))
-        ? [{start: record.base_start, end: record.base_end}]
-        : []
-    ));
-    const clearRanges = [{start, end}, ...baseRangesToClear];
-    const removeFrom = (ranges, source, sort) => normalizeProvenanceRangeList(
-      ranges.flatMap((range) => {
-        if (isGapMoveRecord(range) && gapMoveTargetRanges(range).some((target) => (
-          target.start < end && target.end > start
-        ))) return [];
-        return clearRanges.reduce((remaining, clearRange) => remaining.flatMap((piece) => {
-          if (piece.end <= clearRange.start || piece.start >= clearRange.end) return [{...piece}];
-          const pieces = [];
-          if (piece.start < clearRange.start) pieces.push({...piece, end: clearRange.start});
-          if (piece.end > clearRange.end) pieces.push({...piece, start: clearRange.end});
-          return pieces;
-        }), [{...range}]);
-      }),
-      source,
-      {sort},
-    );
-
-    return {
-      schema: GAP_PROVENANCE_SCHEMA,
-      sources: {
-        script_alignment: removeFrom(provenance.sources.script_alignment, 'script_alignment', true),
-        audio_gate: removeFrom(provenance.sources.audio_gate, 'audio_gate', true),
-      },
-      manual_overrides: removeFrom(provenance.manual_overrides, 'manual', false),
-      legacy: removeFrom(provenance.legacy, 'legacy', false),
-    };
-  }
-
-  // Boundary expansion is destructive only to the Gap portions it reaches.
-  // Static source records can be cut immediately. Stateful manual controls
-  // (move/boundary records) stay intact here; the boundary record's own
-  // cleared_ranges is replayed last and prevents their old visual result from
-  // resurfacing when the user later drags back.
-  function clearStaticGapRemoveProvenanceRanges(value, ranges, fallbackGaps = []) {
-    const provenance = normalizeGapRemoveProvenance(value, fallbackGaps);
-    const clearedRanges = normalizeGapRangeList(ranges);
-    if (!clearedRanges.length) return provenance;
-    const removeFrom = (items, source, sort) => normalizeProvenanceRangeList(
-      items.flatMap((item) => subtractGapAbsorbRanges(item, clearedRanges)),
-      source,
-      {sort},
-    );
-    return {
-      schema: GAP_PROVENANCE_SCHEMA,
-      sources: {
-        script_alignment: removeFrom(provenance.sources.script_alignment, 'script_alignment', true),
-        audio_gate: removeFrom(provenance.sources.audio_gate, 'audio_gate', true),
-      },
-      manual_overrides: normalizeProvenanceRangeList(
-        provenance.manual_overrides.flatMap((item) => (
-          isGapMoveRecord(item) || isBoundaryResizeRecord(item)
-            ? [{ ...item }]
-            : subtractGapAbsorbRanges(item, clearedRanges)
-        )),
-        'manual',
-      ),
-      legacy: removeFrom(provenance.legacy, 'legacy', false),
-    };
-  }
-
-  function normalizeGapAbsorbRanges(ranges) {
-    return normalizeGapRangeList(ranges);
-  }
-
-  function subtractGapAbsorbRanges(item, ranges) {
-    return ranges.reduce((pieces, range) => pieces.flatMap((piece) => {
-      if (piece.end <= range.start || piece.start >= range.end) return [piece];
-      const remaining = [];
-      if (piece.start < range.start) remaining.push({ ...piece, end: range.start });
-      if (piece.end > range.end) remaining.push({ ...piece, start: range.end });
-      return remaining;
-    }), [{ ...item }]);
-  }
-
-  // A moved visible Gap owns any other Gap it covers at the destination. Do
-  // not consume the current visible range itself: that is the move record's
-  // base object, and it must remain available when the user drags back.
-  // A previously moved Gap is different from an ordinary source record: only
-  // its current target pieces are covered. Deleting the whole move record
-  // would resurrect its cleared base elsewhere on the timeline.
-  function absorbGapRemoveProvenanceRanges(
-    value,
-    ranges,
-    preserveIds = [],
-    fallbackGaps = [],
-    targetRemoved = true,
-  ) {
-    const provenance = normalizeGapRemoveProvenance(value, fallbackGaps);
-    const absorbRanges = normalizeGapAbsorbRanges(ranges);
-    if (!absorbRanges.length) return provenance;
-    const preserved = new Set(preserveIds);
-    const targetState = targetRemoved !== false;
-    const overlapsAbsorbedRange = (item) => absorbRanges.some((range) => (
-      item.end > range.start && item.start < range.end
-    ));
-    const cropOrAbsorb = (item) => {
-      if (!overlapsAbsorbedRange(item)) return [{ ...item }];
-      // Equal-state gaps would otherwise coalesce with the moved target and
-      // make it visibly longer. Treat those as fully absorbed; for an
-      // inactive/restored Gap the differing-state overlap is only clipped.
-      if ((item.removed !== false) === targetState) return [];
-      return subtractGapAbsorbRanges(item, absorbRanges);
-    };
-    const removeFrom = (items, source, sort) => normalizeProvenanceRangeList(
-      items.flatMap(cropOrAbsorb),
-      source,
-      {sort},
-    );
-    const manual = provenance.manual_overrides.flatMap((item) => {
-      if (preserved.has(item.id)) {
-        return [{ ...item }];
-      }
-      if (isGapMoveRecord(item)) {
-        const targets = gapMoveTargetRanges(item);
-        if (!targets.some(overlapsAbsorbedRange)) {
-          return [{ ...item }];
-        }
-        const remainingTargets = (item.removed !== false) === targetState
-          ? targets.filter((target) => !overlapsAbsorbedRange(target))
-          : targets.flatMap((target) => subtractGapAbsorbRanges(target, absorbRanges));
-        return [createGapMoveRecord({
-          id: item.id,
-          removed: item.removed,
-          baseStart: item.base_start,
-          baseEnd: item.base_end,
-          targetRanges: remainingTargets,
-        })];
-      }
-      if (!overlapsAbsorbedRange(item)) {
-        return [{ ...item }];
-      }
-      // A boundary operation has no independent destination range to crop.
-      // Keep it in place; the later move record wins within the target range.
-      if (isBoundaryResizeRecord(item)) return [{ ...item }];
-      return cropOrAbsorb(item);
-    });
-    return {
-      schema: GAP_PROVENANCE_SCHEMA,
-      sources: {
-        script_alignment: removeFrom(provenance.sources.script_alignment, 'script_alignment', true),
-        audio_gate: removeFrom(provenance.sources.audio_gate, 'audio_gate', true),
-      },
-      manual_overrides: normalizeProvenanceRangeList(manual, 'manual'),
-      legacy: removeFrom(provenance.legacy, 'legacy', false),
-    };
-  }
-
   // The display projection keeps both final states as one visible layer:
   // `removed:true` is an enabled gap, while `removed:false` is a visible but
   // ineffective manual restoration. Source records remain internal.
   function getGapRemoveDisplayGaps(gaps) {
     if (!Array.isArray(gaps)) return [];
-    const cached = GAP_DISPLAY_PROJECTION_CACHE.get(gaps);
+    const cached = U.GAP_DISPLAY_PROJECTION_CACHE.get(gaps);
     if (cached) return cached;
     const normalized = gaps
       .map((gap) => {
@@ -6735,7 +6784,7 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
       const covering = normalized.filter((gap) => gap.start < end && gap.end > start);
       if (!covering.length) continue;
       const removed = !covering.some((gap) => gap.removed === false);
-      const origins = GAP_PROVENANCE_SOURCES.filter((source) => covering.some((gap) => (
+      const origins = U.GAP_PROVENANCE_SOURCES.filter((source) => covering.some((gap) => (
         gapRemoveDisplayOrigins(gap).includes(source)
       )));
       const next = {start, end, removed};
@@ -6746,7 +6795,7 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
       const previous = result[result.length - 1];
       if (previous && previous.end === start && previous.removed === removed) {
         previous.end = end;
-        const combinedOrigins = GAP_PROVENANCE_SOURCES.filter((source) => (
+        const combinedOrigins = U.GAP_PROVENANCE_SOURCES.filter((source) => (
           gapRemoveDisplayOrigins(previous).includes(source)
           || origins.includes(source)
         ));
@@ -6758,99 +6807,207 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
         result.push(next);
       }
     }
-    GAP_DISPLAY_PROJECTION_CACHE.set(gaps, result);
+    U.GAP_DISPLAY_PROJECTION_CACHE.set(gaps, result);
     return result;
   }
 
-  function normalizeGapRemoveData(value) {
-    const source = value && typeof value === 'object' ? value : {};
-    const rawGaps = normalizeGapRemoveGaps(source.gaps);
-    const hasProvenance = Boolean(source.provenance && typeof source.provenance === 'object');
-    const provenance = normalizeGapRemoveProvenance(source.provenance, rawGaps);
-    const computedGaps = hasProvenance ? gapRangesFromProvenance(provenance) : rawGaps;
-    const gaps = cloneJsonValue(decorateGapRemoveGaps(computedGaps, provenance)) || [];
+  Object.assign(U, {
+    gapRemoveDisplayOrigins,
+    gapRemoveDisplaySource,
+    getGapRemoveDisplayType,
+    isGapRemoveDisplayProtected,
+    getGapRemoveDisplayGaps,
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// 从来源记录里挖掉/清掉区间，以及吸收区间（absorb）的减法。
+// 自 web/shared/gap-remove-core.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweGapRemove；
+// 兼容出口 window.AsrGapRemoveCore 仍由 shared/gap-remove/compat-surface.js 统一组装。
+(function initMaweGapRemoveProvenanceEdit(global) {
+  'use strict';
+
+  const U = global.MaweGapRemove;
+
+  function removeGapRemoveProvenanceRange(value, startMs, endMs, fallbackGaps = []) {
+    const provenance = U.normalizeGapRemoveProvenance(value, fallbackGaps);
+    const start = Math.max(0, Math.round(Math.min(Number(startMs), Number(endMs))));
+    const end = Math.max(0, Math.round(Math.max(Number(startMs), Number(endMs))));
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return provenance;
+
+    const baseRangesToClear = provenance.manual_overrides.flatMap((record) => (
+      U.isGapMoveRecord(record) && U.gapMoveTargetRanges(record).some((target) => (
+        target.start < end && target.end > start
+      ))
+        ? [{start: record.base_start, end: record.base_end}]
+        : []
+    ));
+    const clearRanges = [{start, end}, ...baseRangesToClear];
+    const removeFrom = (ranges, source, sort) => U.normalizeProvenanceRangeList(
+      ranges.flatMap((range) => {
+        if (U.isGapMoveRecord(range) && U.gapMoveTargetRanges(range).some((target) => (
+          target.start < end && target.end > start
+        ))) return [];
+        return clearRanges.reduce((remaining, clearRange) => remaining.flatMap((piece) => {
+          if (piece.end <= clearRange.start || piece.start >= clearRange.end) return [{...piece}];
+          const pieces = [];
+          if (piece.start < clearRange.start) pieces.push({...piece, end: clearRange.start});
+          if (piece.end > clearRange.end) pieces.push({...piece, start: clearRange.end});
+          return pieces;
+        }), [{...range}]);
+      }),
+      source,
+      {sort},
+    );
+
     return {
-      schema: GAP_REMOVE_SCHEMA,
-      // Older gap lists came from the same audio-gate workflow but did not
-      // carry a provenance layer. Normalize them into the current detector so
-      // their display, shrinking, clearing, and rescanning stay consistent.
-      detector: 'audio_gate',
-      minimum_ms: clampInteger(source.minimum_ms, 400, 100, 60000),
-      threshold_db: Math.min(0, Math.max(-96, Number.isFinite(Number(source.threshold_db)) ? Number(source.threshold_db) : -28)),
-      hysteresis_db: Math.min(30, Math.max(0, Number.isFinite(Number(source.hysteresis_db)) ? Number(source.hysteresis_db) : 2)),
-      lead_in_ms: clampInteger(source.lead_in_ms, 120, 0, 2000),
-      lead_out_ms: clampInteger(source.lead_out_ms, 80, 0, 2000),
-      skip_playback: source.skip_playback !== false,
-      manual_corrections: source.manual_corrections === true || provenance.manual_overrides.length > 0,
-      operation_mode: normalizeGapOperationMode(source.operation_mode),
-      disable_coverage_percent: clampGapRemoveDisableCoverage(source.disable_coverage_percent),
-      disable_remaining_ms: clampGapRemoveDisableRemaining(source.disable_remaining_ms),
-      gaps,
-      provenance,
+      schema: U.GAP_PROVENANCE_SCHEMA,
+      sources: {
+        script_alignment: removeFrom(provenance.sources.script_alignment, 'script_alignment', true),
+        audio_gate: removeFrom(provenance.sources.audio_gate, 'audio_gate', true),
+      },
+      manual_overrides: removeFrom(provenance.manual_overrides, 'manual', false),
+      legacy: removeFrom(provenance.legacy, 'legacy', false),
     };
   }
 
-  function applyGapRemoveRange(gaps, startMs, endMs, removed) {
-    const source = coalesceGapRemoveGaps(gaps);
-    const start = Math.max(0, Math.round(Math.min(Number(startMs), Number(endMs))));
-    const end = Math.max(0, Math.round(Math.max(Number(startMs), Number(endMs))));
-    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return source;
+  // Boundary expansion is destructive only to the Gap portions it reaches.
+  // Static source records can be cut immediately. Stateful manual controls
+  // (move/boundary records) stay intact here; the boundary record's own
+  // cleared_ranges is replayed last and prevents their old visual result from
+  // resurfacing when the user later drags back.
+  function clearStaticGapRemoveProvenanceRanges(value, ranges, fallbackGaps = []) {
+    const provenance = U.normalizeGapRemoveProvenance(value, fallbackGaps);
+    const clearedRanges = U.normalizeGapRangeList(ranges);
+    if (!clearedRanges.length) return provenance;
+    const removeFrom = (items, source, sort) => U.normalizeProvenanceRangeList(
+      items.flatMap((item) => subtractGapAbsorbRanges(item, clearedRanges)),
+      source,
+      {sort},
+    );
+    return {
+      schema: U.GAP_PROVENANCE_SCHEMA,
+      sources: {
+        script_alignment: removeFrom(provenance.sources.script_alignment, 'script_alignment', true),
+        audio_gate: removeFrom(provenance.sources.audio_gate, 'audio_gate', true),
+      },
+      manual_overrides: U.normalizeProvenanceRangeList(
+        provenance.manual_overrides.flatMap((item) => (
+          U.isGapMoveRecord(item) || U.isBoundaryResizeRecord(item)
+            ? [{ ...item }]
+            : subtractGapAbsorbRanges(item, clearedRanges)
+        )),
+        'manual',
+      ),
+      legacy: removeFrom(provenance.legacy, 'legacy', false),
+    };
+  }
 
-    const next = [];
-    source.forEach((gap) => {
-      if (gap.end <= start || gap.start >= end) {
-        next.push({ ...gap });
-        return;
+  function normalizeGapAbsorbRanges(ranges) {
+    return U.normalizeGapRangeList(ranges);
+  }
+
+  function subtractGapAbsorbRanges(item, ranges) {
+    return ranges.reduce((pieces, range) => pieces.flatMap((piece) => {
+      if (piece.end <= range.start || piece.start >= range.end) return [piece];
+      const remaining = [];
+      if (piece.start < range.start) remaining.push({ ...piece, end: range.start });
+      if (piece.end > range.end) remaining.push({ ...piece, start: range.end });
+      return remaining;
+    }), [{ ...item }]);
+  }
+
+  // A moved visible Gap owns any other Gap it covers at the destination. Do
+  // not consume the current visible range itself: that is the move record's
+  // base object, and it must remain available when the user drags back.
+  // A previously moved Gap is different from an ordinary source record: only
+  // its current target pieces are covered. Deleting the whole move record
+  // would resurrect its cleared base elsewhere on the timeline.
+  function absorbGapRemoveProvenanceRanges(
+    value,
+    ranges,
+    preserveIds = [],
+    fallbackGaps = [],
+    targetRemoved = true,
+  ) {
+    const provenance = U.normalizeGapRemoveProvenance(value, fallbackGaps);
+    const absorbRanges = normalizeGapAbsorbRanges(ranges);
+    if (!absorbRanges.length) return provenance;
+    const preserved = new Set(preserveIds);
+    const targetState = targetRemoved !== false;
+    const overlapsAbsorbedRange = (item) => absorbRanges.some((range) => (
+      item.end > range.start && item.start < range.end
+    ));
+    const cropOrAbsorb = (item) => {
+      if (!overlapsAbsorbedRange(item)) return [{ ...item }];
+      // Equal-state gaps would otherwise coalesce with the moved target and
+      // make it visibly longer. Treat those as fully absorbed; for an
+      // inactive/restored Gap the differing-state overlap is only clipped.
+      if ((item.removed !== false) === targetState) return [];
+      return subtractGapAbsorbRanges(item, absorbRanges);
+    };
+    const removeFrom = (items, source, sort) => U.normalizeProvenanceRangeList(
+      items.flatMap(cropOrAbsorb),
+      source,
+      {sort},
+    );
+    const manual = provenance.manual_overrides.flatMap((item) => {
+      if (preserved.has(item.id)) {
+        return [{ ...item }];
       }
-      if (gap.start < start) next.push({ ...gap, end: start });
-      if (!removed) {
-        next.push({
-          start: Math.max(gap.start, start),
-          end: Math.min(gap.end, end),
-          removed: false,
-        });
+      if (U.isGapMoveRecord(item)) {
+        const targets = U.gapMoveTargetRanges(item);
+        if (!targets.some(overlapsAbsorbedRange)) {
+          return [{ ...item }];
+        }
+        const remainingTargets = (item.removed !== false) === targetState
+          ? targets.filter((target) => !overlapsAbsorbedRange(target))
+          : targets.flatMap((target) => subtractGapAbsorbRanges(target, absorbRanges));
+        return [U.createGapMoveRecord({
+          id: item.id,
+          removed: item.removed,
+          baseStart: item.base_start,
+          baseEnd: item.base_end,
+          targetRanges: remainingTargets,
+        })];
       }
-      if (gap.end > end) next.push({ ...gap, start: end });
+      if (!overlapsAbsorbedRange(item)) {
+        return [{ ...item }];
+      }
+      // A boundary operation has no independent destination range to crop.
+      // Keep it in place; the later move record wins within the target range.
+      if (U.isBoundaryResizeRecord(item)) return [{ ...item }];
+      return cropOrAbsorb(item);
     });
-    if (removed) next.push({ start, end, removed: true });
-    return coalesceGapRemoveGaps(next);
+    return {
+      schema: U.GAP_PROVENANCE_SCHEMA,
+      sources: {
+        script_alignment: removeFrom(provenance.sources.script_alignment, 'script_alignment', true),
+        audio_gate: removeFrom(provenance.sources.audio_gate, 'audio_gate', true),
+      },
+      manual_overrides: U.normalizeProvenanceRangeList(manual, 'manual'),
+      legacy: removeFrom(provenance.legacy, 'legacy', false),
+    };
   }
 
-  function shrinkGapRemoveGaps(gaps, leadInMs, leadOutMs) {
-    const source = coalesceGapRemoveGaps(gaps);
-    const leadIn = clampInteger(leadInMs, 40, 0, 2000);
-    const leadOut = clampInteger(leadOutMs, 80, 0, 2000);
-    return coalesceGapRemoveGaps(source
-      .map((gap) => ({
-        ...gap,
-        start: gap.start + leadIn,
-        end: gap.end - leadOut,
-      }))
-      .filter((gap) => gap.end > gap.start));
-  }
+  Object.assign(U, {
+    removeGapRemoveProvenanceRange,
+    clearStaticGapRemoveProvenanceRanges,
+    normalizeGapAbsorbRanges,
+    subtractGapAbsorbRanges,
+    absorbGapRemoveProvenanceRanges,
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
 
-  // 将一个已有区段作为整体平移或复制到目标位置。与人工“范围移除”不同，
-  // 这里保留区段的 removed 状态，因此恢复区段也可以被整体拖动/复制。
-  function overlayGapRemoveRange(gaps, startMs, endMs, removed) {
-    const source = coalesceGapRemoveGaps(gaps);
-    const start = Math.max(0, Math.round(Math.min(Number(startMs), Number(endMs))));
-    const end = Math.max(0, Math.round(Math.max(Number(startMs), Number(endMs))));
-    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return source;
-    const next = [];
-    source.forEach((gap) => {
-      if (gap.end <= start || gap.start >= end) {
-        next.push({ ...gap });
-        return;
-      }
-      if (gap.start < start) next.push({ ...gap, end: start });
-      if (gap.end > end) next.push({ ...gap, start: end });
-    });
-    next.push({ start, end, removed: removed !== false });
-    return coalesceGapRemoveGaps(next);
-  }
+// 空隙整体平移/复制与边界拖拽的取值、覆盖区间、落地记录。
+// 自 web/shared/gap-remove-core.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweGapRemove；
+// 兼容出口 window.AsrGapRemoveCore 仍由 shared/gap-remove/compat-surface.js 统一组装。
+(function initMaweGapRemoveRangeEdit(global) {
+  'use strict';
+
+  const U = global.MaweGapRemove;
 
   function translateGapRemoveRange(gaps, index, deltaMs, durationMs, copy) {
-    const source = coalesceGapRemoveGaps(gaps);
+    const source = U.coalesceGapRemoveGaps(gaps);
     const gapIndex = Math.round(Number(index));
     const delta = Math.round(Number(deltaMs));
     if (!Number.isFinite(gapIndex) || !Number.isFinite(delta)
@@ -6866,7 +7023,7 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
     const end = start + length;
     if (start === original.start && end === original.end) return source;
     const remaining = copy ? source : source.filter((_, sourceIndex) => sourceIndex !== gapIndex);
-    return overlayGapRemoveRange(remaining, start, end, original.removed);
+    return U.overlayGapRemoveRange(remaining, start, end, original.removed);
   }
 
   function moveGapRemoveRange(gaps, index, deltaMs, durationMs) {
@@ -6878,7 +7035,7 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
   }
 
   function gapBoundaryTarget(gap, edge, valueMs, minimumMs = 10) {
-    if (!gap || !GAP_REMOVE_BOUNDARY_EDGES.includes(edge)) return null;
+    if (!gap || !U.GAP_REMOVE_BOUNDARY_EDGES.includes(edge)) return null;
     const value = Math.round(Number(valueMs));
     const minimum = Math.max(1, Math.round(Number(minimumMs) || 10));
     if (!Number.isFinite(value)) return null;
@@ -6895,7 +7052,7 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
   }
 
   function gapBoundaryExpansionRange(original, target, edge) {
-    if (!original || !target || !GAP_REMOVE_BOUNDARY_EDGES.includes(edge)) return null;
+    if (!original || !target || !U.GAP_REMOVE_BOUNDARY_EDGES.includes(edge)) return null;
     if (edge === 'start' && target.start < original.start) {
       return {start: target.start, end: original.start};
     }
@@ -6910,7 +7067,7 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
   function gapBoundaryCoveredRanges(gaps, index, original, target, edge) {
     const expansion = gapBoundaryExpansionRange(original, target, edge);
     if (!expansion) return [];
-    return normalizeGapRangeList(gaps.flatMap((gap, gapIndex) => {
+    return U.normalizeGapRangeList(gaps.flatMap((gap, gapIndex) => {
       if (gapIndex === index || gap.end <= expansion.start || gap.start >= expansion.end) return [];
       if (expansion.start <= gap.start && expansion.end >= gap.end) {
         return [{start: gap.start, end: gap.end}];
@@ -6923,7 +7080,7 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
   }
 
   function resizeGapRemoveBoundary(gaps, index, edge, valueMs, minimumMs = 10) {
-    const source = coalesceGapRemoveGaps(gaps);
+    const source = U.coalesceGapRemoveGaps(gaps);
     const gapIndex = Math.round(Number(index));
     if (!Number.isFinite(gapIndex)
         || gapIndex < 0 || gapIndex >= source.length || !['start', 'end'].includes(edge)) {
@@ -6934,7 +7091,7 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
     if (!target || (target.start === original.start && target.end === original.end)) return source;
     // The dragged edge owns its target range. It must not turn a shared
     // boundary into a coupled resize of the neighboring Gap.
-    return overlayGapRemoveRange(
+    return U.overlayGapRemoveRange(
       source.filter((_, sourceIndex) => sourceIndex !== gapIndex),
       target.start,
       target.end,
@@ -6952,7 +7109,7 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
   }
 
   function boundaryResizeChange(original, target, edge) {
-    if (!original || !target || !GAP_REMOVE_BOUNDARY_EDGES.includes(edge)) return null;
+    if (!original || !target || !U.GAP_REMOVE_BOUNDARY_EDGES.includes(edge)) return null;
     const boundary = Math.round(Number(target[edge]));
     const current = Math.round(Number(original[edge]));
     if (!Number.isFinite(boundary) || boundary === current) return null;
@@ -6963,7 +7120,7 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
     const current = Math.round(Number(original?.[edge]));
     for (let index = provenance.manual_overrides.length - 1; index >= 0; index -= 1) {
       const record = provenance.manual_overrides[index];
-      if (!isBoundaryResizeRecord(record) || record.edge !== edge
+      if (!U.isBoundaryResizeRecord(record) || record.edge !== edge
           || record.removed !== (original.removed !== false)
           || record.boundary !== current) continue;
       if (usedChanges.some((used) => used.recordId && used.recordId === record.id)) continue;
@@ -6978,8 +7135,8 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
     const candidateIndex = findBoundaryResizeRecordIndex(provenance, original, edge, usedChanges);
     const candidate = candidateIndex >= 0 ? provenance.manual_overrides[candidateIndex] : null;
     const base = candidate ? Math.round(Number(candidate.base)) : current;
-    const nextClearedRanges = normalizeGapRangeList([
-      ...gapBoundaryClearedRanges(candidate),
+    const nextClearedRanges = U.normalizeGapRangeList([
+      ...U.gapBoundaryClearedRanges(candidate),
       ...clearedRanges,
     ]);
     const next = provenance.manual_overrides.filter((_, index) => index !== candidateIndex);
@@ -6990,14 +7147,14 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
         start: Math.min(base, boundary, ...nextClearedRanges.map((range) => range.start)),
         end: Math.max(base, boundary, ...nextClearedRanges.map((range) => range.end)),
         removed: original.removed !== false,
-        operation: GAP_REMOVE_MANUAL_OPERATION_BOUNDARY_RESIZE,
+        operation: U.GAP_REMOVE_MANUAL_OPERATION_BOUNDARY_RESIZE,
         edge,
         base,
         boundary,
         ...(nextClearedRanges.length ? {cleared_ranges: nextClearedRanges} : {}),
       });
     }
-    const normalized = normalizeGapRemoveProvenance({
+    const normalized = U.normalizeGapRemoveProvenance({
       ...provenance,
       manual_overrides: next,
     });
@@ -7007,9 +7164,32 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
     };
   }
 
+  Object.assign(U, {
+    translateGapRemoveRange,
+    moveGapRemoveRange,
+    copyGapRemoveRange,
+    gapBoundaryTarget,
+    gapBoundaryExpansionRange,
+    gapBoundaryCoveredRanges,
+    resizeGapRemoveBoundary,
+    resizedGapAtBoundary,
+    boundaryResizeChange,
+    findBoundaryResizeRecordIndex,
+    upsertBoundaryResizeRecord,
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// 移动与边界调整写回来源记录：去重、目标区间拆分与吸收。
+// 自 web/shared/gap-remove-core.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweGapRemove；
+// 兼容出口 window.AsrGapRemoveCore 仍由 shared/gap-remove/compat-surface.js 统一组装。
+(function initMaweGapRemoveProvenanceMove(global) {
+  'use strict';
+
+  const U = global.MaweGapRemove;
+
   function gapRemoveRangesEqual(left, right) {
-    const a = normalizeGapRemoveGaps(left);
-    const b = normalizeGapRemoveGaps(right);
+    const a = U.normalizeGapRemoveGaps(left);
+    const b = U.normalizeGapRemoveGaps(right);
     return a.length === b.length && a.every((gap, index) => {
       const other = b[index];
       return other && gap.start === other.start && gap.end === other.end
@@ -7034,8 +7214,8 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
     let candidateTargetIndex = -1;
     for (let index = provenance.manual_overrides.length - 1; index >= 0; index -= 1) {
       const record = provenance.manual_overrides[index];
-      if (!isGapMoveRecord(record) || record.removed !== removed) continue;
-      const targetIndex = gapMoveTargetRanges(record).findIndex((range) => (
+      if (!U.isGapMoveRecord(record) || record.removed !== removed) continue;
+      const targetIndex = U.gapMoveTargetRanges(record).findIndex((range) => (
         range.start === original.start && range.end === original.end
       ));
       if (targetIndex < 0) continue;
@@ -7046,7 +7226,7 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
     const candidate = candidateIndex >= 0 ? provenance.manual_overrides[candidateIndex] : null;
     const baseStart = candidate ? Math.round(Number(candidate.base_start)) : original.start;
     const baseEnd = candidate ? Math.round(Number(candidate.base_end)) : original.end;
-    const candidateTargets = candidate ? gapMoveTargetRanges(candidate) : [];
+    const candidateTargets = candidate ? U.gapMoveTargetRanges(candidate) : [];
     const nextTargets = candidate
       ? candidateTargets.map((range, index) => (
         index === candidateTargetIndex ? { start: target.start, end: target.end } : range
@@ -7056,7 +7236,7 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
     const removeRecord = targetReturnsToBase && (!candidate || candidateTargets.length === 1);
     const absorbed = removeRecord
       ? provenance
-      : absorbGapRemoveProvenanceRanges(
+      : U.absorbGapRemoveProvenanceRanges(
         provenance,
         absorbRanges,
         candidate ? [candidate.id] : [],
@@ -7067,7 +7247,7 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
       !candidate || item.id !== candidate.id
     ));
     if (!removeRecord) {
-      next.push(createGapMoveRecord({
+      next.push(U.createGapMoveRecord({
         id: candidate?.id,
         removed,
         baseStart,
@@ -7075,7 +7255,7 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
         targetRanges: nextTargets,
       }));
     }
-    const normalized = normalizeGapRemoveProvenance({
+    const normalized = U.normalizeGapRemoveProvenance({
       ...absorbed,
       manual_overrides: next,
     });
@@ -7097,17 +7277,17 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
     durationMs,
     fallbackGaps = [],
   ) {
-    const visible = getGapRemoveDisplayGaps(gaps);
+    const visible = U.getGapRemoveDisplayGaps(gaps);
     const gapIndex = Math.round(Number(index));
-    const provenance = normalizeGapRemoveProvenance(value, fallbackGaps);
+    const provenance = U.normalizeGapRemoveProvenance(value, fallbackGaps);
     if (!Number.isFinite(gapIndex) || gapIndex < 0 || gapIndex >= visible.length) {
-      return { changed: false, provenance, gaps: gapRangesFromProvenance(provenance) };
+      return { changed: false, provenance, gaps: U.gapRangesFromProvenance(provenance) };
     }
     const original = visible[gapIndex];
     const delta = Math.round(Number(deltaMs));
     const durationValue = Number(durationMs);
     if (!Number.isFinite(delta)) {
-      return { changed: false, provenance, gaps: gapRangesFromProvenance(provenance) };
+      return { changed: false, provenance, gaps: U.gapRangesFromProvenance(provenance) };
     }
     const length = original.end - original.start;
     const duration = Number.isFinite(durationValue) && durationValue > 0
@@ -7119,14 +7299,14 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
     );
     const targetEnd = targetStart + length;
     if (targetStart === original.start && targetEnd === original.end) {
-      return { changed: false, provenance, gaps: gapRangesFromProvenance(provenance) };
+      return { changed: false, provenance, gaps: U.gapRangesFromProvenance(provenance) };
     }
     // Keep the dragged block's geometry exact. `moveGapRemoveRange()` is a
     // useful visual overlay helper, but it coalesces adjacent ranges; using
     // that merged result as the persisted target makes an active Gap pull an
     // adjacent inactive Gap along with it.
     const target = { ...original, start: targetStart, end: targetEnd };
-    const absorbRanges = subtractGapAbsorbRanges(
+    const absorbRanges = U.subtractGapAbsorbRanges(
       target,
       [{ start: original.start, end: original.end }],
     ).map((range) => ({ start: range.start, end: range.end }));
@@ -7138,7 +7318,7 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
     return {
       changed: true,
       provenance: recordResult.provenance,
-      gaps: gapRangesFromProvenance(recordResult.provenance),
+      gaps: U.gapRangesFromProvenance(recordResult.provenance),
       original,
       target,
     };
@@ -7155,25 +7335,25 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
     valueMs,
     fallbackGaps = [],
   ) {
-    const visible = getGapRemoveDisplayGaps(gaps);
+    const visible = U.getGapRemoveDisplayGaps(gaps);
     const gapIndex = Math.round(Number(index));
-    const provenance = normalizeGapRemoveProvenance(value, fallbackGaps);
+    const provenance = U.normalizeGapRemoveProvenance(value, fallbackGaps);
     if (!Number.isFinite(gapIndex) || gapIndex < 0 || gapIndex >= visible.length
-        || !GAP_REMOVE_BOUNDARY_EDGES.includes(edge)) {
-      return { changed: false, provenance, gaps: gapRangesFromProvenance(provenance) };
+        || !U.GAP_REMOVE_BOUNDARY_EDGES.includes(edge)) {
+      return { changed: false, provenance, gaps: U.gapRangesFromProvenance(provenance) };
     }
     const original = visible[gapIndex];
-    const target = gapBoundaryTarget(original, edge, valueMs);
+    const target = U.gapBoundaryTarget(original, edge, valueMs);
     if (!target || (target.start === original.start && target.end === original.end)) {
-      return { changed: false, provenance, gaps: gapRangesFromProvenance(provenance) };
+      return { changed: false, provenance, gaps: U.gapRangesFromProvenance(provenance) };
     }
-    const clearedRanges = gapBoundaryCoveredRanges(visible, gapIndex, original, target, edge);
-    const cleanedProvenance = clearStaticGapRemoveProvenanceRanges(
+    const clearedRanges = U.gapBoundaryCoveredRanges(visible, gapIndex, original, target, edge);
+    const cleanedProvenance = U.clearStaticGapRemoveProvenanceRanges(
       provenance,
       clearedRanges,
       fallbackGaps,
     );
-    const recordResult = upsertBoundaryResizeRecord(cleanedProvenance, {
+    const recordResult = U.upsertBoundaryResizeRecord(cleanedProvenance, {
       original,
       edge,
       boundary: target[edge],
@@ -7182,11 +7362,28 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
     return {
       changed: true,
       provenance: recordResult.provenance,
-      gaps: gapRangesFromProvenance(recordResult.provenance),
+      gaps: U.gapRangesFromProvenance(recordResult.provenance),
       original,
       target,
     };
   }
+
+  Object.assign(U, {
+    gapRemoveRangesEqual,
+    movedGapAtTarget,
+    upsertGapMoveRecord,
+    moveGapRemoveProvenance,
+    resizeGapRemoveProvenanceBoundary,
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// 按波形峰值做静音检测（带滞回与前/后端预留）。
+// 自 web/shared/gap-remove-core.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweGapRemove；
+// 兼容出口 window.AsrGapRemoveCore 仍由 shared/gap-remove/compat-surface.js 统一组装。
+(function initMaweGapRemoveAudioDetect(global) {
+  'use strict';
+
+  const U = global.MaweGapRemove;
 
   function waveformPeakDb(peaks, index) {
     const low = Number(peaks[index * 2]);
@@ -7245,9 +7442,23 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
     return rawGaps.filter((gap) => gap.end - gap.start >= minimumMs);
   }
 
+  Object.assign(U, {
+    waveformPeakDb,
+    detectAudioGapRemoveGaps,
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// 只读查询与播放跳转：已移除区间、禁用匹配、命中查找、跳过区间与时间映射。
+// 自 web/shared/gap-remove-core.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweGapRemove；
+// 兼容出口 window.AsrGapRemoveCore 仍由 shared/gap-remove/compat-surface.js 统一组装。
+(function initMaweGapRemoveGapQueries(global) {
+  'use strict';
+
+  const U = global.MaweGapRemove;
+
   function getRemovedGapRanges(gaps) {
     const merged = [];
-    normalizeGapRemoveGaps(gaps).filter((gap) => gap.removed).forEach((gap) => {
+    U.normalizeGapRemoveGaps(gaps).filter((gap) => gap.removed).forEach((gap) => {
       const previous = merged[merged.length - 1];
       if (previous && gap.start <= previous.end) {
         previous.end = Math.max(previous.end, gap.end);
@@ -7259,8 +7470,8 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
   }
 
   function findGapRemoveDisableMatches(segments, gaps, options = {}) {
-    const coverageThreshold = clampGapRemoveDisableCoverage(options.coveragePercent);
-    const remainingThreshold = clampGapRemoveDisableRemaining(options.remainingMs);
+    const coverageThreshold = U.clampGapRemoveDisableCoverage(options.coveragePercent);
+    const remainingThreshold = U.clampGapRemoveDisableRemaining(options.remainingMs);
     const removedRanges = getRemovedGapRanges(gaps);
     const source = Array.isArray(segments) ? segments : [];
     const matches = [];
@@ -7342,44 +7553,7 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
     return intervals;
   }
 
-  global.AsrGapRemoveCore = Object.freeze({
-    GAP_REMOVE_SCHEMA,
-    GAP_PROVENANCE_SCHEMA,
-    GAP_PROVENANCE_SOURCES,
-    GAP_REMOVE_OPERATION_MODES,
-    DEFAULT_GAP_REMOVE_OPERATION_MODE,
-    GAP_REMOVE_MANUAL_OPERATION_BOUNDARY_RESIZE,
-    GAP_REMOVE_MANUAL_OPERATION_MOVE,
-    GAP_REMOVE_DISABLE_COVERAGE_DEFAULT,
-    GAP_REMOVE_DISABLE_REMAINING_DEFAULT_MS,
-    GAP_REMOVE_DISABLE_REMAINING_MAX_MS,
-    clampGapRemoveDisableCoverage,
-    clampGapRemoveDisableRemaining,
-    normalizeGapOperationMode,
-    gapOperationAllowsBoundary,
-    gapOperationAllowsMiddle,
-    normalizeGapRemoveData,
-    normalizeGapRemoveGaps,
-    normalizeGapRemoveProvenance,
-    gapRangesFromProvenance,
-    decorateGapRemoveGaps,
-    replaceGapRemoveProvenanceSource,
-    appendGapRemoveManualOverrides,
-    coalesceGapRemoveGaps,
-    getGapRemoveDisplayType,
-    isGapRemoveDisplayProtected,
-    removeGapRemoveProvenanceRange,
-    getGapRemoveDisplayGaps,
-    applyGapRemoveRange,
-    shrinkGapRemoveGaps,
-    overlayGapRemoveRange,
-    translateGapRemoveRange,
-    moveGapRemoveRange,
-    copyGapRemoveRange,
-    moveGapRemoveProvenance,
-    resizeGapRemoveBoundary,
-    resizeGapRemoveProvenanceBoundary,
-    detectAudioGapRemoveGaps,
+  Object.assign(U, {
     getRemovedGapRanges,
     findGapRemoveDisableMatches,
     findGapRemoveAtTime,
@@ -7387,6 +7561,62 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
     getGapPlaybackSkip,
     mapGapRemovedTime,
     buildGapRemovedIntervals,
+  });
+})(typeof window !== 'undefined' ? window : globalThis);
+
+// window.AsrGapRemoveCore 兼容出口：结构、键名与键序与拆分前完全一致（契约测试逐项比对），
+// 取值来自 shared/gap-remove/ 各模块发布到 window.MaweGapRemove 的内部符号。内部 helper 不要往这里加。
+// 必须在 shared/gap-remove/ 全部模块之后加载。
+(function initMaweGapRemoveCompatSurface(global) {
+  'use strict';
+
+  const U = global.MaweGapRemove;
+
+  global.AsrGapRemoveCore = Object.freeze({
+    GAP_REMOVE_SCHEMA: U.GAP_REMOVE_SCHEMA,
+    GAP_PROVENANCE_SCHEMA: U.GAP_PROVENANCE_SCHEMA,
+    GAP_PROVENANCE_SOURCES: U.GAP_PROVENANCE_SOURCES,
+    GAP_REMOVE_OPERATION_MODES: U.GAP_REMOVE_OPERATION_MODES,
+    DEFAULT_GAP_REMOVE_OPERATION_MODE: U.DEFAULT_GAP_REMOVE_OPERATION_MODE,
+    GAP_REMOVE_MANUAL_OPERATION_BOUNDARY_RESIZE: U.GAP_REMOVE_MANUAL_OPERATION_BOUNDARY_RESIZE,
+    GAP_REMOVE_MANUAL_OPERATION_MOVE: U.GAP_REMOVE_MANUAL_OPERATION_MOVE,
+    GAP_REMOVE_DISABLE_COVERAGE_DEFAULT: U.GAP_REMOVE_DISABLE_COVERAGE_DEFAULT,
+    GAP_REMOVE_DISABLE_REMAINING_DEFAULT_MS: U.GAP_REMOVE_DISABLE_REMAINING_DEFAULT_MS,
+    GAP_REMOVE_DISABLE_REMAINING_MAX_MS: U.GAP_REMOVE_DISABLE_REMAINING_MAX_MS,
+    clampGapRemoveDisableCoverage: U.clampGapRemoveDisableCoverage,
+    clampGapRemoveDisableRemaining: U.clampGapRemoveDisableRemaining,
+    normalizeGapOperationMode: U.normalizeGapOperationMode,
+    gapOperationAllowsBoundary: U.gapOperationAllowsBoundary,
+    gapOperationAllowsMiddle: U.gapOperationAllowsMiddle,
+    normalizeGapRemoveData: U.normalizeGapRemoveData,
+    normalizeGapRemoveGaps: U.normalizeGapRemoveGaps,
+    normalizeGapRemoveProvenance: U.normalizeGapRemoveProvenance,
+    gapRangesFromProvenance: U.gapRangesFromProvenance,
+    decorateGapRemoveGaps: U.decorateGapRemoveGaps,
+    replaceGapRemoveProvenanceSource: U.replaceGapRemoveProvenanceSource,
+    appendGapRemoveManualOverrides: U.appendGapRemoveManualOverrides,
+    coalesceGapRemoveGaps: U.coalesceGapRemoveGaps,
+    getGapRemoveDisplayType: U.getGapRemoveDisplayType,
+    isGapRemoveDisplayProtected: U.isGapRemoveDisplayProtected,
+    removeGapRemoveProvenanceRange: U.removeGapRemoveProvenanceRange,
+    getGapRemoveDisplayGaps: U.getGapRemoveDisplayGaps,
+    applyGapRemoveRange: U.applyGapRemoveRange,
+    shrinkGapRemoveGaps: U.shrinkGapRemoveGaps,
+    overlayGapRemoveRange: U.overlayGapRemoveRange,
+    translateGapRemoveRange: U.translateGapRemoveRange,
+    moveGapRemoveRange: U.moveGapRemoveRange,
+    copyGapRemoveRange: U.copyGapRemoveRange,
+    moveGapRemoveProvenance: U.moveGapRemoveProvenance,
+    resizeGapRemoveBoundary: U.resizeGapRemoveBoundary,
+    resizeGapRemoveProvenanceBoundary: U.resizeGapRemoveProvenanceBoundary,
+    detectAudioGapRemoveGaps: U.detectAudioGapRemoveGaps,
+    getRemovedGapRanges: U.getRemovedGapRanges,
+    findGapRemoveDisableMatches: U.findGapRemoveDisableMatches,
+    findGapRemoveAtTime: U.findGapRemoveAtTime,
+    isGapPreviewActive: U.isGapPreviewActive,
+    getGapPlaybackSkip: U.getGapPlaybackSkip,
+    mapGapRemovedTime: U.mapGapRemovedTime,
+    buildGapRemovedIntervals: U.buildGapRemovedIntervals,
   });
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -8576,7 +8806,7 @@ window.ASR_EDITOR_PALETTE = [{"name": "yellow", "value": "#c4a019"}, {"name": "g
   });
 })(typeof window !== 'undefined' ? window : globalThis);
 
-// 空隙移除核心的桥接层：真正的算法在 web/shared/gap-remove-core.js，这里只做兼容别名与派生段重建。
+// 空隙移除核心的桥接层：真正的算法在 web/shared/gap-remove/，这里只做兼容别名与派生段重建。
 // 自 web/editor/lib/utils.js 的单个巨型 IIFE 拆出。内部符号发布到 window.MaweLib；
 // 兼容出口 window.AsrEditorUtils 仍由 editor/lib/compat-surface.js 统一组装。
 (function initMaweLibGapRemoveBridge(global) {
