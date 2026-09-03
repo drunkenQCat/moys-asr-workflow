@@ -4,10 +4,42 @@
 # directory layout below it is for navigation and carries no order semantics.
 # editor/playback/jkl.js owns JKL playback state; editor/boot/entry.js initializes
 # its UI at load and consumes it through the window.MaweJklPlayback facade.
+# editor/lib/* publish internal symbols on window.MaweLib and read each other
+# lazily inside function bodies, so their mutual order is free; only load-time
+# initializers need their owner first. Within that block editor/lib/namespace.js
+# must come first (it creates window.MaweLib) and editor/lib/compat-surface.js
+# last (it snapshots the whole surface into the window.AsrEditorUtils compat exit).
 editor/boot/data.js
 editor/boot/registry.js
 shared/gap-remove-core.js
-editor/lib/utils.js
+editor/lib/namespace.js
+editor/lib/json-value.js
+editor/lib/audio-metadata.js
+editor/lib/text-processing.js
+editor/lib/cue-metrics.js
+editor/lib/cue-timings.js
+editor/lib/duration-format.js
+editor/lib/split-candidates.js
+editor/lib/cue-navigation.js
+editor/lib/split-trim-symbols.js
+editor/lib/settings-normalize.js
+editor/lib/gap-remove-bridge.js
+editor/lib/history-record.js
+editor/lib/subtitles/normalize.js
+editor/lib/subtitles/word-split.js
+editor/lib/subtitles/bindings.js
+editor/lib/timed-text/core.js
+editor/lib/timed-text/structure.js
+editor/lib/timed-text/boundary.js
+editor/lib/export/srt-payload.js
+editor/lib/export/plan.js
+editor/lib/export/fcp7.js
+editor/lib/export/artifacts.js
+editor/lib/platform.js
+editor/lib/preview-geometry.js
+editor/lib/graphics/lottie.js
+editor/lib/graphics/ograf.js
+editor/lib/compat-surface.js
 editor/i18n/i18n.js
 editor/waveform/runtime.js
 editor/playback/jkl.js

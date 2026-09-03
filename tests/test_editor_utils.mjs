@@ -9,13 +9,88 @@ import { TextDecoder, TextEncoder } from 'node:util';
 import vm from 'node:vm';
 
 
+// editor/lib/utils.js 已按职责拆成 namespace.js 到 compat-surface.js 的连续模块块。
+// 这里按 editor-scripts.txt 的顺序加载整块，断言对象是装配结果而不是某个文件，
+// 模块日后继续拆细也不会让本测试失效。editor/lib 其余模块（colors、settings 等）
+// 依赖页面注入数据，不属于本块，不在此加载。
+function editorScriptManifest() {
+  return fs.readFileSync(new URL('../web/editor-scripts.txt', import.meta.url), 'utf8')
+    .split('\n')
+    .map((line) => line.split('#', 1)[0].trim())
+    .filter(Boolean);
+}
+
 const context = { window: {}, TextDecoder, TextEncoder, Uint8Array };
-const gapCoreSource = fs.readFileSync(new URL('../web/shared/gap-remove-core.js', import.meta.url), 'utf8');
-vm.runInNewContext(gapCoreSource, context);
-const source = fs.readFileSync(new URL('../web/editor/lib/utils.js', import.meta.url), 'utf8');
-vm.runInNewContext(source, context);
+const manifest = editorScriptManifest();
+const blockStart = manifest.indexOf('editor/lib/namespace.js');
+const blockEnd = manifest.indexOf('editor/lib/compat-surface.js');
+assert.ok(blockStart >= 0 && blockEnd > blockStart, '清单应包含 editor/lib 的 namespace.js … compat-surface.js 模块块');
+const libEntries = ['shared/gap-remove-core.js', ...manifest.slice(blockStart, blockEnd + 1)];
+for (const entry of libEntries) {
+  vm.runInNewContext(fs.readFileSync(new URL(`../web/${entry}`, import.meta.url), 'utf8'), context);
+}
 const gapCore = context.window.AsrGapRemoveCore;
 const helpers = context.window.AsrEditorUtils;
+
+// 拆分前 window.AsrEditorUtils 的键序快照（取自拆分前的源文件导出字面量）。
+// 兼容出口的键名与键序都属于对外契约，新增内部 helper 一律放 window.MaweLib。
+const ASR_EDITOR_UTILS_KEYS = [
+    "subtitleFontFamilyDisplayName", "decodeSubtitleText", "parseBwfTimeReference", "readBwfTimeReferenceFromFile",
+    "normalizeKeyboardOperationReferenceMode", "resolveKeyboardOperationReference", "buildReplacementPreview", "applyTextProcessing",
+    "buildTextProcessingPreview", "buildTimedTextDiff", "timedTextItemCoverage", "timedTextItemReuse",
+    "buildTimedTextBoundaryPlan", "buildTimedTextStructurePlan", "buildTimedTextEditReport", "timedTextEditDirtyFlags",
+    "applyTimedTextEdit", "countTextUnits", "countSubtitleUnits", "cueMetrics",
+    "joinSegmentTexts", "subtitleTextLength", "isShortSubtitleText", "normalizeSegmentTimings",
+    "normalizeItemTimingRanges", "repairSegmentOverlap", "planAutoMerge", "applyAutoMergeSnaps",
+    "planSubtitleExtension", "applySubtitleExtension", "formatHumanDuration", "formatGapRemoveDuration",
+    "splitCharOffsetAtTime", "findAdjacentCueIndex", "findCueNavigationTarget", "findCueSelectionExtensionTarget",
+    "resolveMergedGroupInheritance", "MULTI_SUBTITLE_SCHEMA", "MULTI_SUBTITLE_TOLERANCE_MS", "MULTI_SUBTITLE_DISPLAY_MODES",
+    "MULTI_SUBTITLE_SPLIT_MODES", "ensureStableSegmentIds", "uniqueStableSegmentId", "normalizeMultiSubtitle",
+    "normalizeMultiSubtitleProject", "detectSubtitleSplitMode", "isWordSplitConnector", "SPLIT_TRIM_PRIMARY_SYMBOLS",
+    "DEFAULT_EXTRA_SPLIT_TRIM_SYMBOLS", "DEFAULT_SPLIT_TRIM_SYMBOLS", "parseSplitTrimSymbolInput", "normalizeSplitTrimSymbols",
+    "setSplitTrimSymbols", "applySplitEdgeTrim", "subtitleSplitOffsets", "cleanSplitTextParts",
+    "splitSubtitleText", "nearestSubtitleSplitOffset", "hasUsableSplitTimestamps", "bindingForSegment",
+    "buildSubtitleBinding", "rebuildBindingOffsets", "swapMainAndExtensionSubtitle", "removeSubtitleBindings",
+    "matchSubtitleSegments", "buildMultiDisplayRows", "getSrtExportFirstIndex", "getSrtExportOffset",
+    "normalizeEditorSettings", "normalizeMultiSubtitleRowHeight", "normalizeClickBehavior", "normalizeClickTarget",
+    "normalizeJklPlaybackMode", "clampMediaSeekStepMs", "clampCueMoveStepMs", "clampAutoSaveInterval",
+    "clampCharcountThreshold", "clampNinjaSlashLength", "clampNinjaSlashRotateAmplitude", "clampAutoMergeGapMs",
+    "clampAutoMergeShortCount", "GAP_REMOVE_DISABLE_COVERAGE_DEFAULT", "GAP_REMOVE_DISABLE_REMAINING_DEFAULT_MS", "GAP_REMOVE_DISABLE_REMAINING_MAX_MS",
+    "clampGapRemoveDisableCoverage", "clampGapRemoveDisableRemaining", "normalizeGapRemoveData", "normalizeGapRemoveProvenance",
+    "gapRangesFromProvenance", "decorateGapRemoveGaps", "getGapRemoveDisplayType", "isGapRemoveDisplayProtected",
+    "removeGapRemoveProvenanceRange", "getGapRemoveDisplayGaps", "replaceGapRemoveProvenanceSource", "appendGapRemoveManualOverrides",
+    "buildSegmentsHistorySnapshot", "buildHistoryRecord", "effectiveColorName", "shiftGroupReferenceIndices",
+    "repairGroupReferenceIndices", "buildSrtPayload", "buildPlainTextPayload", "fileBasename",
+    "normalizeGapRemoveGaps", "applyGapRemoveRange", "shrinkGapRemoveGaps", "moveGapRemoveRange",
+    "copyGapRemoveRange", "moveGapRemoveProvenance", "resizeGapRemoveBoundary", "detectAudioGapRemoveGaps",
+    "getRemovedGapRanges", "findGapRemoveDisableMatches", "mapGapRemovedTime", "buildGapRemovedIntervals",
+    "buildGapRemovedDynamicSegments", "EXPORT_FRAME_PROFILES", "resolveExportFrameProfile", "exportMsToFrames",
+    "mapExportTime", "exportPolicyMsToFrames", "normalizeExportOptions", "sanitizeExportName",
+    "buildExportNames", "escapeExportXml", "exportPathToFileUrl", "buildProjectExportPlan",
+    "serializeMappedSrt", "serializeFcp7Xml", "buildFcp7ExportArtifacts", "saveSequentialExportArtifacts",
+    "buildFfconcat", "configuredEnterAction", "isMacPlatform", "createHistoryStack",
+    "PREVIEW_MIN_WIDTH", "PREVIEW_MIN_HEIGHT", "DEFAULT_PREVIEW_GEOMETRY", "DEFAULT_STICKER_GEOMETRY",
+    "normalizePreviewGeometry", "clampPreviewGeometry", "previewGeometryToCss", "applyPreviewGeometryDelta",
+    "buildLottieAnimation", "buildOgrafGraphic",
+];
+
+test('AsrEditorUtils 兼容出口的键名与键序保持不变', () => {
+  assert.deepEqual(Object.keys(helpers), ASR_EDITOR_UTILS_KEYS);
+  assert.deepEqual(
+    ASR_EDITOR_UTILS_KEYS.filter((key) => helpers[key] === undefined),
+    [],
+    '兼容出口存在取不到值的键：某个模块没有将符号发布到 window.MaweLib',
+  );
+});
+
+test('拆分后的模块顺序满足加载期依赖（gap-remove core 必须先于桥接层）', () => {
+  assert.ok(libEntries.indexOf('shared/gap-remove-core.js') < libEntries.indexOf('editor/lib/gap-remove-bridge.js'));
+  assert.ok(libEntries.includes('editor/lib/compat-surface.js'));
+  assert.ok(
+    libEntries.indexOf('editor/lib/compat-surface.js') > libEntries.lastIndexOf('editor/lib/graphics/ograf.js'),
+    'compat-surface.js 必须排在 editor/lib 各模块之后：它一次性快照整个 window.MaweLib 出口',
+  );
+});
 const i18nSource = fs.readFileSync(new URL('../web/editor/i18n/i18n.js', import.meta.url), 'utf8');
 const i18nContext = { window: {} };
 vm.runInNewContext(i18nSource, i18nContext);
