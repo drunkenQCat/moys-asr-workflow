@@ -83,7 +83,36 @@ class EditorAssetContractTests(unittest.TestCase):
                 "editor/lib/graphics/ograf.js",
                 "editor/lib/compat-surface.js",
                 "editor/i18n/i18n.js",
-                "editor/waveform/runtime.js",
+                "editor/waveform/namespace.js",
+                "editor/waveform/constants.js",
+                "editor/waveform/workspaces.js",
+                "editor/waveform/labels.js",
+                "editor/waveform/numeric.js",
+                "editor/waveform/multi-row.js",
+                "editor/waveform/layout-tree.js",
+                "editor/waveform/settings-io.js",
+                "editor/waveform/decode.js",
+                "editor/waveform/spectral.js",
+                "editor/waveform/scale.js",
+                "editor/waveform/cue-timing.js",
+                "editor/waveform/segment-split.js",
+                "editor/waveform/cue-lookup.js",
+                "editor/waveform/core.js",
+                "editor/waveform/media.js",
+                "editor/waveform/controls.js",
+                "editor/waveform/hover-preview.js",
+                "editor/waveform/layout.js",
+                "editor/waveform/layout-edit.js",
+                "editor/waveform/view.js",
+                "editor/waveform/render.js",
+                "editor/waveform/cue-blocks.js",
+                "editor/waveform/pointer-time.js",
+                "editor/waveform/pointer-create.js",
+                "editor/waveform/cue-drag.js",
+                "editor/waveform/keyboard-adjust.js",
+                "editor/waveform/gap-drag.js",
+                "editor/waveform/playback.js",
+                "editor/waveform/compat-surface.js",
                 "editor/playback/jkl.js",
                 "editor/ui/hint.js",
                 "editor/lib/multi-subtitle-core.js",
@@ -159,95 +188,40 @@ class EditorAssetContractTests(unittest.TestCase):
         )
 
     def test_editor_script_payload_follows_manifest_order(self) -> None:
+        # 锚点不手写：逐个清单条目取自己源码里的首个非注释行，再要求这些锚点按同样的
+        # 顺序出现在装配结果里。模块继续拆细、IIFE 改名都不用再维护一张对齐表。
         payload = edit.build_editor_scripts()
+        manifest = edit.read_editor_script_manifest()
         previous_index = -1
-        markers = (
-            'const DATA = __DATA_JSON__;',
-            '// Shared frontend runtime registry.',
-            '// Shared gap-remove data and playback helpers',
-            '(function initMaweLibNamespace(global) {',
-            '(function initMaweLibCompatSurface(global) {',
-            '(function initMaweI18n(global) {',
-            '// Framework-neutral waveform runtime.',
-            '(function initMaweJklPlayback(global) {',
-            '(function initMaweHint(global) {',
-            '(function initMaweMultiSubtitleCore(global) {',
-            '(function initMaweSettings(global) {',
-            '(function initMaweColors(global) {',
-            '(function initMaweGapRemoveData(global) {',
-            '(function initMaweCoreState(global) {',
-            '(function initMaweHistory(global) {',
-            '(function initMaweDom(global) {',
-            '(function initMaweCuePanelState(global) {',
-            '(function initMaweNinja(global) {',
-            '(function initMaweSettingsPanels(global) {',
-            '(function initMaweDisplaySettings(global) {',
-            '(function initMaweSplitMode(global) {',
-            '(function initMaweSplitTrim(global) {',
-            '(function initMaweSegmentOps(global) {',
-            '(function initMaweFloatingPanel(global) {',
-            '(function initMaweGapRemoveUi(global) {',
-            '(function initMaweSelection(global) {',
-            '(function initMaweBindingAlign(global) {',
-            '(function initMaweCuePanel(global) {',
-            '(function initMaweCueElements(global) {',
-            '(function initMaweColorFilter(global) {',
-            '(function initMaweSearch(global) {',
-            '(function initMaweInlineEdit(global) {',
-            '(function initMaweSplitCore(global) {',
-            '(function initMaweSplitContext(global) {',
-            '(function initMaweCueListAnchor(global) {',
-            '(function initMaweNavPreview(global) {',
-            '(function initMaweCueEvents(global) {',
-            '(function initMaweMediaPlayback(global) {',
-            '(function initMaweKeyboardTargets(global) {',
-            '(function initMaweShortcuts(global) {',
-            '(function initMaweMergeAdjacent(global) {',
-            '(function initMaweAppearance(global) {',
-            '(function initMawePreviewGeometry(global) {',
-            '(function initMawePlaybackLoop(global) {',
-            '(function initMaweStickerOverlay(global) {',
-            '(function initMaweExportSrt(global) {',
-            '(function initMaweExportTimeline(global) {',
-            '(function initMaweServerSave(global) {',
-            '(function initMaweWorkspaces(global) {',
-            '(function initMaweProjectSave(global) {',
-            '(function initMaweDynamicExports(global) {',
-            '(function initMaweExportMenus(global) {',
-            '(function initMaweProjectMediaInputs(global) {',
-            '(function initMaweJsonRepair(global) {',
-            '(function initMaweProjectLoad(global) {',
-            '(function initMaweLoadingProgress(global) {',
-            '(function initMaweMultiImport(global) {',
-            '(function initMaweMediaLoad(global) {',
-            '(function initMaweStickerRoot(global) {',
-            '(function initMaweFindReplace(global) {',
-            '(function initMaweTextProcess(global) {',
-            '(function initMaweTimedTextEdit(global) {',
-            '(function initMaweStickerPicker(global) {',
-            '(function initMaweAddCue(global) {',
-            '(function initMaweBoundDrag(global) {',
-            '(function initMaweContextMenus(global) {',
-            '(function initMaweTextCleanup(global) {',
-            '(function initMaweWaveformInit(global) {',
-            '(function initMaweHelpPanel(global) {',
-            '(function initMaweTheme(global) {',
-            '(function initMaweMediaStep(global) {',
-            '(function initMaweAppearanceInputs(global) {',
-            '(function initMaweBehaviorHints(global) {',
-            '(function initMaweServerConnection(global) {',
-            '(function initMaweDragDrop(global) {',
-            '(function initMaweStickerOtioExport(global) {',
-            "window.addEventListener('error', (event) => {",
-            "const helpOnboardingButton = document.getElementById('help-onboarding');",
-        )
-        for asset_name, marker in zip(edit.read_editor_script_manifest(), markers):
-            current_index = payload.index(marker)
-            self.assertGreater(current_index, previous_index, asset_name)
-            previous_index = current_index
+        for entry in manifest:
+            source = edit.editor_script_path(entry).read_text(encoding="utf-8")
+            marker = next(
+                line for line in source.splitlines() if line.strip() and not line.lstrip().startswith("//")
+            )
+            found = payload.find(marker, previous_index + 1)
+            self.assertGreater(found, previous_index, f"{entry} 的起点没有出现在上一个条目之后")
+            previous_index = found
+
+    def test_waveform_prototype_mixins_load_after_the_class_and_before_the_exit(self) -> None:
+        """波形块按 window.MaweWaveform 装配：混入模块在加载期就要拿到类，
+        所以顺序必须是 namespace → …… → core（class 声明）→ 各混入 → 兼容出口。"""
+        manifest = list(edit.read_editor_script_manifest())
+        block = [e for e in manifest if e.startswith("editor/waveform/")]
+        self.assertEqual(block[0], "editor/waveform/namespace.js")
+        self.assertEqual(block[-1], "editor/waveform/compat-surface.js")
+        class_owner = "editor/waveform/core.js"
+        self.assertIn(class_owner, block)
+        mixins = [
+            entry
+            for entry in block
+            if "defineMethods(U.WaveformEditor.prototype" in edit.editor_script_path(entry).read_text(encoding="utf-8")
+        ]
+        self.assertGreaterEqual(len(mixins), 10, "原型混入模块数量异常，疑似装配方式被改动")
+        for entry in mixins:
+            self.assertGreater(manifest.index(entry), manifest.index(class_owner), f"{entry} 在类声明之前加载")
 
     def test_waveform_gap_display_type_uses_shared_core_and_subtle_protected_style(self) -> None:
-        waveform = edit.read_web_asset("editor/waveform/runtime.js")
+        waveform = edit.read_editor_scripts_under("editor/waveform/")
         styles = edit.read_web_asset("waveform.css")
         self.assertIn("getGapRemoveDisplayType", waveform)
         self.assertIn("isGapRemoveDisplayProtected", waveform)
@@ -257,7 +231,7 @@ class EditorAssetContractTests(unittest.TestCase):
         self.assertIn("this.options.getGapRemoveGaps?.() || []", waveform)
 
     def test_gap_state_labels_match_in_mawe_and_align(self) -> None:
-        waveform = edit.read_web_asset("editor/waveform/runtime.js")
+        waveform = edit.read_editor_scripts_under("editor/waveform/")
         align_page = (ROOT / "server-align" / "index.html").read_text(encoding="utf-8")
         label = "gap.removed === false ? '空隙（未激活）' : '空隙'"
         self.assertIn(label, waveform)

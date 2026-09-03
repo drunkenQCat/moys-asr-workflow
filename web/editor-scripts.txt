@@ -9,6 +9,11 @@
 # initializers need their owner first. Within that block editor/lib/namespace.js
 # must come first (it creates window.MaweLib) and editor/lib/compat-surface.js
 # last (it snapshots the whole surface into the window.AsrEditorUtils compat exit).
+# editor/waveform/* follows the same rule on window.MaweWaveform, with one extra
+# constraint: the prototype-mixin modules install methods onto
+# WaveformEditor.prototype while loading, so they must all come after
+# editor/waveform/core.js (which declares the class) and before
+# editor/waveform/compat-surface.js (which rebuilds window.AsrWaveform).
 editor/boot/data.js
 editor/boot/registry.js
 shared/gap-remove-core.js
@@ -41,7 +46,36 @@ editor/lib/graphics/lottie.js
 editor/lib/graphics/ograf.js
 editor/lib/compat-surface.js
 editor/i18n/i18n.js
-editor/waveform/runtime.js
+editor/waveform/namespace.js
+editor/waveform/constants.js
+editor/waveform/workspaces.js
+editor/waveform/labels.js
+editor/waveform/numeric.js
+editor/waveform/multi-row.js
+editor/waveform/layout-tree.js
+editor/waveform/settings-io.js
+editor/waveform/decode.js
+editor/waveform/spectral.js
+editor/waveform/scale.js
+editor/waveform/cue-timing.js
+editor/waveform/segment-split.js
+editor/waveform/cue-lookup.js
+editor/waveform/core.js
+editor/waveform/media.js
+editor/waveform/controls.js
+editor/waveform/hover-preview.js
+editor/waveform/layout.js
+editor/waveform/layout-edit.js
+editor/waveform/view.js
+editor/waveform/render.js
+editor/waveform/cue-blocks.js
+editor/waveform/pointer-time.js
+editor/waveform/pointer-create.js
+editor/waveform/cue-drag.js
+editor/waveform/keyboard-adjust.js
+editor/waveform/gap-drag.js
+editor/waveform/playback.js
+editor/waveform/compat-surface.js
 editor/playback/jkl.js
 editor/ui/hint.js
 editor/lib/multi-subtitle-core.js
