@@ -40,16 +40,19 @@ FFMPEG_DIR="$BUILD_DIR/ffmpeg-static"
 # 对齐。内容随维护更新，无法写死 SHA256，改为随包下载上游 checksums.sha256
 # 比对完整性（curl --fail 保证 404 / 断流直接报错，不再静默存下错误页），
 # 解压后另校验 ffmpeg 自报版本包含分支号。升级大版本只改 FFMPEG_BRANCH。
+# 所有下载都带 --retry-all-errors：curl 的 --retry 默认只覆盖 transient 错误码，
+# 对 HTTP/2 流被对端折断（curl (92) PROTOCOL_ERROR）这类错误不重试，2026-09-10
+# macOS 打包即因此整轮失败。
 if [ ! -x "$FFMPEG_DIR/bin/ffmpeg" ]; then
     echo "    下载静态 ffmpeg（$FFMPEG_ASSET）..."
-    if ! curl --fail --location --silent --show-error --retry 3 --retry-delay 2 \
+    if ! curl --fail --location --silent --show-error --retry-all-errors --retry 3 --retry-delay 2 \
             -o "$FFMPEG_TARBALL" "$FFMPEG_URL"; then
         echo "错误：ffmpeg 下载失败（$FFMPEG_URL）。" >&2
         rm -f "$FFMPEG_TARBALL"
         exit 1
     fi
     echo "    对照上游 checksums.sha256 校验静态 ffmpeg 完整性..."
-    if ! curl --fail --location --silent --show-error --retry 3 --retry-delay 2 \
+    if ! curl --fail --location --silent --show-error --retry-all-errors --retry 3 --retry-delay 2 \
             -o "$FFMPEG_CHECKSUMS" \
             "https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/checksums.sha256" \
         || ! bash "$REPO_ROOT/scripts/verify_sha256.sh" "$FFMPEG_CHECKSUMS" "$FFMPEG_ASSET" "$FFMPEG_TARBALL"; then
@@ -87,9 +90,9 @@ cp "$FFMPEG_DIR/bin/ffmpeg" "$FFMPEG_DIR/bin/ffprobe" "dist/MAW/ffmpeg/bin/"
 _GPL_TARGET="dist/MAW/ffmpeg/GPLv3.txt"
 _GPL_TMP="${_GPL_TARGET}.tmp"
 rm -f "$_GPL_TMP"
-if curl --fail --location --silent --show-error --connect-timeout 15 --max-time 90 \
+if curl --fail --location --silent --show-error --retry-all-errors --connect-timeout 15 --max-time 90 \
     -o "$_GPL_TMP" "https://www.gnu.org/licenses/gpl-3.0.txt" \
-    || curl --fail --location --silent --show-error --connect-timeout 15 --max-time 90 --retry 1 \
+    || curl --fail --location --silent --show-error --retry-all-errors --connect-timeout 15 --max-time 90 --retry 1 \
         -o "$_GPL_TMP" \
         "https://raw.githubusercontent.com/spdx/license-list-data/main/text/GPL-3.0-only.txt"; then
     :
@@ -168,7 +171,7 @@ cp "$APP_DIR/MAW.desktop" "$APP_DIR/usr/share/applications/MAW.desktop"
 
 echo "==> 4/6 准备 appimagetool"
 if [ ! -x "$APPIMAGE_TOOL" ]; then
-    curl --fail --location --silent --show-error --retry 3 --retry-delay 2 -o "$APPIMAGE_TOOL" "$APPIMAGE_URL"
+    curl --fail --location --silent --show-error --retry-all-errors --retry 3 --retry-delay 2 -o "$APPIMAGE_TOOL" "$APPIMAGE_URL"
     chmod +x "$APPIMAGE_TOOL"
     # 校验下载的是 ELF 二进制而非 HTML 错误页
     if ! file "$APPIMAGE_TOOL" | grep -q 'ELF'; then

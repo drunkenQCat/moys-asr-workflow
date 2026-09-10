@@ -495,6 +495,27 @@ class PackagingContractTests(unittest.TestCase):
         self.assertNotIn("/releases/download/autobuild-", script)
         self.assertNotIn("FFMPEG_SHA256=", script)
 
+    def test_release_path_curl_downloads_retry_protocol_errors(self) -> None:
+        """Given every release download, When it is read, Then it enables --retry-all-errors, because curl's default retry policy ignores errors such as HTTP/2 stream resets (curl exit 92) that killed a macOS build on 2026-09-10."""
+        rel_paths = (
+            "scripts/build-appimage.sh",
+            ".github/workflows/release.yml",
+            ".github/workflows/pr-release-windows.yml",
+        )
+        invocations: list[str] = []
+        for rel_path in rel_paths:
+            for lineno, line in enumerate(read_text(rel_path).splitlines(), start=1):
+                stripped = line.strip()
+                if stripped.startswith("#"):
+                    continue
+                if re.search(r"\bcurl\s+-", line):
+                    invocations.append(f"{rel_path}:{lineno}")
+                    if "--retry-all-errors" not in line:
+                        self.fail(f"{rel_path}:{lineno} 的下载缺少 --retry-all-errors：{stripped}")
+
+        # 清单本身也是契约：新增或删改下载点时先确认它是否同样需要重试加固。
+        self.assertEqual(len(invocations), 14, f"curl 下载点数量与清单不符：{invocations}")
+
     def test_local_build_script_invokes_uv_and_pyinstaller_for_maw_onedir(self) -> None:
         """Given a Windows developer build, When the script is read, Then it builds dist/MAW/MAW.exe."""
         script = read_text("scripts/build-windows.ps1")

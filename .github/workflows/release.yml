@@ -79,8 +79,8 @@ jobs:
       - name: Download embedded Python bootstrap assets
         run: |
           mkdir -p build
-          curl -L --retry 3 --connect-timeout 20 --max-time 300 -o build/python-3.11.9-embed-amd64.zip https://www.python.org/ftp/python/3.11.9/python-3.11.9-embed-amd64.zip
-          curl -L --retry 3 --connect-timeout 20 --max-time 120 -o build/get-pip.py https://bootstrap.pypa.io/get-pip.py
+          curl -L --retry-all-errors --retry 3 --connect-timeout 20 --max-time 300 -o build/python-3.11.9-embed-amd64.zip https://www.python.org/ftp/python/3.11.9/python-3.11.9-embed-amd64.zip
+          curl -L --retry-all-errors --retry 3 --connect-timeout 20 --max-time 120 -o build/get-pip.py https://bootstrap.pypa.io/get-pip.py
 
       - name: Build MAW bundle
         shell: pwsh
@@ -391,8 +391,8 @@ jobs:
           FfprobeArchive="$DownloadRoot/ffprobe81arm.zip"
           mkdir -p "$DownloadRoot" "$ExtractRoot/ffmpeg" "$ExtractRoot/ffprobe"
 
-          curl --fail --location --retry 3 --silent --show-error --output "$FfmpegArchive" "$FfmpegArchiveUrl"
-          curl --fail --location --retry 3 --silent --show-error --output "$FfprobeArchive" "$FfprobeArchiveUrl"
+          curl --fail --location --retry-all-errors --retry 3 --silent --show-error --output "$FfmpegArchive" "$FfmpegArchiveUrl"
+          curl --fail --location --retry-all-errors --retry 3 --silent --show-error --output "$FfprobeArchive" "$FfprobeArchiveUrl"
           printf '%s  %s\n' "$FfmpegArchiveSha256" "$FfmpegArchive" | shasum -a 256 -c -
           printf '%s  %s\n' "$FfprobeArchiveSha256" "$FfprobeArchive" | shasum -a 256 -c -
           unzip -q -o "$FfmpegArchive" -d "$ExtractRoot/ffmpeg"
@@ -415,9 +415,9 @@ jobs:
           mkdir -p "$FfmpegDirectory/bin"
           cp "$FfmpegBinary" "$FfmpegDirectory/bin/ffmpeg"
           cp "$FfprobeBinary" "$FfmpegDirectory/bin/ffprobe"
-          curl --fail --location --retry 3 --silent --show-error --output "$FfmpegDirectory/LICENSE.md" "$LicenseBaseUrl/LICENSE.md"
-          curl --fail --location --retry 3 --silent --show-error --output "$FfmpegDirectory/COPYING.GPLv3" "$LicenseBaseUrl/COPYING.GPLv3"
-          curl --fail --location --retry 3 --silent --show-error --output "$FfmpegDirectory/COPYING.LGPLv2.1" "$LicenseBaseUrl/COPYING.LGPLv2.1"
+          curl --fail --location --retry-all-errors --retry 3 --silent --show-error --output "$FfmpegDirectory/LICENSE.md" "$LicenseBaseUrl/LICENSE.md"
+          curl --fail --location --retry-all-errors --retry 3 --silent --show-error --output "$FfmpegDirectory/COPYING.GPLv3" "$LicenseBaseUrl/COPYING.GPLv3"
+          curl --fail --location --retry-all-errors --retry 3 --silent --show-error --output "$FfmpegDirectory/COPYING.LGPLv2.1" "$LicenseBaseUrl/COPYING.LGPLv2.1"
           cat > "$FfmpegDirectory/SOURCE.txt" <<EOF
           FFmpeg $FfmpegVersion Apple Silicon static binaries for MAW.
           Build provider: https://www.osxexperts.net/

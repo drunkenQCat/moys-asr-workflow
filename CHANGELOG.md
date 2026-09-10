@@ -8,6 +8,8 @@
 
 - **Linux 打包不再依赖会被 BtbN 删除的固定 autobuild** ： AppImage 打包此前写死某个 dated autobuild 的下载地址与 SHA256，而 BtbN 只保留最近十来天的 dated release，过期即 404；下载又未开 `--fail`，404 页面会被存成文件并报成「校验和不匹配」，1.6.0-beta.3 的 Linux 打包即因此失败。现改为固定使用 `latest` release 中 FFmpeg 8.1 稳定分支资产的永久直链（与 Windows 的 8.1.2 / macOS 的 8.1 同大版本），开启 curl `--fail`，随包下载上游 `checksums.sha256` 比对完整性，解压后再校验二进制自报版本；实际打进包的归档哈希仍记录在 `ffmpeg/SOURCE.txt`。升级大版本只需改脚本里的 `FFMPEG_BRANCH`。
 
+- **打包下载不再被单次网络抖动判死** ： curl 的 `--retry` 默认只覆盖 transient 错误码，对 HTTP/2 流被对端折断这类错误（`curl (92) PROTOCOL_ERROR`）不会重试，1.6.0-beta.3 的 macOS 打包即因此偶发失败。发布路径的全部下载点（Linux AppImage、macOS FFmpeg 与许可证、Windows 内嵌 Python 引导资产）统一补上 `--retry-all-errors`，并由契约测试守住"新增下载点不得漏掉"。
+
 ## [1.6.0-beta.3] - 2026-09-10
 
 ### 🚀 全新特性
