@@ -66,76 +66,83 @@
 
 
   function applyCanonicalProject(data, filename) {
-    MaweCuePanelState.currentCuePanelIdx = -1;
-    MaweCuePanelState.currentCuePanelKind = 'main';
-    MaweCuePanelState.currentCuePanelTrackId = null;
-    MaweCuePanelState.resetCuePanelEditState();
-    resetLoadedMedia();
-    projectExtensionFields = Object.fromEntries(
-      Object.entries(data).filter(([key]) => !CANONICAL_PROJECT_FIELDS.has(key)),
-    );
-    MaweBoot.DATA.schema = window.AsrEditorUtils.PROJECT_SCHEMA;
-    MaweBoot.DATA.media = typeof data.media === 'string' ? data.media : '';
-    MaweBoot.DATA.language = data.language || '';
-    MaweBoot.DATA.language_source = typeof data.language_source === 'string' ? data.language_source : undefined;
-    MaweBoot.DATA.split_mode = typeof data.split_mode === 'string' ? data.split_mode : undefined;
-    MaweBoot.DATA.timestamp_granularity = typeof data.timestamp_granularity === 'string'
-      ? data.timestamp_granularity : undefined;
-    MaweBoot.DATA.model = data.model || '';
-    MaweBoot.DATA.timebase = normalizeTimelineTimebase(data.timebase);
-    timelineFpsManuallySet = hasExplicitTimelineFps(data.timebase);
-    MaweBoot.DATA.media_metadata = normalizeMediaMetadata(data.media_metadata);
-    MaweBoot.DATA.media_time_reference = data.media_time_reference || null;
-    MaweBoot.DATA.waveform = data.waveform || null;
-    MaweBoot.DATA.spectral = data.spectral || null;
-    MaweBoot.DATA.waveform_reapeaks = data.waveform_reapeaks || null;
-    MaweBoot.DATA.workspace = data.workspace || null;
-    MaweBoot.DATA.gap_remove = data.gap_remove || null;
-    MaweBoot.DATA.script_alignment = data.script_alignment || null;
-    MaweBoot.DATA.preview = (data.preview && typeof data.preview === 'object') ? data.preview : null;
-    MaweHistory.gapRemoveDirty = false;
-    MaweAppearance.previewGeometryDirty = false;
-    MaweServerSave.projectImportDirty = false;
-    // 外部载入的工程没有页面持有的文件句柄；新建/另存为会在载入后重新绑定句柄。
-    MaweServerSave.projectFileHandle = null;
-    MawePreviewGeometry.setPreviewGeometry(MaweAppearance.getPreviewGeometry(), { markDirty: false });
-    MaweAppearance.applyExtensionSubtitleAppearance(MaweBoot.DATA.preview?.extension_subtitle);
-    MawePreviewGeometry.setStickerGeometry(MawePreviewGeometry.getStickerGeometry(), { markDirty: false });
-    MawePreviewGeometry.refreshPreviewGeometryEditable();
-    if (data.sticker_root) MaweBoot.STICKER_ROOT = data.sticker_root;
-    MaweBoot.DATA.segments.length = 0;
-    data.segments.forEach((segment) => MaweBoot.DATA.segments.push(segment));
-    MaweBoot.DATA.multi_subtitle = window.AsrEditorUtils.normalizeMultiSubtitle(data.multi_subtitle, MaweBoot.DATA.segments);
-    syncProjectTimebaseAndBindingOffsets(MaweBoot.DATA, { preferFrames: MaweBoot.DATA.timebase.unit === 'frames' });
-    MaweHistory.editorHistory.clear();
-    MaweHistory.updateUndoRedoButtons();
-    clearSelection();
-    MawePlaybackLoop.lastActive = -1;
-    if (MaweCoreState.waveformEditor) {
-      MaweCoreState.waveformEditor.setLayoutData(MaweBoot.DATA.workspace, { render: false });
-      MaweDisplaySettings.applyEditorDisplaySettings(MaweBoot.DATA.workspace?.editorDisplay);
-      MaweWorkspaces.restoreWorkspaceSelection();
-      MaweWorkspaces.syncWorkspaceControls();
-      MaweCoreState.waveformLoadedFromProject = MaweCoreState.waveformEditor.setPayload(MaweBoot.DATA.waveform, { render: false });
-      MaweCoreState.waveformEditor.setSpectralPayload(MaweBoot.DATA.spectral, { render: false });
-      MaweCoreState.waveformEditor.setReapeaksWaveform(MaweBoot.DATA.waveform_reapeaks, { render: false });
-    }
-    updateGapRemoveUi();
-    renderAll({ waveform: 'full', preserveCueListScroll: false });
-    MawePlaybackLoop.refreshSubtitlePreview(0, -1);
-    updateUnloadedMediaLabel(MaweBoot.DATA.media);
-    MaweBoot.FILENAME_BASE = filename.replace(/\.(json|mosp)$/i, '');
-    const jsonEl = document.getElementById('json-name');
-    if (jsonEl) {
-      jsonEl.textContent = filename;
-      jsonEl.title = `点击复制工程文件名：${filename}`;
-      jsonEl.classList.remove('empty');
-      jsonEl.onclick = () => MaweExportTimeline.copyText(filename, `已复制：${filename}`);
-    }
-    MaweServerSave.projectCheckpointed = true;
-    MaweServerSave.configureServerSaveControls();
-    MaweServerSave.scheduleAutoSave();
+  // 原地换工程：在途/已排期的延迟波形载荷（含响度标尺）全部作废，见
+  // deferredReapeaksEpoch 的说明。
+  deferredReapeaksEpoch += 1;
+  MaweCuePanelState.currentCuePanelIdx = -1;
+  MaweCuePanelState.currentCuePanelKind = 'main';
+  MaweCuePanelState.currentCuePanelTrackId = null;
+  MaweCuePanelState.resetCuePanelEditState();
+  resetLoadedMedia();
+  projectExtensionFields = Object.fromEntries(
+    Object.entries(data).filter(([key]) => !CANONICAL_PROJECT_FIELDS.has(key)),
+  );
+  MaweBoot.DATA.schema = window.AsrEditorUtils.PROJECT_SCHEMA;
+  MaweBoot.DATA.media = typeof data.media === 'string' ? data.media : '';
+  MaweBoot.DATA.language = data.language || '';
+  MaweBoot.DATA.language_source = typeof data.language_source === 'string' ? data.language_source : undefined;
+  MaweBoot.DATA.split_mode = typeof data.split_mode === 'string' ? data.split_mode : undefined;
+  MaweBoot.DATA.timestamp_granularity = typeof data.timestamp_granularity === 'string'
+    ? data.timestamp_granularity : undefined;
+  MaweBoot.DATA.model = data.model || '';
+  MaweBoot.DATA.timebase = AsrEditorUtils.normalizeTimelineTimebase(data.timebase);
+  timelineFpsManuallySet = hasExplicitTimelineFps(data.timebase);
+  MaweBoot.DATA.media_metadata = AsrEditorUtils.normalizeMediaMetadata(data.media_metadata);
+  MaweBoot.DATA.media_time_reference = data.media_time_reference || null;
+  MaweBoot.DATA.waveform = data.waveform || null;
+  MaweBoot.DATA.spectral = data.spectral || null;
+  MaweBoot.DATA.waveform_reapeaks = data.waveform_reapeaks || null;
+  // 响度统计不写进工程文件，所以这里恒为 null：切工程必须先清掉上一个素材的
+  // 标尺，等新媒体的 /api/waveform 回来再拟合。
+  MaweBoot.DATA.loudness = data.loudness || null;
+  MaweBoot.DATA.workspace = data.workspace || null;
+  MaweBoot.DATA.gap_remove = data.gap_remove || null;
+  MaweBoot.DATA.script_alignment = data.script_alignment || null;
+  MaweBoot.DATA.preview = (data.preview && typeof data.preview === 'object') ? data.preview : null;
+  MaweHistory.gapRemoveDirty = false;
+  MaweAppearance.previewGeometryDirty = false;
+  MaweServerSave.projectImportDirty = false;
+  // 外部载入的工程没有页面持有的文件句柄；新建/另存为会在载入后重新绑定句柄。
+  MaweServerSave.projectFileHandle = null;
+  MawePreviewGeometry.setPreviewGeometry(MaweAppearance.getPreviewGeometry(), { markDirty: false });
+  MaweAppearance.applyExtensionSubtitleAppearance(MaweBoot.DATA.preview?.extension_subtitle);
+  MawePreviewGeometry.setStickerGeometry(MawePreviewGeometry.getStickerGeometry(), { markDirty: false });
+  MawePreviewGeometry.refreshPreviewGeometryEditable();
+  if (data.sticker_root) MaweBoot.STICKER_ROOT = data.sticker_root;
+  MaweBoot.DATA.segments.length = 0;
+  data.segments.forEach((segment) => MaweBoot.DATA.segments.push(segment));
+  MaweBoot.DATA.multi_subtitle = MULTI_SUBTITLE_UTILS.normalizeMultiSubtitle(data.multi_subtitle, MaweBoot.DATA.segments);
+  syncProjectTimebaseAndBindingOffsets(MaweBoot.DATA, { preferFrames: MaweBoot.DATA.timebase.unit === 'frames' });
+  MaweHistory.editorHistory.clear();
+  MaweHistory.updateUndoRedoButtons();
+  clearSelection();
+  MawePlaybackLoop.lastActive = -1;
+  if (MaweCoreState.waveformEditor) {
+    MaweCoreState.waveformEditor.setLayoutData(MaweBoot.DATA.workspace, { render: false });
+    MaweDisplaySettings.applyEditorDisplaySettings(MaweBoot.DATA.workspace?.editorDisplay);
+    MaweWorkspaces.restoreWorkspaceSelection();
+    MaweWorkspaces.syncWorkspaceControls();
+    MaweCoreState.waveformLoadedFromProject = MaweCoreState.waveformEditor.setPayload(MaweBoot.DATA.waveform, { render: false });
+    MaweCoreState.waveformEditor.setSpectralPayload(MaweBoot.DATA.spectral, { render: false });
+    MaweCoreState.waveformEditor.setReapeaksWaveform(MaweBoot.DATA.waveform_reapeaks, { render: false });
+    MaweCoreState.waveformEditor.setLoudnessStats(MaweBoot.DATA.loudness, { render: false });
   }
+  updateGapRemoveUi();
+  renderAll({ waveform: 'full', preserveCueListScroll: false });
+  MawePlaybackLoop.refreshSubtitlePreview(0, -1);
+  updateUnloadedMediaLabel(MaweBoot.DATA.media);
+  MaweBoot.FILENAME_BASE = filename.replace(/\.(json|mosp)$/i, '');
+  const jsonEl = document.getElementById('json-name');
+  if (jsonEl) {
+    jsonEl.textContent = filename;
+    jsonEl.title = `点击复制工程文件名：${filename}`;
+    jsonEl.classList.remove('empty');
+    jsonEl.onclick = () => MaweExportTimeline.copyText(filename, `已复制：${filename}`);
+  }
+  MaweServerSave.projectCheckpointed = true;
+  MaweServerSave.configureServerSaveControls();
+  MaweServerSave.scheduleAutoSave();
+}
 
 
 

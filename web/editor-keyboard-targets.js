@@ -35,20 +35,21 @@
 
 
   function navigateCueListBoundary(key) {
-    const target = getCurrentCuePanelTarget();
-    if (!target) return false;
-    const boundary = renderedCueBoundaryTarget(target, key === 'Home' ? 'first' : 'last');
-    if (!boundary) return false;
-    if (target.kind === 'extension') {
-      selectOnlyExtension(boundary.index, target.track);
-      lastClickedExtensionIdx = boundary.index;
-    } else {
-      selectOnly(boundary.index);
-      lastClickedIdx = boundary.index;
-    }
-    scrollCueToCenter(boundary.cue);
-    return true;
+  const target = getCurrentCuePanelTarget();
+  if (!target) return false;
+  const boundary = renderedCueBoundaryTarget(target, key === 'Home' ? 'first' : 'last');
+  if (!boundary) return false;
+  interruptCueListFollowing();
+  if (target.kind === 'extension') {
+    selectOnlyExtension(boundary.index, target.track);
+    lastClickedExtensionIdx = boundary.index;
+  } else {
+    selectOnly(boundary.index);
+    lastClickedIdx = boundary.index;
   }
+  scrollCueToCenter(boundary.cue);
+  return true;
+}
 
 
 
@@ -141,45 +142,46 @@
 
 
   function switchMultiSubtitleTrack(direction) {
-    if (!MaweMultiSubtitleCore.multiSubtitleVisible()) return false;
-    const current = getCurrentCuePanelTarget();
-    if (!current) return false;
-    const wantMain = direction < 0;
-    if ((wantMain && current.kind === 'main') || (!wantMain && current.kind === 'extension')) return false;
+  if (!MaweMultiSubtitleCore.multiSubtitleVisible()) return false;
+  const current = getCurrentCuePanelTarget();
+  if (!current) return false;
+  const wantMain = direction < 0;
+  if ((wantMain && current.kind === 'main') || (!wantMain && current.kind === 'extension')) return false;
 
-    const extensionTrack = MaweMultiSubtitleCore.getActiveExtensionTrack();
-    let nextIndex = -1;
-    if (wantMain) {
-      const binding = MaweMultiSubtitleCore.bindingForExtensionIndex(current.index, current.track);
-      nextIndex = boundSegmentIndex(binding, binding?.main_segment_ids, MaweBoot.DATA.segments);
-      if (nextIndex < 0) nextIndex = nearestSubtitleIndex(MaweBoot.DATA.segments, current.segment, 'main');
-    } else {
-      const binding = MaweMultiSubtitleCore.bindingForMainIndex(current.index);
-      const bindingTrack = binding ? MaweMultiSubtitleCore.getExtensionTrack(binding.track_id) : null;
-      if (bindingTrack?.id === extensionTrack?.id) {
-        nextIndex = boundSegmentIndex(binding, binding?.extension_segment_ids, extensionTrack.segments);
-      }
-      if (nextIndex < 0) {
-        nextIndex = nearestSubtitleIndex(extensionTrack?.segments, current.segment, 'extension');
-      }
+  const extensionTrack = MaweMultiSubtitleCore.getActiveExtensionTrack();
+  let nextIndex = -1;
+  if (wantMain) {
+    const binding = MaweMultiSubtitleCore.bindingForExtensionIndex(current.index, current.track);
+    nextIndex = boundSegmentIndex(binding, binding?.main_segment_ids, MaweBoot.DATA.segments);
+    if (nextIndex < 0) nextIndex = nearestSubtitleIndex(MaweBoot.DATA.segments, current.segment, 'main');
+  } else {
+    const binding = MaweMultiSubtitleCore.bindingForMainIndex(current.index);
+    const bindingTrack = binding ? MaweMultiSubtitleCore.getExtensionTrack(binding.track_id) : null;
+    if (bindingTrack?.id === extensionTrack?.id) {
+      nextIndex = boundSegmentIndex(binding, binding?.extension_segment_ids, extensionTrack.segments);
     }
-    if (nextIndex < 0) return false;
-
-    if (wantMain) {
-      selectOnly(nextIndex);
-      lastClickedIdx = nextIndex;
-    } else {
-      selectOnlyExtension(nextIndex, extensionTrack);
-      lastClickedExtensionIdx = nextIndex;
+    if (nextIndex < 0) {
+      nextIndex = nearestSubtitleIndex(extensionTrack?.segments, current.segment, 'extension');
     }
-    const cue = MaweCoreState.container.querySelector(
-      wantMain
-        ? `.cue[data-idx="${nextIndex}"], .multi-dual-cue[data-main-idx="${nextIndex}"]`
-        : `.multi-dual-cue[data-ext-idx="${nextIndex}"], .multi-extension-cue[data-ext-idx="${nextIndex}"]`,
-    );
-    if (cue) scrollCueIntoViewIfNeeded(cue);
-    return true;
   }
+  if (nextIndex < 0) return false;
+
+  interruptCueListFollowing();
+  if (wantMain) {
+    selectOnly(nextIndex);
+    lastClickedIdx = nextIndex;
+  } else {
+    selectOnlyExtension(nextIndex, extensionTrack);
+    lastClickedExtensionIdx = nextIndex;
+  }
+  const cue = MaweCoreState.container.querySelector(
+    wantMain
+      ? `.cue[data-idx="${nextIndex}"], .multi-dual-cue[data-main-idx="${nextIndex}"]`
+      : `.multi-dual-cue[data-ext-idx="${nextIndex}"], .multi-extension-cue[data-ext-idx="${nextIndex}"]`,
+  );
+  if (cue) scrollCueIntoViewIfNeeded(cue);
+  return true;
+}
 
   global.MaweKeyboardTargets = Object.freeze({
     renderedCueBoundaryTarget,

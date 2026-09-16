@@ -55,13 +55,14 @@
 
 
   function pushUndo(label, { captureView = false } = {}) {
-    const record = window.AsrEditorUtils.buildHistoryRecord(
-      'segments', label, snapshotSegments(), captureView ? snapshotEditorSelection() : null,
-    );
-    editorHistory.push(record);
-    updateUndoRedoButtons();
-    return record;
-  }
+  rememberCueListMutation();
+  const record = EDITOR_SETTINGS_UTILS.buildHistoryRecord(
+    'segments', label, snapshotSegments(), captureView ? snapshotEditorSelection() : null,
+  );
+  editorHistory.push(record);
+  updateUndoRedoButtons();
+  return record;
+}
 
 
   function pushLayoutUndo(label, snapshot) {
@@ -185,49 +186,52 @@
 
 
   function applyHistoryRecord(record) {
-    if (record.kind === 'layout') {
-      if (!MaweCoreState.waveformEditor?.restoreLayoutHistorySnapshot?.(record.layout)) {
-        MaweHint.flashHint('工作区恢复失败：波形模块尚未加载', 'warning');
-        return false;
-      }
-      MaweBoot.DATA.workspace = MaweCoreState.waveformEditor.getLayoutData();
-      return true;
+  if (record.kind === 'layout') {
+    if (!MaweCoreState.waveformEditor?.restoreLayoutHistorySnapshot?.(record.layout)) {
+      MaweHint.flashHint('工作区恢复失败：波形模块尚未加载', 'warning');
+      return false;
     }
-    if (record.kind === 'gap_remove') {
-      MaweBoot.DATA.gap_remove = record.gapRemove;
-      gapRemoveDirty = record.gapRemoveDirty;
-      updateGapRemoveUi();
-      return true;
-    }
-    if (record.kind === 'preview') {
-      applyPreviewState(record.preview);
-      return true;
-    }
-    const snapshot = record.segs && Array.isArray(record.segs.segments)
-      ? record.segs : { segments: record.segs, multi_subtitle: MaweBoot.DATA.multi_subtitle };
-    const previousWaveformStructure = MaweMultiSubtitleCore.multiSubtitleWaveformStructureKey();
-    MaweBoot.DATA.segments.length = 0;
-    (snapshot.segments || []).forEach(s => MaweBoot.DATA.segments.push(s));
-    MaweBoot.DATA.multi_subtitle = snapshot.multi_subtitle || {
-      schema: 'moy.asr.multi_subtitle.v1', enabled: false, display_mode: 'both', tracks: [], bindings: [],
-    };
-    MaweMultiSubtitleCore.normalizeMultiSubtitleState();
-    // 历史恢复会改变下标身份；丢弃旧面板绑定，避免 clearSelection() 把旧面板
-    // 内容提交到恢复后占据同一下标的另一条字幕，并因此生成新历史、清空 redo。
-    MaweCuePanelState.currentCuePanelIdx = -1;
-    MaweCuePanelState.currentCuePanelKind = 'main';
-    MaweCuePanelState.currentCuePanelTrackId = null;
-    MaweCuePanelState.resetCuePanelEditState();
-    clearSelection();
-    MawePlaybackLoop.lastActive = -1;
-    const structureChanged = previousWaveformStructure
-      !== MaweMultiSubtitleCore.multiSubtitleWaveformStructureKey();
-    renderAll({
-      waveform: structureChanged ? 'full' : 'overlay',
-    });
-    if (record.view) restoreEditorSelection(record.view);
+    MaweBoot.DATA.workspace = MaweCoreState.waveformEditor.getLayoutData();
     return true;
   }
+  if (record.kind === 'gap_remove') {
+    MaweBoot.DATA.gap_remove = record.gapRemove;
+    gapRemoveDirty = record.gapRemoveDirty;
+    updateGapRemoveUi();
+    return true;
+  }
+  if (record.kind === 'preview') {
+    applyPreviewState(record.preview);
+    return true;
+  }
+  const snapshot = record.segs && Array.isArray(record.segs.segments)
+    ? record.segs : { segments: record.segs, multi_subtitle: MaweBoot.DATA.multi_subtitle };
+  // 视口属于本次撤销动作，不随历史快照恢复。
+  const cueListAnchor = captureCueListRenderAnchor();
+  const previousWaveformStructure = MaweMultiSubtitleCore.multiSubtitleWaveformStructureKey();
+  MaweBoot.DATA.segments.length = 0;
+  (snapshot.segments || []).forEach(s => MaweBoot.DATA.segments.push(s));
+  MaweBoot.DATA.multi_subtitle = snapshot.multi_subtitle || {
+    schema: 'moy.asr.multi_subtitle.v1', enabled: false, display_mode: 'both', tracks: [], bindings: [],
+  };
+  MaweMultiSubtitleCore.normalizeMultiSubtitleState();
+  // 历史恢复会改变下标身份；丢弃旧面板绑定，避免 clearSelection() 把旧面板
+  // 内容提交到恢复后占据同一下标的另一条字幕，并因此生成新历史、清空 redo。
+  MaweCuePanelState.currentCuePanelIdx = -1;
+  MaweCuePanelState.currentCuePanelKind = 'main';
+  MaweCuePanelState.currentCuePanelTrackId = null;
+  MaweCuePanelState.resetCuePanelEditState();
+  clearSelection();
+  MawePlaybackLoop.lastActive = -1;
+  const structureChanged = previousWaveformStructure
+    !== MaweMultiSubtitleCore.multiSubtitleWaveformStructureKey();
+  renderAll({
+    waveform: structureChanged ? 'full' : 'overlay',
+    cueListAnchor,
+  });
+  if (record.view) restoreEditorSelection(record.view);
+  return true;
+}
 
 
   function performUndo() {

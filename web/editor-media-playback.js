@@ -195,46 +195,51 @@
 
 
   function bindPlayerEvents(mediaElement) {
-    if (!mediaElement) return;
-    mediaElement.addEventListener('timeupdate', MawePlaybackLoop.update);
-    mediaElement.addEventListener('seeked', MawePlaybackLoop.update);
-    mediaElement.addEventListener('loadedmetadata', () => {
+  if (!mediaElement) return;
+  mediaElement.addEventListener('timeupdate', MawePlaybackLoop.update);
+  mediaElement.addEventListener('seeked', MawePlaybackLoop.update);
+  mediaElement.addEventListener('loadedmetadata', () => {
+    MaweTextCleanup.notifyAutoLoadedMediaReady(mediaElement);
+    MaweTextCleanup.flushPendingMediaSeek(mediaElement);
+  });
+  mediaElement.addEventListener('canplay', () => MaweTextCleanup.flushPendingMediaSeek(mediaElement));
+  mediaElement.addEventListener('progress', () => MaweTextCleanup.flushPendingMediaSeek(mediaElement));
+  mediaElement.addEventListener('play', () => {
+    // 开始播放可驱动已启用的跟随，但不会恢复被用户关闭的跟随状态。
+    if (MaweCoreState.player === mediaElement && cueListScroll.following) cueListScroll.playbackKey = null;
+    startPlaybackRefresh(mediaElement);
+  });
+  mediaElement.addEventListener('playing', () => startPlaybackRefresh(mediaElement));
+  mediaElement.addEventListener('pause', () => {
+    stopPlaybackRefresh(mediaElement);
+    if (MaweCoreState.player !== mediaElement) return;
+    if (cueListScroll.owner === 'follow') invalidateCueListVisualAnchorRestore();
+    MawePlaybackLoop.update();
+    MaweCoreState.waveformEditor?.updatePlayback();
+  });
+  mediaElement.addEventListener('ended', () => {
+    stopPlaybackRefresh(mediaElement);
+    if (MaweCoreState.player !== mediaElement) return;
+    MawePlaybackLoop.update();
+    MaweCoreState.waveformEditor?.updatePlayback();
+  });
+  mediaElement.addEventListener('emptied', () => stopPlaybackRefresh(mediaElement));
+  if (mediaElement.tagName === 'VIDEO') {
+    mediaElement.addEventListener('click', (event) => {
+      if (event.defaultPrevented) return;
+      togglePlayback();
+    });
+  }
+  ['timeupdate', 'loadedmetadata', 'durationchange', 'play', 'playing', 'pause', 'ended', 'volumechange', 'ratechange', 'emptied']
+    .forEach((eventName) => mediaElement.addEventListener(eventName, syncMediaControls));
+  if (mediaElement.readyState >= 1) {
+    queueMicrotask(() => {
       MaweTextCleanup.notifyAutoLoadedMediaReady(mediaElement);
       MaweTextCleanup.flushPendingMediaSeek(mediaElement);
     });
-    mediaElement.addEventListener('canplay', () => MaweTextCleanup.flushPendingMediaSeek(mediaElement));
-    mediaElement.addEventListener('progress', () => MaweTextCleanup.flushPendingMediaSeek(mediaElement));
-    mediaElement.addEventListener('play', () => startPlaybackRefresh(mediaElement));
-    mediaElement.addEventListener('playing', () => startPlaybackRefresh(mediaElement));
-    mediaElement.addEventListener('pause', () => {
-      stopPlaybackRefresh(mediaElement);
-      if (MaweCoreState.player !== mediaElement) return;
-      MawePlaybackLoop.update();
-      MaweCoreState.waveformEditor?.updatePlayback();
-    });
-    mediaElement.addEventListener('ended', () => {
-      stopPlaybackRefresh(mediaElement);
-      if (MaweCoreState.player !== mediaElement) return;
-      MawePlaybackLoop.update();
-      MaweCoreState.waveformEditor?.updatePlayback();
-    });
-    mediaElement.addEventListener('emptied', () => stopPlaybackRefresh(mediaElement));
-    if (mediaElement.tagName === 'VIDEO') {
-      mediaElement.addEventListener('click', (event) => {
-        if (event.defaultPrevented) return;
-        togglePlayback();
-      });
-    }
-    ['timeupdate', 'loadedmetadata', 'durationchange', 'play', 'playing', 'pause', 'ended', 'volumechange', 'ratechange', 'emptied']
-      .forEach((eventName) => mediaElement.addEventListener(eventName, syncMediaControls));
-    if (mediaElement.readyState >= 1) {
-      queueMicrotask(() => {
-        MaweTextCleanup.notifyAutoLoadedMediaReady(mediaElement);
-        MaweTextCleanup.flushPendingMediaSeek(mediaElement);
-      });
-    }
-    syncMediaControls();
   }
+  syncMediaControls();
+}
 
 
 
@@ -249,19 +254,20 @@
 
 
   function seekMediaTo(timeSeconds) {
-    if (!hasLoadedMedia()) return false;
-    const duration = Number.isFinite(MaweCoreState.player.duration) && MaweCoreState.player.duration > 0
-      ? MaweCoreState.player.duration : null;
-    if (!Number.isFinite(duration)) return false;
-    MaweJklPlayback.stopJklReversePlayback({ render: false });
-    const targetSeconds = Math.max(0, Math.min(duration, Number(timeSeconds) || 0));
-    MaweCoreState.player.currentTime = targetSeconds;
-    MawePlaybackLoop.update();
-    MaweCoreState.waveformEditor?.revealTime(targetSeconds * 1000, true);
-    MaweCoreState.waveformEditor?.updatePlayback();
-    syncMediaControls();
-    return true;
-  }
+  if (!hasLoadedMedia()) return false;
+  const duration = Number.isFinite(MaweCoreState.player.duration) && MaweCoreState.player.duration > 0
+    ? MaweCoreState.player.duration : null;
+  if (!Number.isFinite(duration)) return false;
+  MaweJklPlayback.stopJklReversePlayback({ render: false });
+  const targetSeconds = Math.max(0, Math.min(duration, Number(timeSeconds) || 0));
+  MaweCoreState.player.currentTime = targetSeconds;
+  MawePlaybackLoop.update();
+  resumeCueListFollowing();
+  MaweCoreState.waveformEditor?.revealTime(targetSeconds * 1000, true);
+  MaweCoreState.waveformEditor?.updatePlayback();
+  syncMediaControls();
+  return true;
+}
 
   global.MaweMediaPlayback = Object.freeze({
     syncPlayerPlaceholder,

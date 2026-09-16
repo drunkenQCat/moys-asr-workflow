@@ -7,100 +7,103 @@
 
 
 
-  function markProjectSaved(filename, backupName, { silent = false } = {}) {
+  function markProjectSaved(filename, backupName, { silent = false, fingerprint = null } = {}) {
+  // 请求在途时的新编辑继续保持脏状态，失败请求从不进入这里。
+  const unchanged = !inlineEditHasUncommittedText()
+    && (fingerprint === null || fingerprint === projectSaveFingerprint());
+  const multi = MaweMultiSubtitleCore.getMultiSubtitleState();
+  if (unchanged) {
     MaweBoot.DATA.segments.forEach((segment) => { delete segment._dirty; });
-    const multi = MaweMultiSubtitleCore.getMultiSubtitleState();
     delete multi._dirty;
     (multi.tracks || []).forEach((track) => track.segments.forEach((segment) => { delete segment._dirty; }));
     MaweHistory.gapRemoveDirty = false;
     MaweAppearance.previewGeometryDirty = false;
     MaweServerSave.projectImportDirty = false;
-    MaweBoot.FILENAME_BASE = filename.replace(/\.(json|mosp)$/i, '');
-    const jsonEl = document.getElementById('json-name');
-    if (jsonEl) {
-      jsonEl.textContent = filename;
-      jsonEl.title = `点击复制工程文件名：${filename}`;
-      jsonEl.classList.remove('empty');
-    }
-    renderAll();
-    if (!silent) MaweHint.flashHint('保存成功！', 'success');
+    MaweCoreState.container.querySelectorAll('.dirty').forEach(element => element.classList.remove('dirty'));
   }
+  MaweBoot.FILENAME_BASE = filename.replace(/\.(json|mosp)$/i, '');
+  const jsonEl = document.getElementById('json-name');
+  if (jsonEl) {
+    jsonEl.textContent = filename;
+    jsonEl.title = `点击复制工程文件名：${filename}`;
+    jsonEl.classList.remove('empty');
+  }
+  if (!silent) MaweHint.flashHint('保存成功！', 'success');
+}
 
 
 
   async function saveProjectToServer({ silent = false, backupOnly = false } = {}) {
-    if (backupOnly && (MaweServerSave.projectFileHandle || !MaweSettings.EDITOR_SETTINGS.projectBackupEnabled)) return false;
-    if (!MaweServerSave.serverProjectSavingEnabled()) {
-      if (!silent) MaweHint.flashHint('当前服务器未绑定工程；请先导出 .mosp，再重新打开该文件', 'invalid');
-      return false;
-    }
-    if (MaweServerSave.projectSaveInFlight || MaweServerSave.projectCheckpointInFlight) return false;
-    if (editingState) finishEdit(true);
-    if (extensionEditingState) finishExtensionEdit(true);
-    commitCuePanelEdit();
-    const projectJson = buildJson();
-    MaweServerSave.projectSaveInFlight = true;
-    try {
-      const saveUrl = new URL(MaweBoot.SERVER_CONFIG.saveUrl, window.location.href);
-      const response = await fetch(saveUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          project: JSON.parse(projectJson), filename: null,
-          backupOnly,
-          backupLimit: MaweSettings.EDITOR_SETTINGS.projectBackupEnabled && (backupOnly || !silent)
-            ? MaweSettings.EDITOR_SETTINGS.projectBackupLimit : null,
-        }),
-      });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok || !result.ok) {
-        throw new Error(result.error || `服务器返回 ${response.status}`);
-      }
-      if (!backupOnly) markProjectSaved(result.filename, result.backup, { silent });
-      return true;
-    } catch (error) {
-      const detail = error?.message || error;
-      MaweServerSave.showProjectSaveError(detail);
-      // A stale browser tab can outlive the localhost process (the browser reports
-      // ERR_CONNECTION_REFUSED). Offer a real file save so Ctrl+S never strands
-      // completed edits, while making clear that the bound JSON was not overwritten.
-      if (!silent && error instanceof TypeError
-          && confirm('无法连接本地编辑器服务器。是否改为导出工程文件，以免丢失改动？')) {
-        const saved = await MaweExportTimeline.downloadFile(projectJson, `${MaweBoot.FILENAME_BASE}.mosp`, 'application/json', {
-          desc: 'MOSE 工程文件', types: { 'application/json': ['.mosp', '.json'] }
-        });
-        if (saved) MaweHint.flashHint('服务器未连接；工程已导出为 .mosp，请重新打开该文件后继续', 'success');
-      }
-      return false;
-    } finally {
-      MaweServerSave.projectSaveInFlight = false;
-    }
+  if (backupOnly && (MaweServerSave.projectFileHandle || !MaweSettings.EDITOR_SETTINGS.projectBackupEnabled)) return false;
+  if (!MaweServerSave.serverProjectSavingEnabled()) {
+    if (!silent) MaweHint.flashHint('当前服务器未绑定工程；请先导出 .mosp，再重新打开该文件', 'invalid');
+    return false;
   }
+  if (MaweServerSave.projectSaveInFlight || MaweServerSave.projectCheckpointInFlight) return false;
+  flushInlineEditsForSave();
+  const projectJson = buildJson();
+  const fingerprint = projectSaveFingerprint();
+  MaweServerSave.projectSaveInFlight = true;
+  try {
+    const saveUrl = new URL(MaweBoot.SERVER_CONFIG.saveUrl, window.location.href);
+    const response = await fetch(saveUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        project: JSON.parse(projectJson), filename: null,
+        backupOnly,
+        backupLimit: MaweSettings.EDITOR_SETTINGS.projectBackupEnabled && (backupOnly || !silent)
+          ? MaweSettings.EDITOR_SETTINGS.projectBackupLimit : null,
+      }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.ok) {
+      throw new Error(result.error || `服务器返回 ${response.status}`);
+    }
+    if (!backupOnly) markProjectSaved(result.filename, result.backup, { silent, fingerprint });
+    return true;
+  } catch (error) {
+    const detail = error?.message || error;
+    MaweServerSave.showProjectSaveError(detail);
+    // A stale browser tab can outlive the localhost process (the browser reports
+    // ERR_CONNECTION_REFUSED). Offer a real file save so Ctrl+S never strands
+    // completed edits, while making clear that the bound JSON was not overwritten.
+    if (!silent && error instanceof TypeError
+        && confirm('无法连接本地编辑器服务器。是否改为导出工程文件，以免丢失改动？')) {
+      const saved = await MaweExportTimeline.downloadFile(projectJson, `${MaweBoot.FILENAME_BASE}.mosp`, 'application/json', {
+        desc: 'MOSE 工程文件', types: { 'application/json': ['.mosp', '.json'] }
+      });
+      if (saved) MaweHint.flashHint('服务器未连接；工程已导出为 .mosp，请重新打开该文件后继续', 'success');
+    }
+    return false;
+  } finally {
+    MaweServerSave.projectSaveInFlight = false;
+  }
+}
 
 
 
   // 把当前工程写回页面持有的浏览器文件句柄（新建工程 / 另存为选定的目标）。
   async function saveProjectToHandle({ silent = false } = {}) {
-    if (!MaweServerSave.projectFileHandle) return false;
-    if (MaweServerSave.projectSaveInFlight || MaweServerSave.projectCheckpointInFlight) return false;
-    if (editingState) finishEdit(true);
-    if (extensionEditingState) finishExtensionEdit(true);
-    commitCuePanelEdit();
-    const projectJson = buildJson();
-    MaweServerSave.projectSaveInFlight = true;
-    try {
-      const writable = await MaweServerSave.projectFileHandle.createWritable();
-      await writable.write(new Blob([projectJson], { type: 'application/json;charset=utf-8' }));
-      await writable.close();
-      markProjectSaved(MaweServerSave.projectFileHandle.name, null, { silent });
-      return true;
-    } catch (error) {
-      MaweHint.flashHint(`保存失败：${error?.message || error}`, 'warning');
-      return false;
-    } finally {
-      MaweServerSave.projectSaveInFlight = false;
-    }
+  if (!MaweServerSave.projectFileHandle) return false;
+  if (MaweServerSave.projectSaveInFlight || MaweServerSave.projectCheckpointInFlight) return false;
+  flushInlineEditsForSave();
+  const projectJson = buildJson();
+  const fingerprint = projectSaveFingerprint();
+  MaweServerSave.projectSaveInFlight = true;
+  try {
+    const writable = await MaweServerSave.projectFileHandle.createWritable();
+    await writable.write(new Blob([projectJson], { type: 'application/json;charset=utf-8' }));
+    await writable.close();
+    markProjectSaved(MaweServerSave.projectFileHandle.name, null, { silent, fingerprint });
+    return true;
+  } catch (error) {
+    MaweHint.flashHint(`保存失败：${error?.message || error}`, 'warning');
+    return false;
+  } finally {
+    MaweServerSave.projectSaveInFlight = false;
   }
+}
 
 
 
