@@ -91,34 +91,57 @@ commit 哈希、破坏全部 fork 与既有 PR 引用**——这是上游维护�
 不是重构 PR 的一部分。稳妥路径：bundle 先退树（PR 级可行），历史清除
 留到某个大版本节点（如 2.0）一次性评估，或接受现状。
 
-## 五、PR 拆分方案（7 个功能 PR + 2 个可选）
+## 五、PR 拆分方案（3 个 PR）
 
-原则：每批可独立合并、可独立回滚（原子恢复该批源码/入口/消费端/加载器/
-产物，不留半态）；批次间 main 可继续演进，import 图对 merge 天然友好
-（这正是机械拆分时代做不到的——共享作用域的合并冲突从此消失）。
+原则：每批可独立合并、可独立回滚（原子恢复该批源码/入口/消费端/加载器，
+不留半态）；import 图对 merge 天然友好——这正是机械拆分时代做不到的，
+共享作用域的合并冲突从此结构性消失。**决策：不实施历史清除**（412+189+105 MB
+的全史死重接受现状）；**bundle 退 Git 提前到 PR-1**，此后所有重构 PR 只动
+源码、不提交任何 bundle 产物。
 
-| PR | 内容 | 规模预估 | 验收门 |
-| --- | --- | --- | --- |
-| **PR-A 准备：类型门扩全图** | 修访问器 setter 模板（TS2630 族）、补 ESM 文件类型契约，tsconfig include 逐步扩到当前全部 ESM 文件 | 中 | typecheck 绿；不迁任何源码 |
-| **PR-B 准备：Python 契约迁移** | 按 ESM_CONTRACT_MIGRATION 处置表把 12 个旧结构测试换成运行时/产物契约 | 中 | 新契约先红后绿；旧拼接断言删除 |
-| **PR-C 准备：构建与 CI 门** | 产物新鲜度门、开发 watch 约定、Node ≥22.7 版本钉、发布携带规则成文 | 小 | CI 全绿；「--write 才写产物」纯读检查 |
-| **PR-D 域批次 1：cues（36 文件）** | 真化最大域；依赖袋消费方就地改 import | 大（~9k 行） | node + 域 e2e + 顺序测试仍守剩余 classic |
-| **PR-E 域批次 2：io + media + markers（37 文件）** | 导出/保存/波形域 | 大 | 同上 |
-| **PR-F 域批次 3：ui + styles + state（42 文件）** | 8 个外部桥随本批消解 | 大 | 同上 |
-| **PR-G 域批次 4：boot + shared + wiring（49 文件）** | 最后的 classic；终态切换：esbuild 直接产 ESM bundle，退役注册表/依赖袋/包装 | 大 | E1–E10 类门禁全绿；三消费端探针 |
-| **PR-H 终态清理** | 删第三节表列全部脚手架与旧测试；AGENTS/文档改写 | 小 | 全量 node/python/e2e + 三页探针 |
-| PR-I（可选）bundle 退 Git | 复用 `codex/bundle-build-artifact` 已验证四层自动构建 | 中 | release CI 三平台 |
-| PR-J（可选）历史清除 | filter-repo 截断 blank-editor/editor.js/bundle 历史 | — | 维护者决策，独立于本线 |
+### PR-1 基建：让后续 PR 不再背 bundle（一个 PR）
 
-依赖链：A、B、C 可并行；D→E→F→G 顺序推进（也可按依赖倒序微调）；
-H 依赖 G；I、J 独立。
+| 内容 | 说明 |
+| --- | --- |
+| bundle 退 Git + 四层自动构建 | 复用 `codex/bundle-build-artifact` 已验证方案（serve.py / maw_gui.py / edit.py 陈旧自建 + release CI 构建三平台已绿）；`.gitignore` 收编产物，仓库瘦身 1.4 MB/文件、终止后续 bundle 噪声 diff |
+| 构建与 CI 门 | 产物新鲜度检查、开发 watch 约定（Server 不再直接反映未构建源码）、Node ≥22.7 版本钉、发布携带规则成文 |
+| 类型门扩全图 | 修访问器 setter 模板（TS2630 族 60 条）、补 ESM 文件类型契约，include 逐步扩到当前全部 ESM 文件 |
+| Python 契约迁移 | 按 `ESM_CONTRACT_MIGRATION.md` 处置表把 12 个旧结构测试换成运行时/产物契约（新契约先红后绿） |
+
+验收：CI 全绿 + typecheck 绿 + bundle 退 Git 后 release 流程实测；不迁移任何产品源码。
+
+### PR-2 全量真化：127 个 classic 文件一次转 ESM（一个 PR）
+
+- 四域一批：cues(36) → io/media/markers(37) → ui/styles/state(42) → boot/shared/wiring(49)；
+  用 `scripts/esm-mechanical/` codemod 机械转换 + 依赖袋消费方就地改 import。
+- 终态切换随批完成：esbuild 直接产 ESM bundle，真 `import`/`export` 语义生效。
+- 8 个外部桥随批消解；共享作用域裸引用由 codemod 按依赖图改写。
+- 规模：~41k 行 churn，全在源码侧；**无 bundle diff**（PR-1 已退 Git）。
+
+验收：新门禁（E1–E10 同型）全绿；全量 node/python/e2e；三页行为探针
+（Python 基线 / 正式 file / 真实 localhost）；顺序类旧测试随域退役。
+
+### PR-3 终态清理：拆脚手架（一个 PR）
+
+- 删：`window.MAWE` 注册表与 `editor-runtime.js`、`initializeLegacy()` 包装、
+  `editor-modules.json` 双轨登记、依赖袋注入形态、get/set 访问器对门面、
+  双语法检查路径、VM 测试加载器、classic 作用域改写工具族（scope-core 保留）、
+  顺序断言测试、`scripts/esm-mechanical/`。
+- 改写：AGENTS 装配约定、开发文档。
+- 验收：全量三线测试 + 依赖图闭合检查；仓库中不再存在 classic/module 双轨。
+
+### 依赖关系
+
+PR-1 → PR-2 → PR-3 严格串行（PR-2 的无 bundle diff 前提是 PR-1 的退 Git；
+PR-3 的脚手架拆除前提是 PR-2 的真化完成）。每批回滚原子恢复该批源码/
+入口/消费端/加载器，不退源码留新 bundle。
 
 ## 六、结论
 
-全量 ESM 可行性**已被完整图实验证实**，剩余工作是工程执行而非技术未知：
-三道准备 PR 把类型门、Python 契约、构建门立稳，四个域批次把 127 个
-classic 文件真化，终态 PR 拆掉全部运行时脚手架。最大的隐性收益不是
-「用了 ESM」，而是**合并模型从「共享作用域符号级三方重放」退化为普通
-文本 merge**——merge-flow 时代最难的那类冲突从此结构性消失。历史清除
-（412+189+105 MB）收益明确但破坏性大，应作为维护者的独立决策与大版本
-节点挂钩，不与重构 PR 混做。
+全量 ESM 可行性**已被完整图实验证实**，剩余工作是工程执行而非技术未知。
+三个 PR 的节奏：PR-1 把 bundle 从版本控制里摘出去并立好三道门（类型/契约/
+新鲜度），PR-2 一次性完成 127 个 classic 文件的真化与终态切换，PR-3 拆掉
+全部运行时脚手架。最大的隐性收益不是「用了 ESM」，而是**合并模型从
+「共享作用域符号级三方重放」退化为普通文本 merge**——merge-flow 时代
+最难的那类冲突从此结构性消失。历史清除不做（决策已定）：412+189+105 MB
+的全史死重接受现状，换取全部 fork 与 commit 引用的稳定。
