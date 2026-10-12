@@ -102,7 +102,7 @@
 
 | 内容 | 说明 |
 | --- | --- |
-| bundle 退 Git + 四层自动构建 | 复用 `codex/bundle-build-artifact` 已验证方案（serve.py / maw_gui.py / edit.py 陈旧自建 + release CI 构建三平台已绿）；`.gitignore` 收编产物，仓库瘦身 1.4 MB/文件、终止后续 bundle 噪声 diff |
+| bundle 退 Git + 四层自动构建 | **直接 cherry-pick** `codex/bundle-build-artifact` 的两个提交（`5ba2baa1` 构建产物不入库 + 运行时入口自动重建、`ddb36b7a` frozen 包内只做存在性检查）；两提交基于 d2d12b42，与本分支同源可干净 pick。效果：serve.py / maw_gui.py / edit.py 陈旧自建 + release CI 构建三平台已绿；`.gitignore` 收编产物，仓库瘦身 1.4 MB/文件、终止后续 bundle 噪声 diff |
 | 构建与 CI 门 | 产物新鲜度检查、开发 watch 约定（Server 不再直接反映未构建源码）、Node ≥22.7 版本钉、发布携带规则成文 |
 | 类型门扩全图 | 修访问器 setter 模板（TS2630 族 60 条）、补 ESM 文件类型契约，include 逐步扩到当前全部 ESM 文件 |
 | Python 契约迁移 | 按 `ESM_CONTRACT_MIGRATION.md` 处置表把 12 个旧结构测试换成运行时/产物契约（新契约先红后绿） |
