@@ -135,7 +135,78 @@ PR-1 → PR-2 → PR-3 严格串行（PR-2 的无 bundle diff 前提是 PR-1 的
 PR-3 的脚手架拆除前提是 PR-2 的真化完成）。每批回滚原子恢复该批源码/
 入口/消费端/加载器，不退源码留新 bundle。
 
-## 六、结论
+## 六、SubAgent 执行编排
+
+### 6.1 编排总则
+
+- **一个主控（orchestrator）+ 按任务书派发的子代理**。主控持有 git 写权限
+  （commit / cherry-pick / push / 开 PR）；子代理只在自己工作树内改代码、
+  跑测试、回报结论，**永不 push、永不碰主检出**。
+- **一个子代理一个 worktree**：`.qwen/worktrees/esm-<lane>`，从当前集成分支
+  拉出；集成只发生在主控的 `esm-integration` 工作树。并发子代理的文件所有权
+  不得重叠（见 6.3 分配表）。
+- **账本纪律**：沿用仓库「边做边落盘」约定，账本
+  `docs/logs/unversioned/<日期>/esm-migration/`，每完成一个子任务即时回写
+  （状态：待处理/进行中/已修复/阻塞），子代理回报与账本对不上以账本为准。
+- **测试纪律**：长命令一律 `python scripts/run_check.py --timeout 180 -- …`；
+  e2e 按域单跑，全量留给集成门；连续两轮不过即停，回报而不是循环重试。
+- **升级条件**：同一失败点两次修复尝试无效、或需要改子任务书范围之外的东西
+  （package.json、构建器、AGENTS），子代理停止并回报，由主控决策。
+
+### 6.2 PR-1 编排（基建）
+
+PR-1 内部三条泳道，文件所有权互斥，可两两并行：
+
+| 泳道 | 内容 | 主要文件所有权 | 并行性 |
+| --- | --- | --- | --- |
+| L1 bundle 退 Git | cherry-pick `5ba2baa1`+`ddb36b7a`，解冲突，跑 release 构建冒烟 | `scripts/build-editor.mjs`、`.gitignore`、MAW.spec | 先行独立完成 |
+| L2 类型门扩全图 | 修访问器 setter 模板（TS2630×60 族）→ 全量诊断分类 → 按类修复 | `scripts/build-editor.mjs` 生成模板段、`web/editor-globals.d.ts`、`tsconfig.typecheck.json` | 与 L3 并行 |
+| L3 Python 契约迁移 | 按 `ESM_CONTRACT_MIGRATION.md` 处置表逐项换 12 个旧结构测试 | `tests/test_editor_assets.py` 等 Python 测试 | 与 L2 并行 |
+
+- L1 由主控亲自做（cherry-pick 需要跨分支操作与 push 权限）。
+- L2 拆两步：主控先修生成模板（一处改动消 60 条诊断），剩余诊断由
+  **诊断分类子代理**（只读分析，产出分类清单）+ **按类修复子代理**
+  （每类一个，各自 worktree）处理；`tsconfig.typecheck.json` 的 include
+  扩大由主控统一执行，避免并发改同一文件。
+- L3 一个子代理按处置表顺序执行，新契约先红后绿的证据写入账本。
+- **集成门（主控）**：typecheck 绿 + `run_check.py` 全量 Python + bundle
+  退 Git 后 release 冒烟 + 确认 diff 中无任何 bundle 产物。
+
+### 6.3 PR-2 编排（全量真化）
+
+机械转换由主控串行执行（codemod 是确定性的，无需智能），**子代理的价值
+在按域修复转换 fallout**：
+
+1. 主控按域序执行 codemod：cues → io/media/markers → ui/styles/state →
+   boot/shared/wiring，每域一轮 `--write` + 依赖图闭合检查 + 全量 node 测试。
+2. 每域转换后若该域测试出现行为红灯，派发**域修复子代理**：
+
+| 域批次 | 文件数 | 修复子代理工作树 | 所有权边界 |
+| --- | --- | --- | --- |
+| cues | 36 | `esm-fix-cues` | `web/editor/cues/**` + 对应 e2e/spec 断言 |
+| io/media/markers | 37 | `esm-fix-io-media` | `web/editor/io|media|markers/**` |
+| ui/styles/state | 42 | `esm-fix-ui-state` | `web/editor/ui|styles|state/**`（8 外部桥所在域，最后转） |
+| boot/shared/wiring | 49 | `esm-fix-boot-shared` | `web/editor/boot|shared/**`、wiring 尾段 |
+
+3. 域子代理任务书要素：只许改本域文件；先复现（跑哪个 spec/测试）、再修、
+   修后重跑证据；禁止改构建器与共享域；发现的跨域问题记账本不越界修。
+4. **集成门（主控，每域合入后）**：全量 node + Python + 域 e2e；
+   终域后加三页行为探针（Python 基线 / file / localhost）与 E1–E10 同型门禁。
+
+### 6.4 PR-3 编排（终态清理）
+
+单个清理子代理 + 主控复核即可：删除清单已在本文第三节钉死，子代理按清单
+执行删除与 AGENTS/文档改写，主控做全量验收与 diff 审查（删除类 diff 逐行
+过一遍防误删 scope-core 等保留项）。
+
+### 6.5 子代理任务书模板（要点）
+
+每份任务书必须自包含：基线 commit、worktree 路径、文件所有权（正/负清单）、
+复现命令（含 `run_check.py` 包装与超时）、验收标准、回报格式（结论/证据/
+未验证边界/阻塞原因）、以及仓库红线（无 AI 署名、`.env` 不读、删文件进
+回收站、测试输出走摘要入口）。任务书之外的需求一律走账本升级，不口头扩权。
+
+## 七、结论
 
 全量 ESM 可行性**已被完整图实验证实**，剩余工作是工程执行而非技术未知。
 三个 PR 的节奏：PR-1 把 bundle 从版本控制里摘出去并立好三道门（类型/契约/
