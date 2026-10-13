@@ -236,3 +236,28 @@ bootstrap，本 PR 不宣称完成。
 | typecheck | 110 基线 / 新增 0 |
 | check:editor / check:launcher | 双新鲜（launcher builderHash 覆盖共享构建器，重建后一致） |
 | git diff --check | 干净 |
+
+## 评审回执补充（10-14 晚，O5 沙盒可复现性修复）
+
+评审在 run_check 环境复跑：O1–O4 过，O5a/O5b 在解包 PR1 档案时
+`tar -xf base.tar` 报 `Invalid empty pathname`——其进程 PATH 解析
+到的 tar 对档案里 48 个中文路径（docs/logs 等）解出空路径名。
+本机 git-bash 的 GNU tar 能解，属 PATH/代码页相关的环境脆弱点，
+「6/6」在评审环境不可复现——接受。
+
+**修复：沙盒基线提取从 `git archive | tar` 改为 `git worktree add
+--detach`**——git 原生检出对 Unicode 路径与终端代码页不敏感，
+彻底不依赖 PATH 里的解包工具。清理配套：discardSandbox = 先
+rmSync（Node 对 junction 拆链接不递归进目标，node_modules 安全）
+再 `git worktree prune` 清主仓管理项；O5a/O5b 的 finally 统一走它
+（O5b 此前断言失败会跳过清理，一并补上）。
+
+复跑（评审同款命令经 run_check：`pnpm exec playwright test
+tests/e2e/assembly-order.spec.mjs --project chromium`）：
+6/6 通过（29.4s，O5a 12.5s / O5b 11.2s，均真实执行到行为断言）。
+事后核验：worktree list 无沙盒残留、node_modules 完好、
+check:editor 新鲜、git diff --check 干净。
+
+运行日志：.artifacts/checks/20261013T191156Z-3f8f85b8/。
+评审未复跑的装配契约 9/9 沙盒配方见上节（三环境变量 +
+full/baseline 根制备步骤）。

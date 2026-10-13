@@ -12,7 +12,7 @@
 // 30–60s；其余四条共享一个服务器。
 import { expect, test } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
-import { cpSync, mkdirSync, openSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -144,12 +144,12 @@ test('O4 bridges: 8 external bridges are live accessors on the page', async () =
 // 打乱基线必须是 classic 源（当前仓库 web/ 已是转换产物）；整树提取
 // （render 需要 edit.py 与 maw/）；tests/e2e 与 editor-modules.json 用
 // 当前版本（消费点扫描与 bootstrap 序都以当前配置为准）。
+// 基线提取用 git worktree：PATH 里的 tar（如 Windows bsdtar）解不出
+// PR1 档案里的中文路径（Invalid empty pathname），git 原生检出对
+// Unicode 路径与终端代码页不敏感，也不依赖外部解包工具。
 async function buildShuffledCopy(sandbox, shuffle, shuffleBootstrap = null, mutateTree = null) {
-  mkdirSync(sandbox, { recursive: true });
-  execFileSync('git', ['archive', 'feat/editor-esm-pr1-foundation'],
-    { cwd: repoRoot, stdio: ['ignore', openSync(join(sandbox, 'base.tar'), 'w'), 'pipe'] });
-  execFileSync('tar', ['-xf', 'base.tar'], { stdio: 'pipe', cwd: sandbox });
-  rmSync(join(sandbox, 'base.tar'));
+  execFileSync('git', ['worktree', 'add', '--detach', sandbox,
+    'feat/editor-esm-pr1-foundation'], { cwd: repoRoot, stdio: 'pipe' });
   cpSync(join(repoRoot, 'tests'), join(sandbox, 'tests'), { recursive: true });
   cpSync(join(repoRoot, 'web/editor-modules.json'), join(sandbox, 'web/editor-modules.json'));
   // 清单退役：文件集由目录推导，次序由 bootstrap 决定；沙盒 PR1 树
@@ -196,6 +196,13 @@ async function buildShuffledCopy(sandbox, shuffle, shuffleBootstrap = null, muta
   }));
 }
 
+// 先 rmSync（Node 对 junction 是拆链接不递归进目标，node_modules
+// 安全），再 prune 清掉主仓 .git 里的 worktree 管理项。
+function discardSandbox(sandbox) {
+  rmSync(sandbox, { recursive: true, force: true });
+  execFileSync('git', ['worktree', 'prune'], { cwd: repoRoot, stdio: 'pipe' });
+}
+
 test('O5a order red light: bootstrap file after consumers breaks boot', async () => {
   test.setTimeout(300_000);
   const sandbox = join(dir, 'shuffle-red');
@@ -207,7 +214,7 @@ test('O5a order red light: bootstrap file after consumers breaks boot', async ()
     // 之后 → 消费者 phase-2 读 MaweBoot.DATA 崩溃，桥接未建立。
     expect(state.bridge).toBe(false);
     expect(state.traceLength).toBeLessThan(188);
-  } finally { rmSync(sandbox, { recursive: true, force: true }); }
+  } finally { discardSandbox(sandbox); }
 });
 
 test('O5b set independence: new module joins the derived set and really executes', async () => {
@@ -219,13 +226,14 @@ test('O5b set independence: new module joins the derived set and really executes
   // 必然被执行」——金丝雀自带 initialize（预转换形态），不进任何
   // 清单，纯靠目录发现加入装配。
   const sandbox = join(dir, 'derived-canary');
-  const state = await buildShuffledCopy(sandbox, null, null, (tree) => {
-    writeFileSync(join(tree, 'web/editor/boot/zz-derived-canary.js'),
-      'export function* initialize() {\n  yield;\n  window.__mawO5bCanaryRan = true;\n}\n');
-  });
-  expect(state.bridge).toBe(true);
-  expect(state.traceLength).toBe(189);
-  expect(state.traceHasCanary, 'canary must appear in the startup trace').toBe(true);
-  expect(state.canaryRan, 'canary side effect must really run').toBe(true);
-  rmSync(sandbox, { recursive: true, force: true });
+  try {
+    const state = await buildShuffledCopy(sandbox, null, null, (tree) => {
+      writeFileSync(join(tree, 'web/editor/boot/zz-derived-canary.js'),
+        'export function* initialize() {\n  yield;\n  window.__mawO5bCanaryRan = true;\n}\n');
+    });
+    expect(state.bridge).toBe(true);
+    expect(state.traceLength).toBe(189);
+    expect(state.traceHasCanary, 'canary must appear in the startup trace').toBe(true);
+    expect(state.canaryRan, 'canary side effect must really run').toBe(true);
+  } finally { discardSandbox(sandbox); }
 });
