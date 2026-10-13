@@ -98,3 +98,48 @@ tests/（适配+-loader 修复）。bundle 不入库（PR-1 已退）。
 ## 目标边界（说准）
 
 本 PR 证明全部源码可机械转 ESM 并由 esbuild 终态装配、三消费端行为等价全绿；仍保留 MAWE 注册表、依赖袋、兼容访问器门面与 110 条类型基线——它们属企划案 Store/命令阶段与词典人工清理，后续批次处理，不混入本迁移。
+
+---
+
+# 评审第二轮（2026-10-13）：可重放性与产物卫生
+
+## 结论
+
+评审三缺口全部落实；「从干净基线一键重现 PR2 当前结果」现在成立。
+
+## 逐条落实
+
+1. **转换器可重放（评审缺口 1）**
+   - 根因实测：`typecheck-fixups` B 段的顶层 AST 扫描看不到生成器
+     内部的函数声明——64 处 setter 摘除实为收尾期逐文件手工补丁，
+     导致 12 个文件不可重放。账本此前「模板层同步修改」的表述
+     与事实不符，已更正。
+   - 修复：规则内化进 `full-convert.mjs`——函数声明只发布 getter
+     （`mutable: false`），并加 eslint-scope 写点守卫（任一 classic
+     文件对函数名的写入引用即硬失败；负控夹具验证生效）。
+   - 新增 `scripts/esm-mechanical/replay-verify.mjs`：PR1 分支
+     `git archive` 提取 → full-convert → 与提交的 188 个清单文件
+     逐字节比较 → **ok: true（188/188，548 跨文件引用一致）**。
+   - `typecheck-fixups` B/C 段退役（B 无效、C 与提交内容不一致且
+     TS1117 已入基线），保留 A 段（输出逐字节不变）；教训写入注释。
+2. **实验产物出库（评审缺口 2）**
+   - `full-baseline-probe.html`/`full-current-probe.html`/
+     `full-browser-verdict.json`/`hoisting-probe/`/`live-binding-probe/`
+     共 17 个文件移出 Git；E6/E8/E9 测试运行时自生成，路径入
+     `.gitignore`。注：根目录写这些探针的 `scripts/verify-editor.mjs`
+     是上游 #181 既有工具（本分支未改），其产物路径未动。
+3. **类型门局限（评审缺口 3，如实标注而非抵赖）**
+   - 基线 110 条构成：TS2339×39、TS1117×29（词典跨对象 merge，
+     静态去重会改运行时值——实测记录在案）、TS2353×15、其余 27 条
+     分散；其中 TS2448（`cursorOffset` 先用后声明）确属值得单独
+     核查的真代码味，已列入后续批次。`editor-legacy-dom.d.ts` 的
+     索引签名是过渡放宽，文件头注明终态方向（消费侧精确 cast）。
+
+## 第二轮验证（转换器改动后复跑）
+
+| 层 | 结果 |
+| --- | --- |
+| replay-verify | 188/188 逐字节一致（PR1 基线重放） |
+| 装配契约 | 9/9（FULL_ROOT=git 树） |
+| node 全量 | 606/606 |
+| typecheck | 110 基线 / 新增 0 |

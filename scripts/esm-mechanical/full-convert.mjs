@@ -8,16 +8,38 @@ import * as eslintScope from 'eslint-scope';
 import { unresolvedRefs } from '../refactor-tools/scope-core.mjs';
 import { convertFactory, readManifest } from './research.mjs';
 
-function declarations(ast) {
+function declarations(ast, writes) {
   return ast.body.flatMap(node => {
     if (node.type === 'VariableDeclaration') return node.declarations.map(decl => {
       if (decl.id.type !== 'Identifier') throw new Error('Top-level destructuring requires a separate conversion rule');
       return { name: decl.id.name, mutable: node.kind !== 'const', kind: node.kind };
     });
-    if (node.type === 'FunctionDeclaration') return [{ name: node.id.name, mutable: true, kind: 'function' }];
+    // 函数声明的绑定不可被赋值（共享消费者从未写函数名），只发布
+    // getter；这同时消除 TS2630「函数名 setter 内自赋值」族诊断。
+    if (node.type === 'FunctionDeclaration') return [{ name: node.id.name, mutable: false, kind: 'function' }];
     if (node.type === 'ClassDeclaration') throw new Error('Top-level class requires review');
     return [];
   });
+}
+
+function findFunctionWriteViolation(sources) {
+  // getter-only 发布的安全性条件：任何 classic 文件对他文件声明的
+  // 函数名的写入必须不存在（文件内写不影响访问器语义——绑定本身
+  // 仍可变，但共享面只读）。判断依据 eslint-scope 的写入引用，
+  // 不用文本启发式（比较运算符也会含「=」）。
+  const functionNames = new Set(sources.filter((item) => item.kind === 'classic')
+    .flatMap((item) => item.declarations.filter((d) => d.kind === 'function').map((d) => d.name)));
+  if (!functionNames.size) return null;
+  for (const item of sources) {
+    if (item.kind !== 'classic' || !item.ast) continue;
+    const scope = eslintScope.analyze(item.ast, { ecmaVersion: 16, sourceType: 'script', ignoreEval: true });
+    for (const ref of scope.globalScope.through) {
+      if (functionNames.has(ref.identifier.name) && ref.isWrite()) {
+        return { file: item.file, name: ref.identifier.name };
+      }
+    }
+  }
+  return null;
 }
 
 export async function convertAll(root, { rewriteShared = true } = {}) {
@@ -46,6 +68,11 @@ export async function convertAll(root, { rewriteShared = true } = {}) {
   }
   const consumed = new Set(), connections = [];
   const externalBridges = new Map();
+  const writeViolation = findFunctionWriteViolation(sources);
+  if (writeViolation) {
+    throw new Error(`Function shared binding has a write point: ${writeViolation.name} in ${writeViolation.file}`
+      + ' (getter-only publishing requires assignment-free function names)');
+  }
   const collectFiles = dir => fs.existsSync(dir) ? fs.readdirSync(dir, { withFileTypes: true }).flatMap(entry =>
     entry.isDirectory() ? collectFiles(path.join(dir, entry.name))
       : entry.name.endsWith('.mjs') ? [path.join(dir, entry.name)] : []) : [];
