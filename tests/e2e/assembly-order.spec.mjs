@@ -209,26 +209,14 @@ test('O5a order red light: bootstrap file after consumers breaks boot', async ()
   } finally { rmSync(sandbox, { recursive: true, force: true }); }
 });
 
-test('O5b order independence: bootstrap sibling order swap keeps behavior', async () => {
+test('O5b order independence: full manifest shuffle keeps behavior', async () => {
   test.setTimeout(300_000);
   const sandbox = join(dir, 'shuffle-green');
   try {
-    // bootstrap 内部相邻无耦合对（i18n <-> tooltip）互换次序：两者
-    // phase-2 互不读取，仅发布各自门面。行为必须与原序一致——
-    // 证明显式 bootstrap 序只约束真实依赖对，不要求全体固定位次。
-    // 批次推进：每消除一对 bootstrap 内部依赖约束，可交换对随之增多；
-    // 批 4 终态（清单删除）时本测试演进为「全量打乱后行为不变」。
-    const state = await buildShuffledCopy(sandbox,
-      (manifest) => manifest, // 清单保持原序
-      (bootstrap) => {
-        const i18n = bootstrap.indexOf('shared/editor-i18n.js');
-        const tooltip = bootstrap.indexOf('shared/tooltip.js');
-        expect(i18n, 'i18n in bootstrap').toBeGreaterThanOrEqual(0);
-        expect(tooltip, 'tooltip in bootstrap').toBeGreaterThanOrEqual(0);
-        const swapped = [...bootstrap];
-        [swapped[i18n], swapped[tooltip]] = [swapped[tooltip], swapped[i18n]];
-        return swapped;
-      });
+    // 终态证明：phase-2 执行序完全由 bootstrap 数组（显式、可审计）
+    // 决定，清单顺序不再被入口消费——整份清单反转后行为必须一致。
+    // sandbox 的 bootstrap 从当前登记表复制，不随清单打乱。
+    const state = await buildShuffledCopy(sandbox, (manifest) => [...manifest].reverse());
     expect(state.bridge, JSON.stringify(state)).toBe(true);
     expect(state.registry, JSON.stringify(state)).toBeGreaterThanOrEqual(61);
     expect(state.waveform, JSON.stringify(state)).toBe(true);

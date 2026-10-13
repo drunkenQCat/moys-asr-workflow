@@ -81,3 +81,28 @@ E6（full-verify）与 e2e O2 都与它比对；E6 bootShape 的注册名
 | e2e click-behavior | 36/36 |
 | typecheck | 110 基线 / 新增 0 |
 | check:editor / check:launcher | 新鲜（launcher bundle 因构建器哈希联动重建） |
+
+## 批 2b：全量 classic 显式序（已完成）
+
+- 尝试 1：用静态分析（IIFE 感知的顶层执行扫描）算 146 条直接边的
+  Kahn 拓扑序替换 bootstrap——真页面验证崩溃（MaweCueElements
+  undefined）：存储型函数体内的延迟读取无法静态判别执行时点，
+  保守口径下切片为 0。结论：静态重排不可靠，放弃。
+- 尝试 2（采纳）：**bootstrap = 当前清单的 classic 全序**。生产
+  清单序已被证明满足全部直接约束，把它整体搬进登记表 bootstrap
+  数组后，入口不再消费清单位次——清单只剩「打包文件集」职责。
+- O5b 升级为**整份清单反转**绿灯：phase-2 执行序完全由显式
+  bootstrap 序决定，打乱清单后 188 文件初始化、注册、波形、
+  桥接全部一致。
+- 试错教训（静态启发式三连败：遗漏 IIFE 体、漏 IIFE 内嵌声明的
+  函数调用、Map.values().flat() 对 Set 无效）记入账本防复发。
+
+### 验证
+
+| 层 | 结果 |
+| --- | --- |
+| node 全量 | 608/608（2 个 process-lifecycle 用例首轮超时、复跑 22/0，并行负载抖动，与本批无关） |
+| 装配契约 E1-E10 | 9/9 |
+| e2e assembly-order | 6/6（O5b=全量清单反转绿灯） |
+| e2e 全量复跑 | waveform-history 53/2*（*与 main 既有同名同数）、click-behavior 36/36、ai-cleanup+multi-subtitle 90/90、i18n/drop/new-project/keyboard/ass-export 88/88 |
+| typecheck | 110 基线 / 新增 0 |
