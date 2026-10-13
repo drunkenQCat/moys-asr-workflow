@@ -66,3 +66,35 @@ tests/（适配+-loader 修复）。bundle 不入库（PR-1 已退）。
    全部 ESM 文件；预期 235 类诊断，按研究报告处置）。
 3. 移植：cp -r copy 的 web/（排除 bundle 产物）与 tests/ 覆盖本分支，三线复跑。
 4. 全绿后提交推送，PR 描述按本账本展开。
+
+---
+
+# PR-2 终态（2026-10-13 收尾，取代上文所有中间快照）
+
+## 验收锚点（更正叙事）
+
+- 迁移前基线：**616 collected / 616 pass / 0 fail**。行为等价迁移 = 满分必须仍是满分；此前文中「55/36/18」皆为迁移过程自分数，非出发状态。
+- 现状：node **606/606 pass**（606 = 616 − order 退役 1 − ai_cleanup vm→e2e 迁移 9；断言无静默丢失，全部有去处）。
+
+## 最终验证矩阵（git 工作树实测；副本实验仅作过程证据）
+
+| 层 | 结果 |
+| --- | --- |
+| node 全量 | 606/606 |
+| 装配契约 | 9 项有效通过，E7 已退役（FULL_ROOT=git 树，BASELINE_ROOT=隔离副本 baseline） |
+| typecheck | 110 存量基线 / 新增 0（scripts/typecheck-baseline.mjs） |
+| Python | 2140 OK / 21 skip（与 main 基线一致） |
+| e2e | waveform-history+click-behavior 89/2*、i18n-save+ass-export+drop+new-project+keyboard 88/0、multi-subtitle 81/0、ai-cleanup-retention 9/9 |
+| e2e 基线比对 | *两失败在纯 main@a34d502a 同样红 → 迁移零回归 |
+
+## 评审五条的落实对照
+
+1. 停止假 DOM 膨胀 → ai_cleanup 9 例迁 e2e 真页面（spec 保留全部业务断言）；identity+隐式门面预挂把其余夹具桩压到个位数方法级。
+2. 加载器确定性 → 单清单 editor-scripts.txt + 直接 import 闭包（清单序）；full-conversion.json/editor-sources.txt 退出测试输入；递归闭包教训已入注释。
+3. 选择性移植 → 127 文件逐文件核对入树（排除产物）；tests 适配同样按漂移清单移植。
+4. 类型门分类 → 模板层 64 setter 摘除（函数声明，逐名验证无写点）；Window/Element/Node 过渡索引签名；schema 字段补全；110 存量入基线（含词典 TS1117 跨对象 merge 不可静态去重的实测记录）；package-lock 清除。
+5. 完整门禁 → 上表；「9/9 + E7 退役」措辞与逐层位置标注已执行。
+
+## 目标边界（说准）
+
+本 PR 证明全部源码可机械转 ESM 并由 esbuild 终态装配、三消费端行为等价全绿；仍保留 MAWE 注册表、依赖袋、兼容访问器门面与 110 条类型基线——它们属企划案 Store/命令阶段与词典人工清理，后续批次处理，不混入本迁移。
