@@ -68,6 +68,7 @@ const DEFINES = {
   __STICKER_URL_PREFIX_JSON__: '""',
   __SERVER_CONFIG_JSON__: '{}',
   __NINJA_SFX_BASE_URL_JSON__: '""',
+  __UI_LANGUAGE_JSON__: '"zh"',
 };
 
 function compile(files, entry, { phase2All = true } = {}) {

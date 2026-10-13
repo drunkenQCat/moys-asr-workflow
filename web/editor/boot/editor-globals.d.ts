@@ -10,7 +10,9 @@
 
 declare const __DATA_JSON__: ProjectData;
 
+// 索引签名：存量 DOM/门面成员类型债的过渡放行；具名接口声明优先。
 interface Window {
+  [key: string]: any;
   MaweAssCanvas: {
     measureRun(style: any, nativeFontSize: number, run: any, text: string): { width: number; ascent: number; descent: number };
     clearCaches(): void;
@@ -38,9 +40,16 @@ interface ProjectSegment {
   start: Milliseconds;
   end: Milliseconds;
   text: string;
+  id?: string;
   disabled?: boolean;
   speaker?: string;
   color?: string;
+  color_ref?: { headIdx?: number } | null;
+  sticker?: string | null;
+  sticker_ref?: { headIdx?: number; ref?: string } | null;
+  start_frame?: number;
+  end_frame?: number;
+  _dirty?: boolean;
   items?: ProjectSegmentItem[];
 }
 
@@ -71,12 +80,18 @@ interface ProjectData {
   timebase?: Record<string, unknown>;
   sticker_root?: string;
   waveform?: ProjectWaveformInfo;
-  gap_remove?: unknown;
-  script_alignment?: unknown;
-  workspace?: unknown;
+  gap_remove?: Record<string, any>;
+  script_alignment?: Record<string, any>;
+  workspace?: Record<string, any>;
   preview?: Record<string, unknown>;
-  overlay_track?: unknown;
-  multi_subtitle?: unknown;
+  overlay_track?: Record<string, any>;
+  multi_subtitle?: Record<string, any>;
+  markers?: Record<string, any>;
+  loudness?: Record<string, any>;
+  spectral?: Record<string, any>;
+  waveform_reapeaks?: Record<string, any>;
+  media_time_reference?: Record<string, any>;
+  preserve_punctuation?: Record<string, any>;
 }
 
 // 冻结门面契约：模块通过 global.MaweXxx = Object.freeze({...}) 挂载，
@@ -139,20 +154,20 @@ interface Window {
 // declare const Xxx: XxxApi，随后从本占位区移除。
 declare const __NINJA_SFX_BASE_URL_JSON__: string;
 declare const exportColorContextResolver: any;
-declare const MaweSettings: any;
-declare const MaweHint: any;
-declare const MaweSpeakerLabels: any;
-declare const MaweCueElements: any;
-declare const MaweInlineEdit: any;
-declare const MaweGapRemoveData: any;
-declare const MaweCoreState: any;
-declare const MaweExportTimeline: any;
-declare const MaweAppearance: any;
-declare const MaweTimeline: any;
-declare const MaweColors: any;
-declare const MaweDom: any;
-declare const MaweMultiSubtitleCore: any;
-declare const ASS_STYLE_LIBRARY: any;
+declare var MaweSettings: any;
+declare var MaweHint: any;
+declare var MaweSpeakerLabels: any;
+declare var MaweCueElements: any;
+declare var MaweInlineEdit: any;
+declare var MaweGapRemoveData: any;
+declare var MaweCoreState: any;
+declare var MaweExportTimeline: any;
+declare var MaweAppearance: any;
+declare var MaweTimeline: any;
+declare var MaweColors: any;
+declare var MaweDom: any;
+declare var MaweMultiSubtitleCore: any;
+declare var ASS_STYLE_LIBRARY: any;
 declare const mergedExportSegments: any;
 declare const activeExtensionSegments: any;
 
@@ -238,11 +253,11 @@ interface MaweCommandsApi {
 }
 declare var MaweCommands: MaweCommandsApi;
 declare var MaweViewUpdates: { invalidate(options?: ViewInvalidation): void };
-declare const MaweHistory: any;
-declare const MaweCuePanel: any;
-declare const MaweCueListAnchor: any;
-declare const MawePlaybackLoop: any;
-declare const MaweServerSave: any;
+declare var MaweHistory: any;
+declare var MaweCuePanel: any;
+declare var MaweCueListAnchor: any;
+declare var MawePlaybackLoop: any;
+declare var MaweServerSave: any;
 interface Window {
   MaweCommands: MaweCommandsApi;
   MaweViewUpdates: typeof MaweViewUpdates;

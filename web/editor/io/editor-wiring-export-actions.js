@@ -2,8 +2,8 @@ import { legacyBindings as __mawImportedBindings0 } from "../ui/editor-wiring-do
 export let legacyBindings;
 export function* initialize() {
 legacyBindings = Object.freeze({
-get applyMediaSizeToResolutionModal() { return applyMediaSizeToResolutionModal; }, set applyMediaSizeToResolutionModal(value) { applyMediaSizeToResolutionModal = value; },
-get dynamicExportCanvasSize() { return dynamicExportCanvasSize; }, set dynamicExportCanvasSize(value) { dynamicExportCanvasSize = value; }
+get applyMediaSizeToResolutionModal() { return applyMediaSizeToResolutionModal; },
+get dynamicExportCanvasSize() { return dynamicExportCanvasSize; }
 });
 yield;
 

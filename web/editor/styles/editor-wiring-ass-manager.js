@@ -4,16 +4,16 @@ import { legacyBindings as __mawImportedBindings2 } from "./editor-wiring-font-g
 export let legacyBindings;
 export function* initialize() {
 legacyBindings = Object.freeze({
-get assStyleLibraryUsesServerStorage() { return assStyleLibraryUsesServerStorage; }, set assStyleLibraryUsesServerStorage(value) { assStyleLibraryUsesServerStorage = value; },
-get setAssStyleLibraryStatus() { return setAssStyleLibraryStatus; }, set setAssStyleLibraryStatus(value) { setAssStyleLibraryStatus = value; },
-get updateAssStyleLibraryStatus() { return updateAssStyleLibraryStatus; }, set updateAssStyleLibraryStatus(value) { updateAssStyleLibraryStatus = value; },
-get assStyleManagerSetSelection() { return assStyleManagerSetSelection; }, set assStyleManagerSetSelection(value) { assStyleManagerSetSelection = value; },
-get updateAssStylePreviewModeHints() { return updateAssStylePreviewModeHints; }, set updateAssStylePreviewModeHints(value) { updateAssStylePreviewModeHints = value; },
-get updateAssStyleManagerLibrary() { return updateAssStyleManagerLibrary; }, set updateAssStyleManagerLibrary(value) { updateAssStyleManagerLibrary = value; },
-get syncAssStyleForm() { return syncAssStyleForm; }, set syncAssStyleForm(value) { syncAssStyleForm = value; },
-get syncAssStyleManager() { return syncAssStyleManager; }, set syncAssStyleManager(value) { syncAssStyleManager = value; },
-get syncAssModeDependentControls() { return syncAssModeDependentControls; }, set syncAssModeDependentControls(value) { syncAssModeDependentControls = value; },
-get syncAssModeControl() { return syncAssModeControl; }, set syncAssModeControl(value) { syncAssModeControl = value; }
+get assStyleLibraryUsesServerStorage() { return assStyleLibraryUsesServerStorage; },
+get setAssStyleLibraryStatus() { return setAssStyleLibraryStatus; },
+get updateAssStyleLibraryStatus() { return updateAssStyleLibraryStatus; },
+get assStyleManagerSetSelection() { return assStyleManagerSetSelection; },
+get updateAssStylePreviewModeHints() { return updateAssStylePreviewModeHints; },
+get updateAssStyleManagerLibrary() { return updateAssStyleManagerLibrary; },
+get syncAssStyleForm() { return syncAssStyleForm; },
+get syncAssStyleManager() { return syncAssStyleManager; },
+get syncAssModeDependentControls() { return syncAssModeDependentControls; },
+get syncAssModeControl() { return syncAssModeControl; }
 });
 yield;
 

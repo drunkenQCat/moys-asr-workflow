@@ -6,8 +6,8 @@ import { legacyBindings as __mawImportedBindings4 } from "../cues/editor-wiring-
 export let legacyBindings;
 export function* initialize() {
 legacyBindings = Object.freeze({
-get restoreCssSubtitlePreview() { return restoreCssSubtitlePreview; }, set restoreCssSubtitlePreview(value) { restoreCssSubtitlePreview = value; },
-get applyAssSubtitlePreview() { return applyAssSubtitlePreview; }, set applyAssSubtitlePreview(value) { applyAssSubtitlePreview = value; }
+get restoreCssSubtitlePreview() { return restoreCssSubtitlePreview; },
+get applyAssSubtitlePreview() { return applyAssSubtitlePreview; }
 });
 yield;
 

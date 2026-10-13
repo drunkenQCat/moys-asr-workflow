@@ -4,9 +4,9 @@ import { legacyBindings as __mawImportedBindings2 } from "../media/editor-wiring
 export let legacyBindings;
 export function* initialize() {
 legacyBindings = Object.freeze({
-get rebuildSubtitleFontFamilyOptions() { return rebuildSubtitleFontFamilyOptions; }, set rebuildSubtitleFontFamilyOptions(value) { rebuildSubtitleFontFamilyOptions = value; },
-get rebuildAssFontNameOptions() { return rebuildAssFontNameOptions; }, set rebuildAssFontNameOptions(value) { rebuildAssFontNameOptions = value; },
-get normalizeAssColorStyleValue() { return normalizeAssColorStyleValue; }, set normalizeAssColorStyleValue(value) { normalizeAssColorStyleValue = value; }
+get rebuildSubtitleFontFamilyOptions() { return rebuildSubtitleFontFamilyOptions; },
+get rebuildAssFontNameOptions() { return rebuildAssFontNameOptions; },
+get normalizeAssColorStyleValue() { return normalizeAssColorStyleValue; }
 });
 yield;
 

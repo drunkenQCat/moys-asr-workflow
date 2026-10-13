@@ -7,15 +7,15 @@ export function* initialize() {
 legacyBindings = Object.freeze({
 get stickerTargetTrack() { return stickerTargetTrack; }, set stickerTargetTrack(value) { stickerTargetTrack = value; },
 get previewTrack() { return previewTrack; }, set previewTrack(value) { previewTrack = value; },
-get stickerSegmentsForTrack() { return stickerSegmentsForTrack; }, set stickerSegmentsForTrack(value) { stickerSegmentsForTrack = value; },
-get colorGroupHeadIndex() { return colorGroupHeadIndex; }, set colorGroupHeadIndex(value) { colorGroupHeadIndex = value; },
-get detachColorFromGroup() { return detachColorFromGroup; }, set detachColorFromGroup(value) { detachColorFromGroup = value; },
-get assignOverlayColor() { return assignOverlayColor; }, set assignOverlayColor(value) { assignOverlayColor = value; },
-get mergeOverlayCues() { return mergeOverlayCues; }, set mergeOverlayCues(value) { mergeOverlayCues = value; },
-get clearOverlayColorOnTargets() { return clearOverlayColorOnTargets; }, set clearOverlayColorOnTargets(value) { clearOverlayColorOnTargets = value; },
-get clearOverlaySticker() { return clearOverlaySticker; }, set clearOverlaySticker(value) { clearOverlaySticker = value; },
-get addOverlayRangeFromWaveform() { return addOverlayRangeFromWaveform; }, set addOverlayRangeFromWaveform(value) { addOverlayRangeFromWaveform = value; },
-get addOverlayAtWaveformTime() { return addOverlayAtWaveformTime; }, set addOverlayAtWaveformTime(value) { addOverlayAtWaveformTime = value; }
+get stickerSegmentsForTrack() { return stickerSegmentsForTrack; },
+get colorGroupHeadIndex() { return colorGroupHeadIndex; },
+get detachColorFromGroup() { return detachColorFromGroup; },
+get assignOverlayColor() { return assignOverlayColor; },
+get mergeOverlayCues() { return mergeOverlayCues; },
+get clearOverlayColorOnTargets() { return clearOverlayColorOnTargets; },
+get clearOverlaySticker() { return clearOverlaySticker; },
+get addOverlayRangeFromWaveform() { return addOverlayRangeFromWaveform; },
+get addOverlayAtWaveformTime() { return addOverlayAtWaveformTime; }
 });
 yield;
 

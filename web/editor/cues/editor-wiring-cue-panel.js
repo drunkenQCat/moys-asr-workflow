@@ -4,12 +4,12 @@ import { legacyBindings as __mawImportedBindings2 } from "../ui/editor-wiring-co
 export let legacyBindings;
 export function* initialize() {
 legacyBindings = Object.freeze({
-get updateSelectionCountText() { return updateSelectionCountText; }, set updateSelectionCountText(value) { updateSelectionCountText = value; },
-get syncOverlaySelectionClasses() { return syncOverlaySelectionClasses; }, set syncOverlaySelectionClasses(value) { syncOverlaySelectionClasses = value; },
-get selectOverlayCueRow() { return selectOverlayCueRow; }, set selectOverlayCueRow(value) { selectOverlayCueRow = value; },
-get selectOverlayRange() { return selectOverlayRange; }, set selectOverlayRange(value) { selectOverlayRange = value; },
-get toggleOverlaySelection() { return toggleOverlaySelection; }, set toggleOverlaySelection(value) { toggleOverlaySelection = value; },
-get buildOverlayCueEl() { return buildOverlayCueEl; }, set buildOverlayCueEl(value) { buildOverlayCueEl = value; }
+get updateSelectionCountText() { return updateSelectionCountText; },
+get syncOverlaySelectionClasses() { return syncOverlaySelectionClasses; },
+get selectOverlayCueRow() { return selectOverlayCueRow; },
+get selectOverlayRange() { return selectOverlayRange; },
+get toggleOverlaySelection() { return toggleOverlaySelection; },
+get buildOverlayCueEl() { return buildOverlayCueEl; }
 });
 yield;
 

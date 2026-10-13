@@ -9,11 +9,11 @@ get ASS_BUILTIN_FONT_SUGGESTIONS() { return ASS_BUILTIN_FONT_SUGGESTIONS; },
 get ASS_STYLE_LIBRARY() { return ASS_STYLE_LIBRARY; }, set ASS_STYLE_LIBRARY(value) { ASS_STYLE_LIBRARY = value; },
 get ASS_STYLE_LIBRARY_READY() { return ASS_STYLE_LIBRARY_READY; }, set ASS_STYLE_LIBRARY_READY(value) { ASS_STYLE_LIBRARY_READY = value; },
 get assStyleLibraryRevision() { return assStyleLibraryRevision; }, set assStyleLibraryRevision(value) { assStyleLibraryRevision = value; },
-get setAssStyleLibrary() { return setAssStyleLibrary; }, set setAssStyleLibrary(value) { setAssStyleLibrary = value; },
-get updateAssStyleLibrarySummary() { return updateAssStyleLibrarySummary; }, set updateAssStyleLibrarySummary(value) { updateAssStyleLibrarySummary = value; },
-get scheduleAssStyleLibrarySave() { return scheduleAssStyleLibrarySave; }, set scheduleAssStyleLibrarySave(value) { scheduleAssStyleLibrarySave = value; },
-get persistAssStyleLibrary() { return persistAssStyleLibrary; }, set persistAssStyleLibrary(value) { persistAssStyleLibrary = value; },
-get loadAssStyleLibrary() { return loadAssStyleLibrary; }, set loadAssStyleLibrary(value) { loadAssStyleLibrary = value; }
+get setAssStyleLibrary() { return setAssStyleLibrary; },
+get updateAssStyleLibrarySummary() { return updateAssStyleLibrarySummary; },
+get scheduleAssStyleLibrarySave() { return scheduleAssStyleLibrarySave; },
+get persistAssStyleLibrary() { return persistAssStyleLibrary; },
+get loadAssStyleLibrary() { return loadAssStyleLibrary; }
 });
 yield;
 

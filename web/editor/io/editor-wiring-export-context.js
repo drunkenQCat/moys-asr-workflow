@@ -3,12 +3,12 @@ import { legacyBindings as __mawImportedBindings1 } from "../boot/editor.js";
 export let legacyBindings;
 export function* initialize() {
 legacyBindings = Object.freeze({
-get mergedExportSegments() { return mergedExportSegments; }, set mergedExportSegments(value) { mergedExportSegments = value; },
-get exportColorContextResolver() { return exportColorContextResolver; }, set exportColorContextResolver(value) { exportColorContextResolver = value; },
+get mergedExportSegments() { return mergedExportSegments; },
+get exportColorContextResolver() { return exportColorContextResolver; },
 get CANONICAL_PROJECT_FIELDS() { return CANONICAL_PROJECT_FIELDS; },
 get projectExtensionFields() { return projectExtensionFields; }, set projectExtensionFields(value) { projectExtensionFields = value; },
-get buildOverlaySubtitleOtioTrack() { return buildOverlaySubtitleOtioTrack; }, set buildOverlaySubtitleOtioTrack(value) { buildOverlaySubtitleOtioTrack = value; },
-get syncProjectBackupControls() { return syncProjectBackupControls; }, set syncProjectBackupControls(value) { syncProjectBackupControls = value; }
+get buildOverlaySubtitleOtioTrack() { return buildOverlaySubtitleOtioTrack; },
+get syncProjectBackupControls() { return syncProjectBackupControls; }
 });
 yield;
 

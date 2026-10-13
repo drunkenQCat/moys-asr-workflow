@@ -1,0 +1,110 @@
+web/editor/boot/editor-runtime.js(13,20): error TS2339: Property 'version' does not exist on type '{ register(name: string, factory: (...args: any[]) => unknown): void; resolve(name: string, ...args: any[]): any; }'.
+web/editor/cues/editor-cue-list-anchor.js(62,12): error TS2339: Property 'neighbors' does not exist on type '{ top: number; scrollTop: any; kind: string; segmentId: any; trackId: any; start: number; }'.
+web/editor/cues/editor-cue-panel.js(17,76): error TS2339: Property 'cueListAnchor' does not exist on type '{ preserveCueListScroll?: boolean; waveform?: string; }'.
+web/editor/cues/editor-cue-panel.js(587,76): error TS2448: Block-scoped variable 'cursorOffset' used before its declaration.
+web/editor/cues/editor-cue-panel.js(593,63): error TS2448: Block-scoped variable 'cursorOffset' used before its declaration.
+web/editor/cues/editor-selection.js(76,17): error TS2339: Property 'segments' does not exist on type 'string'.
+web/editor/cues/editor-split-core.js(1405,84): error TS2353: Object literal may only specify known properties, and 'headIndex' does not exist in type '{ duplicateText?: boolean; forceCut?: boolean; preserveCutMs?: boolean; splitTextMode?: any; }'.
+web/editor/cues/editor-split-core.js(1430,7): error TS2353: Object literal may only specify known properties, and 'index' does not exist in type '{ feedbackPoint?: any; listFeedback?: boolean; track?: string; }'.
+web/editor/cues/editor-split-core.js(1501,48): error TS2353: Object literal may only specify known properties, and 'headIndex' does not exist in type '{ duplicateText?: boolean; forceCut?: boolean; preserveCutMs?: boolean; splitTextMode?: any; }'.
+web/editor/cues/editor-split-core.js(1533,7): error TS2353: Object literal may only specify known properties, and 'index' does not exist in type '{ feedbackPoint?: any; listFeedback?: boolean; track?: string; }'.
+web/editor/cues/editor-split-core.js(1630,96): error TS2353: Object literal may only specify known properties, and 'headIndex' does not exist in type '{ duplicateText?: boolean; forceCut?: boolean; preserveCutMs?: boolean; splitTextMode?: any; }'.
+web/editor/cues/editor-split-core.js(1639,60): error TS2353: Object literal may only specify known properties, and 'headIndex' does not exist in type '{ duplicateText?: boolean; forceCut?: boolean; preserveCutMs?: boolean; splitTextMode?: any; }'.
+web/editor/cues/editor-split-core.js(1676,7): error TS2353: Object literal may only specify known properties, and 'index' does not exist in type '{ feedbackPoint?: any; listFeedback?: boolean; track?: string; }'.
+web/editor/cues/editor-split-core.js(1683,7): error TS2353: Object literal may only specify known properties, and 'index' does not exist in type '{ feedbackPoint?: any; listFeedback?: boolean; track?: string; }'.
+web/editor/cues/editor-split-core.js(1888,9): error TS2353: Object literal may only specify known properties, and 'index' does not exist in type '{ feedbackPoint?: any; listFeedback?: boolean; track?: string; }'.
+web/editor/cues/editor-split-core.js(1937,33): error TS2339: Property 'index' does not exist on type '{ feedbackPoint?: null; listFeedback?: boolean; track?: string; }'.
+web/editor/cues/editor-split-core.js(1937,56): error TS2339: Property 'splitMs' does not exist on type '{ feedbackPoint?: null; listFeedback?: boolean; track?: string; }'.
+web/editor/cues/editor-split-core.js(430,91): error TS2339: Property 'headIndex' does not exist on type '{ duplicateText?: boolean; forceCut?: boolean; preserveCutMs?: boolean; splitTextMode?: null; }'.
+web/editor/cues/editor-sticker-picker.js(203,59): error TS2353: Object literal may only specify known properties, and 'name' does not exist in type '{ headIdx?: number; ref?: string; }'.
+web/editor/cues/editor-sticker-picker.js(226,25): error TS2339: Property 'name' does not exist on type '{ headIdx?: number; }'.
+web/editor/cues/editor-sticker-picker.js(229,9): error TS2322: Type '{ name: any; value: any; start: number; end: number; }' is not assignable to type 'string'.
+web/editor/cues/editor-sticker-picker.js(242,9): error TS2322: Type '{ name: any; value: any; start: number; end: number; }' is not assignable to type 'string'.
+web/editor/cues/editor-sticker-picker.js(246,59): error TS2353: Object literal may only specify known properties, and 'name' does not exist in type '{ headIdx?: number; }'.
+web/editor/cues/editor-sticker-picker.js(289,15): error TS2339: Property 'segments' does not exist on type 'string'.
+web/editor/cues/editor-text-cleanup.js(16,9): error TS2367: This comparison appears to be unintentional because the types 'Record<string, any>' and 'boolean' have no overlap.
+web/editor/cues/editor-text-process.js(84,11): error TS2353: Object literal may only specify known properties, and 'trackId' does not exist in type '{ kind: string; index: any; }'.
+web/editor/cues/editor-timed-text-edit.js(779,27): error TS2339: Property 'length' does not exist on type 'Set<any>'.
+web/editor/cues/editor-wiring-overlay-actions.js(107,5): error TS2698: Spread types may only be created from object types.
+web/editor/io/editor-export-timeline.js(37,39): error TS2698: Spread types may only be created from object types.
+web/editor/io/editor-export-timeline.js(42,36): error TS2339: Property 'name' does not exist on type 'string'.
+web/editor/io/editor-export-timeline.js(42,59): error TS2339: Property 'name' does not exist on type '{ headIdx?: number; }'.
+web/editor/io/editor-export-timeline.js(562,36): error TS2339: Property 'start' does not exist on type 'string'.
+web/editor/io/editor-export-timeline.js(562,64): error TS2339: Property 'start' does not exist on type 'string'.
+web/editor/io/editor-export-timeline.js(563,34): error TS2339: Property 'end' does not exist on type 'string'.
+web/editor/io/editor-export-timeline.js(563,60): error TS2339: Property 'end' does not exist on type 'string'.
+web/editor/io/editor-export-timeline.js(578,28): error TS2339: Property 'rel' does not exist on type 'string'.
+web/editor/io/editor-project-load.js(117,21): error TS2339: Property 'markersDirty' does not exist on type '{ projectImportDirty: boolean; gapRemoveDirty: boolean; previewGeometryDirty: boolean; }'.
+web/editor/io/editor-project-load.js(388,23): error TS2339: Property 'markersDirty' does not exist on type '{ projectImportDirty: boolean; gapRemoveDirty: boolean; previewGeometryDirty: boolean; }'.
+web/editor/io/editor-project-save.js(118,96): error TS2353: Object literal may only specify known properties, and 'contentFingerprint' does not exist in type '{ fingerprint?: any; silent?: boolean; }'.
+web/editor/io/editor-project-save.js(152,86): error TS2353: Object literal may only specify known properties, and 'contentFingerprint' does not exist in type '{ fingerprint?: any; silent?: boolean; }'.
+web/editor/io/editor-project-save.js(201,58): error TS2353: Object literal may only specify known properties, and 'contentFingerprint' does not exist in type '{ fingerprint?: any; silent?: boolean; }'.
+web/editor/io/editor-project-save.js(68,87): error TS2339: Property 'contentFingerprint' does not exist on type '{ fingerprint?: null; silent?: boolean; }'.
+web/editor/io/editor-server-save.js(414,15): error TS2339: Property 'missing' does not exist on type 'Error'.
+web/editor/io/editor-wiring-export-actions.js(274,33): error TS2339: Property 'buildBilingualSrt' does not exist on type 'MaweExportSrtApi'.
+web/editor/io/editor-wiring-export-actions.js(488,51): error TS2365: Operator '>=' cannot be applied to types 'unknown' and 'number'.
+web/editor/io/editor-wiring-export-context.js(266,27): error TS2345: Argument of type 'string | number | boolean' is not assignable to parameter of type 'string'.
+web/editor/io/editor-wiring-export-context.js(267,34): error TS2345: Argument of type 'string | number | true' is not assignable to parameter of type 'number'.
+web/editor/io/editor-wiring-export-context.js(267,62): error TS2345: Argument of type 'string | number | boolean' is not assignable to parameter of type 'number'.
+web/editor/io/editor-wiring-export-context.js(268,41): error TS2464: A computed property name must be of type 'string', 'number', 'symbol', or 'any'.
+web/editor/markers/editor-marker-editing.js(61,23): error TS2339: Property 'markersDirty' does not exist on type '{ projectImportDirty: boolean; gapRemoveDirty: boolean; previewGeometryDirty: boolean; }'.
+web/editor/media/editor-media-load.js(186,40): error TS2810: Expected 1 argument, but got 0. 'new Promise()' needs a JSDoc hint to produce a 'resolve' that can be called without arguments.
+web/editor/media/editor-wiring-waveform-hints.js(20,34): error TS2339: Property 'detail' does not exist on type 'Event'.
+web/editor/media/waveform.js(169,39): error TS2339: Property 'updatePlayback' does not exist on type 'WaveformEditor'.
+web/editor/media/waveform.js(170,35): error TS2339: Property 'scheduleRender' does not exist on type 'WaveformEditor'.
+web/editor/media/waveform.js(171,12): error TS2339: Property 'bindControls' does not exist on type 'WaveformEditor'.
+web/editor/media/waveform.js(172,12): error TS2339: Property 'bindDockHandles' does not exist on type 'WaveformEditor'.
+web/editor/media/waveform.js(173,12): error TS2339: Property 'applyLayout' does not exist on type 'WaveformEditor'.
+web/editor/media/waveform.js(225,49): error TS2339: Property 'activeWaveShape' does not exist on type 'WaveformEditor'.
+web/editor/media/waveform.js(251,50): error TS2551: Property 'setLoudnessStats' does not exist on type 'WaveformEditor'. Did you mean 'loudnessStats'?
+web/editor/media/waveform.js(252,60): error TS2339: Property 'fitWaveformScaleToLoudness' does not exist on type 'WaveformEditor'.
+web/editor/media/waveform.js(253,58): error TS2551: Property 'renderWaveformScaleLabel' does not exist on type 'WaveformEditor'. Did you mean 'waveformScaleLabel'?
+web/editor/media/waveform.js(254,46): error TS2339: Property 'setRowHeight' does not exist on type 'WaveformEditor'.
+web/editor/media/waveform.js(255,50): error TS2339: Property 'setSecondsPerRow' does not exist on type 'WaveformEditor'.
+web/editor/state/editor-core-state.js(13,3): error TS2740: Type 'HTMLElement' is missing the following properties from type 'HTMLMediaElement': autoplay, buffered, controls, crossOrigin, and 45 more.
+web/editor/state/editor-project-settings.js(19,51): error TS2339: Property 'speaker_labels' does not exist on type 'unknown'.
+web/editor/state/editor-project-settings.js(23,28): error TS2339: Property 'speaker_labels' does not exist on type 'unknown'.
+web/editor/state/editor-project-settings.js(24,85): error TS2339: Property 'speaker_labels' does not exist on type 'unknown'.
+web/editor/styles/editor-appearance.js(467,69): error TS2322: Type '"local-fonts"' is not assignable to type 'PermissionName'.
+web/editor/styles/editor-speaker-labels.js(55,77): error TS2339: Property 'speaker_labels' does not exist on type 'unknown'.
+web/editor/styles/editor-wiring-ass-canvas.js(330,19): error TS2345: Argument of type 'CanvasRenderingContext2D | HTMLCanvasElement' is not assignable to parameter of type 'CanvasImageSource'.
+web/editor/styles/editor-wiring-ass-canvas.js(369,19): error TS2345: Argument of type 'CanvasRenderingContext2D | HTMLCanvasElement' is not assignable to parameter of type 'CanvasImageSource'.
+web/editor/ui/editor-display-settings.js(114,47): error TS2554: Expected 0-1 arguments, but got 3.
+web/editor/ui/editor-export-menus.js(212,16): error TS2339: Property 'relatedTarget' does not exist on type 'Event'.
+web/editor/ui/editor-export-menus.js(212,53): error TS2339: Property 'relatedTarget' does not exist on type 'Event'.
+web/editor/ui/editor-export-menus.js(225,28): error TS2740: Type 'EventTarget' is missing the following properties from type 'Node': baseURI, childNodes, firstChild, isConnected, and 43 more.
+web/editor/ui/editor-export-menus.js(277,24): error TS2740: Type 'EventTarget' is missing the following properties from type 'Node': baseURI, childNodes, firstChild, isConnected, and 43 more.
+web/editor/ui/editor-floating-panel.js(243,59): error TS2741: Property 'onOpen' is missing in type '{ panel: any; dragHandle: any; manageButton: any; anchorButton: any; positionKey: any; }' but required in type '{ anchorButton: any; dragHandle: any; manageButton: any; onOpen: any; panel: any; positionKey: any; }'.
+web/editor/ui/editor-wiring-settings-help.js(202,37): error TS2740: Type 'Element' is missing the following properties from type 'HTMLButtonElement': command, commandForElement, disabled, form, and 152 more.
+web/shared/editor-i18n.js(10,37): error TS2304: Cannot find name '__UI_LANGUAGE_JSON__'.
+web/shared/editor-i18n.js(10,83): error TS2304: Cannot find name '__UI_LANGUAGE_JSON__'.
+web/shared/editor-i18n.js(1042,28): error TS1117: An object literal cannot have multiple properties with the same name.
+web/shared/editor-i18n.js(1042,5): error TS1117: An object literal cannot have multiple properties with the same name.
+web/shared/editor-i18n.js(1056,5): error TS1117: An object literal cannot have multiple properties with the same name.
+web/shared/editor-i18n.js(1081,5): error TS1117: An object literal cannot have multiple properties with the same name.
+web/shared/editor-i18n.js(1133,23): error TS1117: An object literal cannot have multiple properties with the same name.
+web/shared/editor-i18n.js(1133,36): error TS1117: An object literal cannot have multiple properties with the same name.
+web/shared/editor-i18n.js(1304,5): error TS1117: An object literal cannot have multiple properties with the same name.
+web/shared/editor-i18n.js(185,5): error TS1117: An object literal cannot have multiple properties with the same name.
+web/shared/editor-i18n.js(213,5): error TS1117: An object literal cannot have multiple properties with the same name.
+web/shared/editor-i18n.js(214,5): error TS1117: An object literal cannot have multiple properties with the same name.
+web/shared/editor-i18n.js(266,5): error TS1117: An object literal cannot have multiple properties with the same name.
+web/shared/editor-i18n.js(313,28): error TS1117: An object literal cannot have multiple properties with the same name.
+web/shared/editor-i18n.js(320,5): error TS1117: An object literal cannot have multiple properties with the same name.
+web/shared/editor-i18n.js(377,5): error TS1117: An object literal cannot have multiple properties with the same name.
+web/shared/editor-i18n.js(550,5): error TS1117: An object literal cannot have multiple properties with the same name.
+web/shared/editor-i18n.js(572,45): error TS1117: An object literal cannot have multiple properties with the same name.
+web/shared/editor-i18n.js(613,6): error TS1117: An object literal cannot have multiple properties with the same name.
+web/shared/editor-i18n.js(662,80): error TS1117: An object literal cannot have multiple properties with the same name.
+web/shared/editor-i18n.js(663,5): error TS1117: An object literal cannot have multiple properties with the same name.
+web/shared/editor-i18n.js(739,5): error TS1117: An object literal cannot have multiple properties with the same name.
+web/shared/editor-i18n.js(853,5): error TS1117: An object literal cannot have multiple properties with the same name.
+web/shared/editor-i18n.js(872,5): error TS1117: An object literal cannot have multiple properties with the same name.
+web/shared/editor-i18n.js(915,5): error TS1117: An object literal cannot have multiple properties with the same name.
+web/shared/editor-i18n.js(915,86): error TS1117: An object literal cannot have multiple properties with the same name.
+web/shared/editor-i18n.js(934,43): error TS1117: An object literal cannot have multiple properties with the same name.
+web/shared/editor-i18n.js(941,120): error TS1117: An object literal cannot have multiple properties with the same name.
+web/shared/editor-i18n.js(943,51): error TS1117: An object literal cannot have multiple properties with the same name.
+web/shared/editor-i18n.js(952,5): error TS1117: An object literal cannot have multiple properties with the same name.
+web/shared/editor-utils.js(482,5): error TS1117: An object literal cannot have multiple properties with the same name.
+web/shared/tooltip.js(151,7): error TS2741: Property 'ok' is missing in type '{ key: string; room: any; }' but required in type '{ key: string; ok: boolean; }'.

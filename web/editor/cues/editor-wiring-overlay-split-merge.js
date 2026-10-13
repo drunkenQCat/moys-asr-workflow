@@ -3,16 +3,16 @@ import { legacyBindings as __mawImportedBindings1 } from "./editor-wiring-overla
 export let legacyBindings;
 export function* initialize() {
 legacyBindings = Object.freeze({
-get fallbackSplitOffset() { return fallbackSplitOffset; }, set fallbackSplitOffset(value) { fallbackSplitOffset = value; },
-get splitOffsetNearTimeForModal() { return splitOffsetNearTimeForModal; }, set splitOffsetNearTimeForModal(value) { splitOffsetNearTimeForModal = value; },
-get splitOffsetNearTextPositionForModal() { return splitOffsetNearTextPositionForModal; }, set splitOffsetNearTextPositionForModal(value) { splitOffsetNearTextPositionForModal = value; },
-get flashSplitAlignmentHint() { return flashSplitAlignmentHint; }, set flashSplitAlignmentHint(value) { flashSplitAlignmentHint = value; },
-get assessSplitAlignment() { return assessSplitAlignment; }, set assessSplitAlignment(value) { assessSplitAlignment = value; },
-get splitStateTrack() { return splitStateTrack; }, set splitStateTrack(value) { splitStateTrack = value; },
-get duplicateSplitTimingIsValid() { return duplicateSplitTimingIsValid; }, set duplicateSplitTimingIsValid(value) { duplicateSplitTimingIsValid = value; },
-get openOverlaySplitModal() { return openOverlaySplitModal; }, set openOverlaySplitModal(value) { openOverlaySplitModal = value; },
-get commitOverlaySplit() { return commitOverlaySplit; }, set commitOverlaySplit(value) { commitOverlaySplit = value; },
-get mergeOverlaySegments() { return mergeOverlaySegments; }, set mergeOverlaySegments(value) { mergeOverlaySegments = value; }
+get fallbackSplitOffset() { return fallbackSplitOffset; },
+get splitOffsetNearTimeForModal() { return splitOffsetNearTimeForModal; },
+get splitOffsetNearTextPositionForModal() { return splitOffsetNearTextPositionForModal; },
+get flashSplitAlignmentHint() { return flashSplitAlignmentHint; },
+get assessSplitAlignment() { return assessSplitAlignment; },
+get splitStateTrack() { return splitStateTrack; },
+get duplicateSplitTimingIsValid() { return duplicateSplitTimingIsValid; },
+get openOverlaySplitModal() { return openOverlaySplitModal; },
+get commitOverlaySplit() { return commitOverlaySplit; },
+get mergeOverlaySegments() { return mergeOverlaySegments; }
 });
 yield;
 

@@ -4,7 +4,7 @@ import { legacyBindings as __mawImportedBindings2 } from "../cues/editor-wiring-
 export let legacyBindings;
 export function* initialize() {
 legacyBindings = Object.freeze({
-get showOverlayContextMenu() { return showOverlayContextMenu; }, set showOverlayContextMenu(value) { showOverlayContextMenu = value; }
+get showOverlayContextMenu() { return showOverlayContextMenu; }
 });
 yield;
 

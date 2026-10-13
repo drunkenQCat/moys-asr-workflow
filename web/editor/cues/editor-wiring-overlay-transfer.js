@@ -3,15 +3,15 @@ import { legacyBindings as __mawImportedBindings1 } from "./editor-wiring-cue-pa
 export let legacyBindings;
 export function* initialize() {
 legacyBindings = Object.freeze({
-get getOverlayTrack() { return getOverlayTrack; }, set getOverlayTrack(value) { getOverlayTrack = value; },
-get overlayTrackVisible() { return overlayTrackVisible; }, set overlayTrackVisible(value) { overlayTrackVisible = value; },
-get detachCuePanelFromTrackEdits() { return detachCuePanelFromTrackEdits; }, set detachCuePanelFromTrackEdits(value) { detachCuePanelFromTrackEdits = value; },
-get convertMainCuesToOverlay() { return convertMainCuesToOverlay; }, set convertMainCuesToOverlay(value) { convertMainCuesToOverlay = value; },
-get convertMainCueToOverlayForDrag() { return convertMainCueToOverlayForDrag; }, set convertMainCueToOverlayForDrag(value) { convertMainCueToOverlayForDrag = value; },
-get convertOverlayCueToMainForDrag() { return convertOverlayCueToMainForDrag; }, set convertOverlayCueToMainForDrag(value) { convertOverlayCueToMainForDrag = value; },
-get convertOverlayCueToMain() { return convertOverlayCueToMain; }, set convertOverlayCueToMain(value) { convertOverlayCueToMain = value; },
-get deleteOverlayCues() { return deleteOverlayCues; }, set deleteOverlayCues(value) { deleteOverlayCues = value; },
-get activeExtensionSegments() { return activeExtensionSegments; }, set activeExtensionSegments(value) { activeExtensionSegments = value; }
+get getOverlayTrack() { return getOverlayTrack; },
+get overlayTrackVisible() { return overlayTrackVisible; },
+get detachCuePanelFromTrackEdits() { return detachCuePanelFromTrackEdits; },
+get convertMainCuesToOverlay() { return convertMainCuesToOverlay; },
+get convertMainCueToOverlayForDrag() { return convertMainCueToOverlayForDrag; },
+get convertOverlayCueToMainForDrag() { return convertOverlayCueToMainForDrag; },
+get convertOverlayCueToMain() { return convertOverlayCueToMain; },
+get deleteOverlayCues() { return deleteOverlayCues; },
+get activeExtensionSegments() { return activeExtensionSegments; }
 });
 yield;
 
