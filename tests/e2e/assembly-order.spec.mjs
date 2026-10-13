@@ -153,7 +153,8 @@ async function buildShuffledCopy(sandbox, shuffle, shuffleBootstrap = null, muta
   cpSync(join(repoRoot, 'tests'), join(sandbox, 'tests'), { recursive: true });
   cpSync(join(repoRoot, 'web/editor-modules.json'), join(sandbox, 'web/editor-modules.json'));
   // 清单退役：文件集由目录推导，次序由 bootstrap 决定；沙盒 PR1 树
-  // 里的清单文件不再被构建读取，无需打乱。
+  // 里的清单文件只被研究用 full-convert 读取（转换枚举），构建不再
+  // 读取它，无需打乱。
   void shuffle;
   if (mutateTree) mutateTree(sandbox);
   if (shuffleBootstrap) {
@@ -189,6 +190,9 @@ async function buildShuffledCopy(sandbox, shuffle, shuffleBootstrap = null, muta
     registry: window.MAWE?.list?.().length ?? 0,
     waveform: Boolean(window.MaweCoreState?.waveformEditor),
     utilsFacade: typeof window.AsrEditorUtils === 'object',
+    canaryRan: window.__mawO5bCanaryRan === true,
+    traceHasCanary: (window.__mawEsmInitializationTrace ?? [])
+      .includes('editor/boot/zz-derived-canary.js'),
   }));
 }
 
@@ -206,25 +210,22 @@ test('O5a order red light: bootstrap file after consumers breaks boot', async ()
   } finally { rmSync(sandbox, { recursive: true, force: true }); }
 });
 
-test('O5b set independence: stray file joins the derived set and boot keeps working', async () => {
+test('O5b set independence: new module joins the derived set and really executes', async () => {
   test.setTimeout(300_000);
-  // 文件集由目录推导（非清单驱动）：在仓库 web/editor 新增一个
-  // 无副作用源文件，重建 bundle，页面正常启动（多一个 trace 条目）；
-  // 清理后恢复。E5 已断言推导集合的确定性与新增成员资格。
-  const stray = join(repoRoot, 'web/editor/boot/zz-derived-canary.js');
-  const exec = (args) => execFileSync(process.execPath,
-    [join(repoRoot, 'scripts/build-editor.mjs'), ...args], { cwd: repoRoot, stdio: 'pipe' });
-  writeFileSync(stray, '// derived-set canary\n');
-  try {
-    exec(['--write']);
-    await page.goto(server.url);
-    await page.waitForFunction(() => Boolean(window.MAWE_EDITOR_BRIDGE && window.MaweCoreState?.waveformEditor));
-    const trace = await page.evaluate(() => window.__mawEsmInitializationTrace);
-    expect(trace.length).toBe(189);
-    expect(trace).toContain('editor/boot/zz-derived-canary.js');
-  } finally {
-    rmSync(stray, { force: true });
-    exec(['--write']);
-  }
+  // 文件集由目录推导（非清单驱动）：向沙盒副本 web/editor/boot 新增
+  // 一个带真实副作用的 classic 模块，全量转换后重建 bundle，页面启动
+  // 且副作用真实发生、trace 含该文件。不在共享工作树写文件/重建产物；
+  // 形态门（E5）保证四不像文件构建失败，本测试证明「有形态的文件
+  // 必然被执行」——金丝雀自带 initialize（预转换形态），不进任何
+  // 清单，纯靠目录发现加入装配。
+  const sandbox = join(dir, 'derived-canary');
+  const state = await buildShuffledCopy(sandbox, null, null, (tree) => {
+    writeFileSync(join(tree, 'web/editor/boot/zz-derived-canary.js'),
+      'export function* initialize() {\n  yield;\n  window.__mawO5bCanaryRan = true;\n}\n');
+  });
+  expect(state.bridge).toBe(true);
+  expect(state.traceLength).toBe(189);
+  expect(state.traceHasCanary, 'canary must appear in the startup trace').toBe(true);
+  expect(state.canaryRan, 'canary side effect must really run').toBe(true);
+  rmSync(sandbox, { recursive: true, force: true });
 });
-

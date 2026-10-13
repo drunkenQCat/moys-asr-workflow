@@ -188,3 +188,51 @@ editor-scripts.txt 已删除（移入回收站）。文件集与次序的
   另开一批，本 PR 未动。
 - modules 登记表仍是显式人工列表（批 3 结论：注册名↔文件
   配对无可靠推导信号），由构建期校验兜底。
+
+## 评审回执（10-14，第二轮意见全部采纳）
+
+评审定位修正接受：本 PR = **清单文件退役、旧顺序集中承接**，
+不是「脱离手工维护顺序」完成态。bootstrap 127 项与 PR2 旧清单
+逐项等价（仅 runtime 规范化），手工顺序只是从 txt 搬进登记表
+JSON——这是刻意的过渡步（静态重排三连败后保全序语义，见批 2b），
+真正的「脱离手工表」需要后续逐组把源码依赖显式化、逐组缩短
+bootstrap，本 PR 不宣称完成。
+
+### 评审点 2：目录发现静默漏装 —— 已修（形态门）
+
+- 构建期 `validateShapes`：文件集中每个文件必须是登记工厂或
+  `export function* initialize` 转换体，四不像文件**构建失败**
+  （报错给出三条出路：登记 / 转换 / 移出 web/editor|shared）。
+- `compileEsmEntry` 的 classicPredicate 影子路径（不 import、
+  只进 trace 的「纯成员」分支）整体移除——非工厂文件无条件
+  import + 驱动，漏装不再可能伪装成已装配。
+- E5 新增反例断言：注释金丝雀加入推导集合的同时 `buildEditor`
+  必须拒绝；O5b 重写为**沙盒副本 + 真实执行**：金丝雀自带
+  initialize（预转换形态，不进任何清单），转换构建后页面启动
+  且副作用真实发生、trace 含它——不再在共享工作树写文件/重建
+  产物（评审可安全复跑）。
+
+### 评审点 3：残留 —— 已清
+
+- AGENTS.md / docs/engineering/DEVELOPMENT.md：清单指引改为
+  目录推导 + bootstrap 显式序 + 登记表口径。
+- scripts/migrate-editor-factories.mjs：readSources（已删）→
+  deriveSources 别名导入，工具恢复可加载。
+- e2e spec EOF 多余空行：已修，`git diff --check` 干净。
+- 契约沙盒配方修正（账本记录，便于复跑）：full 根 = PR1 档案
+  + **当前** editor-modules.json / maw/web_build.py /
+  scripts/build-editor.mjs + sandbox 标记 → full-convert →
+  full-build；baseline 根用其自带 PR1 构建器出 bundle。
+  旧配方在批 4 后会因 PR1 版 web_build 按清单比对新鲜度而误报。
+
+### 验证
+
+| 层 | 结果 |
+| --- | --- |
+| node 全量 | 607/607 |
+| 装配契约 E1-E10 | 9/9（含新形态门反例） |
+| e2e assembly-order | 6/6（O5b 沙盒化 + 真实执行断言） |
+| python 全量 | 2134 通过（skip 21） |
+| typecheck | 110 基线 / 新增 0 |
+| check:editor / check:launcher | 双新鲜（launcher builderHash 覆盖共享构建器，重建后一致） |
+| git diff --check | 干净 |

@@ -5,7 +5,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import * as acorn from 'acorn';
 import * as eslintScope from 'eslint-scope';
 import { convertFactory, inspectSource } from './esm-mechanical/research.mjs';
-import { readSources } from './build-editor.mjs';
+// 清单退役（PR3 批4）后文件集合一来自目录推导的 deriveSources。
+import { deriveSources as readSources } from './build-editor.mjs';
 
 const ROOT = fileURLToPath(new URL('../',import.meta.url));
 const walkFiles = dir => fs.existsSync(dir) ? fs.readdirSync(dir,{withFileTypes:true}).flatMap(entry =>

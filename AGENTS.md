@@ -32,8 +32,8 @@ maw_gui.py + maw/cli.py        # 公开 CLI 与命令分派（指南见 docs/use
 generate_subtitle_qwen_api.py # API 转写入口
 edit.py + maw/waveform.py     # 单文件编辑器生成和波形缓存
 server-editor/serve.py        # 推荐的 localhost 编辑器
-web/editor-scripts.txt        # 编辑器源码装配顺序
-web/editor/ + web/shared/     # 编辑器领域模块与共享能力
+web/editor-modules.json      # 编辑器登记表：工厂/桥/bootstrap 显式序
+web/editor/ + web/shared/     # 编辑器领域模块与共享能力（文件集目录推导）
 web/launcher/                # Launcher 前端
 docs/user/LOCAL_ASR.md             # 实验性本地 Qwen3-ASR / FunASR CLI
 ```
@@ -69,9 +69,7 @@ git diff --check
 ```
 
 `web/editor/boot/editor.js` 是加载守卫入口；连续接线位于各领域的
-`editor-wiring-*.js` 中，构建器按 `web/editor-scripts.txt` 原序执行接线与工厂注册。
-`web/editor-modules.json` 明确列出 ESM 工厂与仍需保留的外部桥。工厂只导出函数，不在模块求值时注册；依赖袋继续由门面注入。
-新增业务逻辑写入所属领域模块，避免再扩大入口。目录位置不决定执行顺序。
+`editor-wiring-*.js` 中。`editor-scripts.txt` 清单已退役：源文件集合由构建器从 `web/editor` + `web/shared` 目录推导（四不像文件构建失败），执行次序由 `web/editor-modules.json` 的 bootstrap 显式序承接（classic 转换体两阶段驱动）。登记表同时列出 ESM 工厂与外部桥：工厂只导出函数、注册名必须有 `MAWE.resolve` 消费来源，依赖袋继续由门面注入。新增业务逻辑写入所属领域模块，避免再扩大入口。目录位置不决定执行顺序。
 
 ### Agent 命令执行：避免 uv 超时卡住
 

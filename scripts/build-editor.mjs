@@ -133,21 +133,22 @@ function bridgeOwnersOf(bridges) {
   return [...new Set(bridges.map(b => b.file))].map((file, i) => [file, i]);
 }
 
-export function compileEsmEntry(files, modules, bridges, bootstrap = [],
-    classicPredicate = null) {
+export function compileEsmEntry(files, modules, bridges, bootstrap = []) {
   const factoryByFile = new Map(modules.map(item => [item.file, item]));
   const owners = bridgeOwnersOf(bridges);
   const imports = [], classicFiles = [], classicIndex = new Map();
   files.forEach((file, i) => {
     const factory = factoryByFile.get(file);
     if (factory) imports.push(`import { ${factory.exportName} as factory${i} } from ${JSON.stringify('./' + file)};`);
-    else if (!classicPredicate || classicPredicate(file)) {
+    else {
+      // 目录推导的文件集里不允许「四不像」文件：validateShapes 已在
+      // 构建期拒绝既非登记工厂也无 initialize 的源码，因此这里对
+      // 非工厂文件无条件 import + 驱动，不存在只进 trace 不进
+      // bundle 的静默漏装路径。
       imports.push(`import { initialize as init${classicFiles.length} } from ${JSON.stringify('./' + file)};`);
       classicIndex.set(file, classicFiles.length);
       classicFiles.push(file);
     }
-    // 既非工厂也非转换体（纯注释/常量文件）：不产生语句，
-    // 仅作为 bundle 成员被打包与追踪。
   });
   imports.push(...owners.map(([file, i]) =>
     `import { legacyBindings as externalBindings${i} } from ${JSON.stringify('./' + file)};`));
@@ -185,10 +186,6 @@ export function compileEsmEntry(files, modules, bridges, bootstrap = [],
   for (const file of files) {
     if (factoryByFile.has(file)) continue; // 工厂无 phase-2；trace 在注册段
     if (bootstrapIndex.has(file)) continue; // 已在显式序列执行
-    if (classicPredicate && !classicPredicate(file)) {
-      calls.push(`window.__mawEsmInitializationTrace.push(${JSON.stringify(file)});`);
-      continue; // 纯成员文件：无初始化语句，仅追踪
-    }
     calls.push(`initializationSteps[${classicIndex.get(file)}].next();`);
     calls.push(`window.__mawEsmInitializationTrace.push(${JSON.stringify(file)});`);
   }
@@ -199,9 +196,7 @@ export async function compileEsmSources(root, files, modules, bridges, read, opt
   validateSources(files);
   const sources = new Map(files.map(file => [file, read(file)]));
   const bootstrap = options.bootstrap ?? [];
-  const classicPredicate = options.classicPredicate
-    ?? (options.classicFiles ? (file) => options.classicFiles.includes(file) : null);
-  const entry = compileEsmEntry(files, modules, bridges ?? [], bootstrap, classicPredicate);
+  const entry = compileEsmEntry(files, modules, bridges ?? [], bootstrap);
   const result = await esbuild.build({absWorkingDir:path.resolve(root),
     stdin:{contents:entry,resolveDir:path.resolve(root,'web'),sourcefile:'editor-entry.mjs',loader:'js'},
     plugins:[{name:'maw-esm-sources',setup(build) {
@@ -251,6 +246,20 @@ function validateRegistry(files, modules, bridges, read) {
   }
 }
 
+// 目录推导文件集的形态门：每个源文件必须是两种装配形态之一——
+// 登记工厂（editor-modules.json）或 classic 转换体（export function*
+// initialize）。否则构建失败：以前这类文件会被静默跳过 import，
+// 只进 sourceFiles 与 trace，看起来「已装配」实际代码不在 bundle 里。
+function validateShapes(files, modules, read) {
+  const factoryFiles = new Set(modules.map(item => item.file));
+  for (const file of files) {
+    if (factoryFiles.has(file)) continue;
+    if (/export function\*\s+initialize\s*\(/.test(read(file))) continue;
+    throw new Error(`Source file is neither a registered factory nor a classic converter (export function* initialize): ${file}`
+      + ' — register it in editor-modules.json, convert it, or move it out of web/editor|shared');
+  }
+}
+
 export async function buildEditor(root = ROOT, options = {}) {
   const files = deriveSources(root), modules = readModules(root);
   const modulesPath = path.join(root,'web/editor-modules.json');
@@ -258,6 +267,7 @@ export async function buildEditor(root = ROOT, options = {}) {
   const config = JSON.parse(configText), inputHashes = {};
   const registryRead = file => fs.readFileSync(path.join(root,'web',file),'utf8');
   validateRegistry(files, modules, config.externalBridges, registryRead);
+  validateShapes(files, modules, registryRead);
   const bootstrap = options.bootstrap ?? config.bootstrap ?? [];
   const REGISTRY_CREATOR = 'editor/boot/editor-runtime.js';
   const initializationOrder = [
@@ -266,14 +276,11 @@ export async function buildEditor(root = ROOT, options = {}) {
     ...bootstrap.filter(file => file !== REGISTRY_CREATOR && !modules.some(item => item.file === file)),
     ...files.filter(file => !bootstrap.includes(file) && !modules.some(item => item.file === file)),
   ];
-  const classicFiles = [];
   const result = await compileEsmSources(root,files,modules,config.externalBridges,file => {
     const original = fs.readFileSync(path.join(root,'web',file),'utf8');
     const source = options.transform ? options.transform(file,original) : original;
-    if (!modules.some(item => item.file === file)
-        && /export function\*\s+initialize\s*\(/.test(source)) classicFiles.push(file);
     inputHashes[file] = sha(source); return source;
-  },{trace:true,bootstrap,classicFiles});
+  },{trace:true,bootstrap});
   const metadata = {format:1,esbuild:esbuild.version,sourceFiles:files,esmFactories:modules.length,
     bootstrap,inputs:inputHashes,configHash:sha(configText),builderHash:sha(fs.readFileSync(fileURLToPath(import.meta.url))),
     // 全部源码经真 import 图装配；显式哈希覆盖每个源文件。

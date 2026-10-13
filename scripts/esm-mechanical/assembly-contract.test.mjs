@@ -103,6 +103,10 @@ test('E5: invalid ESM exports and absent inputs are build failures', async () =>
   try {
     const second = deriveSources(root);
     assert.ok(second.includes('editor/boot/zz-stray-canary.js'), 'stray file joins the derived set');
+    // 形态门：既非登记工厂也无 initialize 的文件必须构建失败，
+    // 不得静默跳过 import、只进 sourceFiles/trace（漏装伪装成已装配）。
+    await assert.rejects(buildEditor(root),
+      /neither a registered factory nor a classic converter/);
   } finally { fs.rmSync(stray, { force: true }); }
 });
 
