@@ -47,6 +47,7 @@ test-results/
 web/editor/boot/editor-bundle.js
 web/editor/boot/editor-bundle.meta.json
 web/launcher/boot/launcher-bundle.js
+web/launcher/boot/tooltip-bundle.js
 web/launcher/boot/launcher-bundle.meta.json
 
 # Local Windows GUI packaging outputs. Keep generated executables local.
