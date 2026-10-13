@@ -1,3 +1,7 @@
+import { legacyBindings as __mawImportedBindings0 } from "./editor-wiring-cue-panel.js";
+import { legacyBindings as __mawImportedBindings1 } from "./editor-wiring-overlay-transfer.js";
+export function* initialize() {
+yield;
 // 颜色筛选：配色下拉、用量缓存与行色刷新。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweColorFilter 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -138,7 +142,7 @@
   });
   MaweSelection.updateMultiSelectionClasses();
   if (MaweCoreState.waveformEditor) MaweCoreState.waveformEditor.updateSelection();
-  updateSelectionCountText();
+  __mawImportedBindings0.updateSelectionCountText();
   MaweHint.flashHint(`已选中 ${MaweSelection.selectedIdxs.size} 条过滤字幕`, MaweSelection.selectedIdxs.size ? 'success' : 'invalid');
 }
 
@@ -197,7 +201,7 @@
     if (el.dataset.overlayIdx != null) {
       const overlayIndex = Number(el.dataset.overlayIdx);
       const segment = Number.isInteger(overlayIndex)
-        ? getOverlayTrack()?.segments?.[overlayIndex]
+        ? __mawImportedBindings1.getOverlayTrack()?.segments?.[overlayIndex]
         : null;
       if (segment) MaweCueElements.updateCueColorPresentation(el, colorBar, segment);
       return;
@@ -230,7 +234,7 @@
     if (el.dataset.overlayIdx != null) {
       const overlayIndex = Number(el.dataset.overlayIdx);
       const segment = Number.isInteger(overlayIndex)
-        ? getOverlayTrack()?.segments?.[overlayIndex]
+        ? __mawImportedBindings1.getOverlayTrack()?.segments?.[overlayIndex]
         : null;
       if (segment) MaweCueElements.updateCueStickerPresentation(el, slotEl, segment, overlayIndex, { overlayTrack: true });
       return;
@@ -254,7 +258,7 @@
   // 表情包分配只改变行内槽位和预览素材，不改变字幕行的数量、顺序或时间；
   // 原地更新可以避免 renderAll() 替换列表节点后产生滚动闪烁。
   refreshCueStickerRows();
-  const overlaySegments = getOverlayTrack()?.segments || [];
+  const overlaySegments = __mawImportedBindings1.getOverlayTrack()?.segments || [];
   const projectHasStickers = MaweBoot.DATA.segments.some((segment) => segment.sticker || segment.sticker_ref)
     || overlaySegments.some((segment) => segment.sticker || segment.sticker_ref);
   MaweCoreState.container.classList.toggle('hide-cue-sticker',
@@ -336,3 +340,5 @@
     positionColorFilterMenu
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

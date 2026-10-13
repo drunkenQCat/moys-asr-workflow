@@ -1,3 +1,6 @@
+import { legacyBindings as __mawImportedBindings0 } from "./editor-wiring-dom-panels.js";
+export function* initialize() {
+yield;
 // 设置搜索：侧栏列出设置项，路径放在提示行，仅在用户选择后跳转。
 (function initSettingsSearch() {
   'use strict';
@@ -354,7 +357,7 @@ MaweDom.helpOpenMediaSettingsButtons.forEach((button) => {
   });
 });
 // 帮助中的「全局设置」入口：定位到对应分区（波形操作/按键/空隙设置所在）。
-helpOpenEditorSettingsButtons.forEach((button) => {
+__mawImportedBindings0.helpOpenEditorSettingsButtons.forEach((button) => {
   button.addEventListener('click', (event) => {
     event.preventDefault();
     MaweSettingsPanels.openEditorSettingsAtTab(button.id === 'help-open-gap-settings' || button.id === 'help-open-keyboard-settings'
@@ -427,3 +430,5 @@ if (MaweDom.helpPanel) {
 
 // 明暗主题与界面强调色：令牌全部定义在 CSS，
 // 这里只负责解析偏好、写 <html> 数据属性、持久化，以及通知波形重绘画布。
+
+}

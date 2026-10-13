@@ -1,3 +1,21 @@
+import { legacyBindings as __mawImportedBindings0 } from "../ui/editor-wiring-dom-panels.js";
+import { legacyBindings as __mawImportedBindings1 } from "./editor-wiring-ass-storage.js";
+import { legacyBindings as __mawImportedBindings2 } from "./editor-wiring-font-geometry.js";
+export let legacyBindings;
+export function* initialize() {
+legacyBindings = Object.freeze({
+get assStyleLibraryUsesServerStorage() { return assStyleLibraryUsesServerStorage; }, set assStyleLibraryUsesServerStorage(value) { assStyleLibraryUsesServerStorage = value; },
+get setAssStyleLibraryStatus() { return setAssStyleLibraryStatus; }, set setAssStyleLibraryStatus(value) { setAssStyleLibraryStatus = value; },
+get updateAssStyleLibraryStatus() { return updateAssStyleLibraryStatus; }, set updateAssStyleLibraryStatus(value) { updateAssStyleLibraryStatus = value; },
+get assStyleManagerSetSelection() { return assStyleManagerSetSelection; }, set assStyleManagerSetSelection(value) { assStyleManagerSetSelection = value; },
+get updateAssStylePreviewModeHints() { return updateAssStylePreviewModeHints; }, set updateAssStylePreviewModeHints(value) { updateAssStylePreviewModeHints = value; },
+get updateAssStyleManagerLibrary() { return updateAssStyleManagerLibrary; }, set updateAssStyleManagerLibrary(value) { updateAssStyleManagerLibrary = value; },
+get syncAssStyleForm() { return syncAssStyleForm; }, set syncAssStyleForm(value) { syncAssStyleForm = value; },
+get syncAssStyleManager() { return syncAssStyleManager; }, set syncAssStyleManager(value) { syncAssStyleManager = value; },
+get syncAssModeDependentControls() { return syncAssModeDependentControls; }, set syncAssModeDependentControls(value) { syncAssModeDependentControls = value; },
+get syncAssModeControl() { return syncAssModeControl; }, set syncAssModeControl(value) { syncAssModeControl = value; }
+});
+yield;
 
 
 
@@ -17,22 +35,22 @@ function setAssStyleLibraryStatus(text, state = 'idle') {
 }
 
 function updateAssStyleLibraryStatus() {
-  if (!assStyleLibraryStatus) return;
+  if (!__mawImportedBindings0.assStyleLibraryStatus) return;
   const usesServerStorage = assStyleLibraryUsesServerStorage();
   const fallback = usesServerStorage
-    ? (ASS_STYLE_LIBRARY_READY ? '已与用户级配置同步' : '使用本地副本，尚未同步')
+    ? (__mawImportedBindings1.ASS_STYLE_LIBRARY_READY ? '已与用户级配置同步' : '使用本地副本，尚未同步')
     : '仅保存在当前浏览器（便携模式）';
   const status = assStyleLibraryStatusText || fallback;
-  assStyleLibraryStatus.textContent = window.MAWE_I18N?.translateText?.(status) || status;
-  assStyleLibraryStatus.dataset.state = !usesServerStorage && assStyleLibraryStatusState === 'success'
+  __mawImportedBindings0.assStyleLibraryStatus.textContent = window.MAWE_I18N?.translateText?.(status) || status;
+  __mawImportedBindings0.assStyleLibraryStatus.dataset.state = !usesServerStorage && assStyleLibraryStatusState === 'success'
     ? 'local' : assStyleLibraryStatusState;
-  if (assStyleLibraryPathHint) {
+  if (__mawImportedBindings0.assStyleLibraryPathHint) {
     const pathHint = !usesServerStorage
       ? '便携 Editor 仅保存到当前浏览器；请用 server-editor 打开后，才会与 Launcher 共享。'
-      : ASS_STYLE_LIBRARY_READY
+      : __mawImportedBindings1.ASS_STYLE_LIBRARY_READY
         ? '已保存到本机用户级配置；Launcher 与 Editor 共享。'
         : '当前使用本地副本；服务器恢复后可再次点击保存同步。';
-    assStyleLibraryPathHint.textContent = window.MAWE_I18N?.translateText?.(pathHint) || pathHint;
+    __mawImportedBindings0.assStyleLibraryPathHint.textContent = window.MAWE_I18N?.translateText?.(pathHint) || pathHint;
   }
 }
 
@@ -51,16 +69,16 @@ function assStyleManagerId(prefix, items) {
 
 function selectedAssStyle() {
   const id = assStyleManagerSelection.kind === 'style' ? assStyleManagerSelection.id : '';
-  return window.AsrEditorUtils.assStyleForId(ASS_STYLE_LIBRARY, id || 'ass');
+  return window.AsrEditorUtils.assStyleForId(__mawImportedBindings1.ASS_STYLE_LIBRARY, id || 'ass');
 }
 
 function selectedAssProfile() {
   const id = assStyleManagerSelection.kind === 'profile' ? assStyleManagerSelection.id : '';
-  return window.AsrEditorUtils.assProfileForId(ASS_STYLE_LIBRARY, id || 'ass');
+  return window.AsrEditorUtils.assProfileForId(__mawImportedBindings1.ASS_STYLE_LIBRARY, id || 'ass');
 }
 
 function assStyleManagerSetSelection(kind, id) {
-  const collection = kind === 'profile' ? ASS_STYLE_LIBRARY.assProfiles : ASS_STYLE_LIBRARY.styles;
+  const collection = kind === 'profile' ? __mawImportedBindings1.ASS_STYLE_LIBRARY.assProfiles : __mawImportedBindings1.ASS_STYLE_LIBRARY.styles;
   const item = (Array.isArray(collection) ? collection : []).find((candidate) => candidate?.id === id);
   if (!item) return;
   assStyleManagerSelection = { kind, id };
@@ -104,10 +122,10 @@ function renderAssStyleList(list, items, kind, selectedId) {
   list.setAttribute('aria-busy', 'false');
   // 主样式 = 当前 ASS 导出方案关联的样式；副样式 = 双语字幕启用时的副字幕槽位。
   const mainStyleId = kind === 'style'
-    ? String(ASS_STYLE_LIBRARY.assProfiles?.find((profile) => profile.id === (ASS_STYLE_LIBRARY.assignments?.assExportProfileId || 'ass'))?.styleId || 'ass')
+    ? String(__mawImportedBindings1.ASS_STYLE_LIBRARY.assProfiles?.find((profile) => profile.id === (__mawImportedBindings1.ASS_STYLE_LIBRARY.assignments?.assExportProfileId || 'ass'))?.styleId || 'ass')
     : '';
   const extensionStyleId = kind === 'style'
-    ? String(ASS_STYLE_LIBRARY.assignments?.assExtensionStyleId || 'ass-extension')
+    ? String(__mawImportedBindings1.ASS_STYLE_LIBRARY.assignments?.assExtensionStyleId || 'ass-extension')
     : '';
   const extensionActive = kind === 'style' && MaweMultiSubtitleCore.multiSubtitleVisible();
   (Array.isArray(items) ? items : []).forEach((item) => {
@@ -144,12 +162,12 @@ function assStyleFormValue(field) {
 }
 
 function updateAssStyleManagerLibrary(mutator, { persist = true } = {}) {
-  const next = assStyleManagerClone(ASS_STYLE_LIBRARY);
+  const next = assStyleManagerClone(__mawImportedBindings1.ASS_STYLE_LIBRARY);
   if (!next) return;
   mutator(next);
-  assStyleLibraryRevision += 1;
-  setAssStyleLibrary(next, { persistLocal: true });
-  if (persist) scheduleAssStyleLibrarySave();
+  __mawImportedBindings1.assStyleLibraryRevision += 1;
+  __mawImportedBindings1.setAssStyleLibrary(next, { persistLocal: true });
+  if (persist) __mawImportedBindings1.scheduleAssStyleLibrarySave();
   syncAssStyleManager();
   MawePlaybackLoop.refreshSubtitlePreview?.();
 }
@@ -184,7 +202,7 @@ function updateAssProfileField(path, value) {
 }
 
 function syncAssStyleForm(style) {
-  if (!assStyleForm) return;
+  if (!__mawImportedBindings0.assStyleForm) return;
   const safeStyle = window.AsrEditorUtils.normalizeAssStyle(style);
   const borderBox = Number(safeStyle.borderStyle) === 3;
   for (const [id, text] of [
@@ -195,12 +213,12 @@ function syncAssStyleForm(style) {
     const label = document.getElementById(id);
     if (label) label.textContent = window.MAWE_I18N?.translateText?.(text) || text;
   }
-  if (assStyleFormTitle) assStyleFormTitle.textContent = safeStyle.name;
-  if (assStyleBuiltinBadge) assStyleBuiltinBadge.hidden = !safeStyle.builtin;
+  if (__mawImportedBindings0.assStyleFormTitle) __mawImportedBindings0.assStyleFormTitle.textContent = safeStyle.name;
+  if (__mawImportedBindings0.assStyleBuiltinBadge) __mawImportedBindings0.assStyleBuiltinBadge.hidden = !safeStyle.builtin;
   const isSrtDefault = safeStyle.id === 'default';
-  if (assStyleSrtHint) assStyleSrtHint.hidden = !isSrtDefault;
-  if (assStylePreviewModeHint) assStylePreviewModeHint.hidden = isSrtDefault;
-  assStyleForm.querySelectorAll('[data-ass-style-field]').forEach((field) => {
+  if (__mawImportedBindings0.assStyleSrtHint) __mawImportedBindings0.assStyleSrtHint.hidden = !isSrtDefault;
+  if (__mawImportedBindings0.assStylePreviewModeHint) __mawImportedBindings0.assStylePreviewModeHint.hidden = isSrtDefault;
+  __mawImportedBindings0.assStyleForm.querySelectorAll('[data-ass-style-field]').forEach((field) => {
     if (document.activeElement === field) return;
     const value = safeStyle[field.dataset.assStyleField];
     if (field.type === 'checkbox') field.checked = value === true;
@@ -215,25 +233,25 @@ function syncAssStyleForm(style) {
   const largeTextField = document.getElementById('ass-style-large-text-field');
   if (smallTextField) smallTextField.hidden = MaweSettings.EDITOR_SETTINGS.assSmallTextEnabled === false;
   if (largeTextField) largeTextField.hidden = MaweSettings.EDITOR_SETTINGS.assLargeTextEnabled === false;
-  if (assStylePreviewSample) {
+  if (__mawImportedBindings0.assStylePreviewSample) {
     // 样例与视频预览共用 Canvas 光栅管线：描边/底框/阴影观感一致。
     // style.fontSize 即样例画布上的字形高度（ascent+descent 语义）。
-    window.MaweAssCanvas?.renderSample(assStylePreviewSample, safeStyle, 'Aa 字幕预览 / 字幕样例');
+    window.MaweAssCanvas?.renderSample(__mawImportedBindings0.assStylePreviewSample, safeStyle, 'Aa 字幕预览 / 字幕样例');
   }
   updateAssStylePreviewModeHints();
 }
 
 function syncAssProfileForm(profile) {
-  if (!assProfileForm) return;
+  if (!__mawImportedBindings0.assProfileForm) return;
   const safeProfile = window.AsrEditorUtils.normalizeAssProfile(profile);
-  if (assProfileFormTitle) assProfileFormTitle.textContent = safeProfile.name;
-  if (assProfileBuiltinBadge) assProfileBuiltinBadge.hidden = !safeProfile.builtin;
-  assProfileForm.querySelectorAll('[data-ass-profile-field]').forEach((field) => {
+  if (__mawImportedBindings0.assProfileFormTitle) __mawImportedBindings0.assProfileFormTitle.textContent = safeProfile.name;
+  if (__mawImportedBindings0.assProfileBuiltinBadge) __mawImportedBindings0.assProfileBuiltinBadge.hidden = !safeProfile.builtin;
+  __mawImportedBindings0.assProfileForm.querySelectorAll('[data-ass-profile-field]').forEach((field) => {
     if (document.activeElement === field) return;
     const value = safeProfile[field.dataset.assProfileField];
     if (value !== undefined && value !== null) field.value = String(value);
   });
-  assProfileForm.querySelectorAll('[data-ass-animation]').forEach((field) => {
+  __mawImportedBindings0.assProfileForm.querySelectorAll('[data-ass-animation]').forEach((field) => {
     const path = field.dataset.assAnimation;
     const [group, key] = path.split('.', 2);
     const value = safeProfile.animations?.[group]?.[key];
@@ -243,83 +261,83 @@ function syncAssProfileForm(profile) {
     }
     field.disabled = key !== 'enabled' && safeProfile.animations?.[group]?.enabled !== true;
   });
-  if (assProfilePreviewSummary) {
+  if (__mawImportedBindings0.assProfilePreviewSummary) {
     const tags = window.AsrEditorUtils.assAnimationOverrideTags(safeProfile);
-    const style = window.AsrEditorUtils.assStyleForId(ASS_STYLE_LIBRARY, safeProfile.styleId);
+    const style = window.AsrEditorUtils.assStyleForId(__mawImportedBindings1.ASS_STYLE_LIBRARY, safeProfile.styleId);
     const summary = `${style.name} · ${tags || '无逐句动画'}`;
-    assProfilePreviewSummary.textContent = window.MAWE_I18N?.translateText?.(summary) || summary;
+    __mawImportedBindings0.assProfilePreviewSummary.textContent = window.MAWE_I18N?.translateText?.(summary) || summary;
   }
 }
 
 function syncAssStyleManager({ force = false } = {}) {
-  if (!assStyleWindow) return;
-  ASS_STYLE_LIBRARY = window.AsrEditorUtils.normalizeAssStyleLibrary(ASS_STYLE_LIBRARY);
-  const styles = ASS_STYLE_LIBRARY.styles || [];
-  const profiles = ASS_STYLE_LIBRARY.assProfiles || [];
+  if (!__mawImportedBindings0.assStyleWindow) return;
+  __mawImportedBindings1.ASS_STYLE_LIBRARY = window.AsrEditorUtils.normalizeAssStyleLibrary(__mawImportedBindings1.ASS_STYLE_LIBRARY);
+  const styles = __mawImportedBindings1.ASS_STYLE_LIBRARY.styles || [];
+  const profiles = __mawImportedBindings1.ASS_STYLE_LIBRARY.assProfiles || [];
   const selectedCollection = assStyleManagerSelection.kind === 'profile' ? profiles : styles;
   if (!selectedCollection.some((item) => item.id === assStyleManagerSelection.id)) {
     assStyleManagerSelection = assStyleManagerSelection.kind === 'profile'
       ? { kind: 'profile', id: profiles[0]?.id || 'ass' }
       : { kind: 'style', id: styles[0]?.id || 'ass' };
   }
-  if (assStyleCount) assStyleCount.textContent = String(styles.length);
-  if (assProfileCount) assProfileCount.textContent = String(profiles.length);
-  updateAssStyleLibrarySummary();
-  renderAssStyleList(assStyleList, styles, 'style', assStyleManagerSelection.kind === 'style' ? assStyleManagerSelection.id : '');
-  renderAssStyleList(assProfileList, profiles, 'profile', assStyleManagerSelection.kind === 'profile' ? assStyleManagerSelection.id : '');
-  if (assSrtDefaultStyleSelect) {
-    const active = ASS_STYLE_LIBRARY.assignments?.srtBurnStyleId || 'default';
-    assSrtDefaultStyleSelect.replaceChildren();
-    styles.forEach((style) => appendAssStyleOption(assSrtDefaultStyleSelect, style.id, style.name));
-    assSrtDefaultStyleSelect.value = active;
+  if (__mawImportedBindings0.assStyleCount) __mawImportedBindings0.assStyleCount.textContent = String(styles.length);
+  if (__mawImportedBindings0.assProfileCount) __mawImportedBindings0.assProfileCount.textContent = String(profiles.length);
+  __mawImportedBindings1.updateAssStyleLibrarySummary();
+  renderAssStyleList(__mawImportedBindings0.assStyleList, styles, 'style', assStyleManagerSelection.kind === 'style' ? assStyleManagerSelection.id : '');
+  renderAssStyleList(__mawImportedBindings0.assProfileList, profiles, 'profile', assStyleManagerSelection.kind === 'profile' ? assStyleManagerSelection.id : '');
+  if (__mawImportedBindings0.assSrtDefaultStyleSelect) {
+    const active = __mawImportedBindings1.ASS_STYLE_LIBRARY.assignments?.srtBurnStyleId || 'default';
+    __mawImportedBindings0.assSrtDefaultStyleSelect.replaceChildren();
+    styles.forEach((style) => appendAssStyleOption(__mawImportedBindings0.assSrtDefaultStyleSelect, style.id, style.name));
+    __mawImportedBindings0.assSrtDefaultStyleSelect.value = active;
   }
-  if (assDefaultProfileSelect) {
-    const active = ASS_STYLE_LIBRARY.assignments?.assExportProfileId || 'ass';
-    assDefaultProfileSelect.replaceChildren();
-    profiles.forEach((profile) => appendAssStyleOption(assDefaultProfileSelect, profile.id, profile.name));
-    assDefaultProfileSelect.value = active;
+  if (__mawImportedBindings0.assDefaultProfileSelect) {
+    const active = __mawImportedBindings1.ASS_STYLE_LIBRARY.assignments?.assExportProfileId || 'ass';
+    __mawImportedBindings0.assDefaultProfileSelect.replaceChildren();
+    profiles.forEach((profile) => appendAssStyleOption(__mawImportedBindings0.assDefaultProfileSelect, profile.id, profile.name));
+    __mawImportedBindings0.assDefaultProfileSelect.value = active;
   }
   // 副字幕样式入口随多重字幕开合显隐：现在挂在方案表单里，与主字幕样式并排。
   const extensionSlotVisible = MaweMultiSubtitleCore.multiSubtitleVisible();
-  if (assProfileExtensionStyleField) assProfileExtensionStyleField.hidden = !extensionSlotVisible;
-  if (assProfileExtensionStyleSelect) {
-    assProfileExtensionStyleSelect.replaceChildren();
-    styles.forEach((style) => appendAssStyleOption(assProfileExtensionStyleSelect, style.id, style.name));
-    assProfileExtensionStyleSelect.value = ASS_STYLE_LIBRARY.assignments?.assExtensionStyleId || 'ass-extension';
+  if (__mawImportedBindings0.assProfileExtensionStyleField) __mawImportedBindings0.assProfileExtensionStyleField.hidden = !extensionSlotVisible;
+  if (__mawImportedBindings0.assProfileExtensionStyleSelect) {
+    __mawImportedBindings0.assProfileExtensionStyleSelect.replaceChildren();
+    styles.forEach((style) => appendAssStyleOption(__mawImportedBindings0.assProfileExtensionStyleSelect, style.id, style.name));
+    __mawImportedBindings0.assProfileExtensionStyleSelect.value = __mawImportedBindings1.ASS_STYLE_LIBRARY.assignments?.assExtensionStyleId || 'ass-extension';
   }
-  if (assProfileStyleSelect) {
+  if (__mawImportedBindings0.assProfileStyleSelect) {
     const selectedProfile = selectedAssProfile();
-    assProfileStyleSelect.replaceChildren();
-    styles.forEach((style) => appendAssStyleOption(assProfileStyleSelect, style.id, style.name));
-    assProfileStyleSelect.value = selectedProfile.styleId;
+    __mawImportedBindings0.assProfileStyleSelect.replaceChildren();
+    styles.forEach((style) => appendAssStyleOption(__mawImportedBindings0.assProfileStyleSelect, style.id, style.name));
+    __mawImportedBindings0.assProfileStyleSelect.value = selectedProfile.styleId;
   }
   const isStyle = assStyleManagerSelection.kind === 'style';
-  if (assStyleEditorEmpty) assStyleEditorEmpty.hidden = selectedCollection.length > 0;
-  if (assStyleForm) assStyleForm.hidden = !isStyle;
-  if (assProfileForm) assProfileForm.hidden = isStyle;
-  const deleteSlot = isStyle ? assStyleDeleteSlot : assProfileDeleteSlot;
-  if (deleteSlot && assStyleDeleteButton && assStyleDeleteButton.parentElement !== deleteSlot) {
-    deleteSlot.append(assStyleDeleteButton);
+  if (__mawImportedBindings0.assStyleEditorEmpty) __mawImportedBindings0.assStyleEditorEmpty.hidden = selectedCollection.length > 0;
+  if (__mawImportedBindings0.assStyleForm) __mawImportedBindings0.assStyleForm.hidden = !isStyle;
+  if (__mawImportedBindings0.assProfileForm) __mawImportedBindings0.assProfileForm.hidden = isStyle;
+  const deleteSlot = isStyle ? __mawImportedBindings0.assStyleDeleteSlot : __mawImportedBindings0.assProfileDeleteSlot;
+  if (deleteSlot && __mawImportedBindings0.assStyleDeleteButton && __mawImportedBindings0.assStyleDeleteButton.parentElement !== deleteSlot) {
+    deleteSlot.append(__mawImportedBindings0.assStyleDeleteButton);
   }
-  if (assStyleDeleteButton) {
+  if (__mawImportedBindings0.assStyleDeleteButton) {
     const selected = selectedCollection.find((item) => item.id === assStyleManagerSelection.id);
-    assStyleDeleteButton.disabled = !selected || selected.builtin === true;
-    assStyleDeleteButton.title = selected?.builtin ? '内置条目不能删除' : '删除当前条目';
+    __mawImportedBindings0.assStyleDeleteButton.disabled = !selected || selected.builtin === true;
+    __mawImportedBindings0.assStyleDeleteButton.title = selected?.builtin ? '内置条目不能删除' : '删除当前条目';
   }
   if (isStyle) syncAssStyleForm(selectedAssStyle());
   else syncAssProfileForm(selectedAssProfile());
   updateAssStyleLibraryStatus();
   // 样式库变化后，设置页「字幕样式」里的 ASS 样式选择器同步刷新。
   syncSubtitleStyleAssControls();
-  if (force) assStyleWindow.querySelector('.ass-style-editor')?.scrollTo({ top: 0 });
+  if (force) __mawImportedBindings0.assStyleWindow.querySelector('.ass-style-editor')?.scrollTo({ top: 0 });
 }
 
 function createAssStyle() {
-  if ((ASS_STYLE_LIBRARY.styles || []).length >= 64) {
+  if ((__mawImportedBindings1.ASS_STYLE_LIBRARY.styles || []).length >= 64) {
     MaweHint.flashHint('样式数量已达到上限（64 个）', 'warning');
     return;
   }
-  const id = assStyleManagerId('style', ASS_STYLE_LIBRARY.styles);
+  const id = assStyleManagerId('style', __mawImportedBindings1.ASS_STYLE_LIBRARY.styles);
   updateAssStyleManagerLibrary((library) => {
     library.styles.push({
       ...assStyleManagerClone(window.AsrEditorUtils.ASS_DEFAULT_ASS_STYLE),
@@ -327,32 +345,32 @@ function createAssStyle() {
     });
   }, { persist: false });
   assStyleManagerSelection = { kind: 'style', id };
-  scheduleAssStyleLibrarySave();
+  __mawImportedBindings1.scheduleAssStyleLibrarySave();
   syncAssStyleManager({ force: true });
 }
 
 function duplicateAssStyle() {
   const source = selectedAssStyle();
-  if (!source || (ASS_STYLE_LIBRARY.styles || []).length >= 64) {
+  if (!source || (__mawImportedBindings1.ASS_STYLE_LIBRARY.styles || []).length >= 64) {
     MaweHint.flashHint('无法复制样式：已达到数量上限', 'warning');
     return;
   }
-  const id = assStyleManagerId('style', ASS_STYLE_LIBRARY.styles);
+  const id = assStyleManagerId('style', __mawImportedBindings1.ASS_STYLE_LIBRARY.styles);
   updateAssStyleManagerLibrary((library) => {
     library.styles.push({ ...assStyleManagerClone(source), id, name: `${source.name} 副本`, builtin: false });
   }, { persist: false });
   assStyleManagerSelection = { kind: 'style', id };
-  scheduleAssStyleLibrarySave();
+  __mawImportedBindings1.scheduleAssStyleLibrarySave();
   syncAssStyleManager({ force: true });
 }
 
 function duplicateAssProfile() {
   const source = selectedAssProfile();
-  if (!source || (ASS_STYLE_LIBRARY.assProfiles || []).length >= 64) {
+  if (!source || (__mawImportedBindings1.ASS_STYLE_LIBRARY.assProfiles || []).length >= 64) {
     MaweHint.flashHint('无法复制方案：已达到数量上限', 'warning');
     return;
   }
-  const id = assStyleManagerId('profile', ASS_STYLE_LIBRARY.assProfiles);
+  const id = assStyleManagerId('profile', __mawImportedBindings1.ASS_STYLE_LIBRARY.assProfiles);
   updateAssStyleManagerLibrary((library) => {
     library.assProfiles.push({
       ...assStyleManagerClone(source),
@@ -360,16 +378,16 @@ function duplicateAssProfile() {
     });
   }, { persist: false });
   assStyleManagerSelection = { kind: 'profile', id };
-  scheduleAssStyleLibrarySave();
+  __mawImportedBindings1.scheduleAssStyleLibrarySave();
   syncAssStyleManager({ force: true });
 }
 
 function createAssProfile() {
-  if ((ASS_STYLE_LIBRARY.assProfiles || []).length >= 64) {
+  if ((__mawImportedBindings1.ASS_STYLE_LIBRARY.assProfiles || []).length >= 64) {
     MaweHint.flashHint('ASS 方案数量已达到上限（64 个）', 'warning');
     return;
   }
-  const id = assStyleManagerId('profile', ASS_STYLE_LIBRARY.assProfiles);
+  const id = assStyleManagerId('profile', __mawImportedBindings1.ASS_STYLE_LIBRARY.assProfiles);
   updateAssStyleManagerLibrary((library) => {
     library.assProfiles.push({
       ...assStyleManagerClone(window.AsrEditorUtils.ASS_DEFAULT_PROFILE),
@@ -378,13 +396,13 @@ function createAssProfile() {
     });
   }, { persist: false });
   assStyleManagerSelection = { kind: 'profile', id };
-  scheduleAssStyleLibrarySave();
+  __mawImportedBindings1.scheduleAssStyleLibrarySave();
   syncAssStyleManager({ force: true });
 }
 
 function deleteSelectedAssEntry() {
   const { kind, id } = assStyleManagerSelection;
-  const collection = kind === 'profile' ? ASS_STYLE_LIBRARY.assProfiles : ASS_STYLE_LIBRARY.styles;
+  const collection = kind === 'profile' ? __mawImportedBindings1.ASS_STYLE_LIBRARY.assProfiles : __mawImportedBindings1.ASS_STYLE_LIBRARY.styles;
   const item = collection?.find((candidate) => candidate.id === id);
   if (!item || item.builtin) {
     MaweHint.flashHint('内置条目不能删除；可以直接修改其参数', 'warning');
@@ -415,48 +433,48 @@ function updateAssStyleAssignment(slot, value) {
 }
 
 const assStyleFloatingPanel = MaweFloatingPanel.createFloatingPanel({
-  panel: assStyleWindow,
-  dragHandle: assStyleDragHandle,
-  manageButton: assStyleManagerOpenButton,
-  anchorButton: assStyleManagerOpenButton,
+  panel: __mawImportedBindings0.assStyleWindow,
+  dragHandle: __mawImportedBindings0.assStyleDragHandle,
+  manageButton: __mawImportedBindings0.assStyleManagerOpenButton,
+  anchorButton: __mawImportedBindings0.assStyleManagerOpenButton,
   positionKey: ASS_STYLE_WINDOW_POSITION_KEY,
   onOpen: () => {
     syncAssStyleManager({ force: true });
-    void loadAssStyleLibrary({ force: true });
+    void __mawImportedBindings1.loadAssStyleLibrary({ force: true });
   },
 });
 document.getElementById('ass-frame-style-edit')?.addEventListener('click', () => assStyleFloatingPanel.open());
-assStyleWindowClose?.addEventListener('click', () => assStyleFloatingPanel.close());
-assStyleWindowCloseFooter?.addEventListener('click', () => assStyleFloatingPanel.close());
-assStyleNewButton?.addEventListener('click', createAssStyle);
-assStyleDuplicateButton?.addEventListener('click', duplicateAssStyle);
-assProfileNewButton?.addEventListener('click', createAssProfile);
-assStyleDeleteButton?.addEventListener('click', deleteSelectedAssEntry);
-assStyleSettingsLink?.addEventListener('click', (event) => {
+__mawImportedBindings0.assStyleWindowClose?.addEventListener('click', () => assStyleFloatingPanel.close());
+__mawImportedBindings0.assStyleWindowCloseFooter?.addEventListener('click', () => assStyleFloatingPanel.close());
+__mawImportedBindings0.assStyleNewButton?.addEventListener('click', createAssStyle);
+__mawImportedBindings0.assStyleDuplicateButton?.addEventListener('click', duplicateAssStyle);
+__mawImportedBindings0.assProfileNewButton?.addEventListener('click', createAssProfile);
+__mawImportedBindings0.assStyleDeleteButton?.addEventListener('click', deleteSelectedAssEntry);
+__mawImportedBindings0.assStyleSettingsLink?.addEventListener('click', (event) => {
   event.preventDefault();
   MaweSettingsPanels.openEditorSettingsAtTab('editor-settings-tab-subtitle-style');
 });
-assStyleSaveButton?.addEventListener('click', () => {
+__mawImportedBindings0.assStyleSaveButton?.addEventListener('click', () => {
   setAssStyleLibraryStatus(
     assStyleLibraryUsesServerStorage() ? '正在保存用户级样式库…' : '正在保存到当前浏览器…',
     'pending',
   );
-  void persistAssStyleLibrary();
+  void __mawImportedBindings1.persistAssStyleLibrary();
 });
-assSrtDefaultStyleSelect?.addEventListener('change', () => updateAssStyleAssignment('srtBurnStyleId', assSrtDefaultStyleSelect.value));
-assDefaultProfileSelect?.addEventListener('change', () => updateAssStyleAssignment('assExportProfileId', assDefaultProfileSelect.value));
-assProfileExtensionStyleSelect?.addEventListener('change', () => updateAssStyleAssignment('assExtensionStyleId', assProfileExtensionStyleSelect.value));
+__mawImportedBindings0.assSrtDefaultStyleSelect?.addEventListener('change', () => updateAssStyleAssignment('srtBurnStyleId', __mawImportedBindings0.assSrtDefaultStyleSelect.value));
+__mawImportedBindings0.assDefaultProfileSelect?.addEventListener('change', () => updateAssStyleAssignment('assExportProfileId', __mawImportedBindings0.assDefaultProfileSelect.value));
+__mawImportedBindings0.assProfileExtensionStyleSelect?.addEventListener('change', () => updateAssStyleAssignment('assExtensionStyleId', __mawImportedBindings0.assProfileExtensionStyleSelect.value));
 // 设置页「字幕样式」的 ASS 选择器：主字幕改的是当前 ASS 输出方案关联的
 // 样式（与样式库窗口中方案表单的样式下拉同步）；副字幕改库中的副字幕槽位。
-mainAssStyleSelect?.addEventListener('change', () => {
+__mawImportedBindings0.mainAssStyleSelect?.addEventListener('change', () => {
   updateAssStyleManagerLibrary((library) => {
     const profileId = library.assignments?.assExportProfileId || 'ass';
     const profile = (library.assProfiles || []).find((item) => item.id === profileId);
-    if (profile) profile.styleId = mainAssStyleSelect.value;
+    if (profile) profile.styleId = __mawImportedBindings0.mainAssStyleSelect.value;
   });
 });
-extensionAssStyleSelect?.addEventListener('change', () => {
-  updateAssStyleAssignment('assExtensionStyleId', extensionAssStyleSelect.value);
+__mawImportedBindings0.extensionAssStyleSelect?.addEventListener('change', () => {
+  updateAssStyleAssignment('assExtensionStyleId', __mawImportedBindings0.extensionAssStyleSelect.value);
 });
 // 「使用 ASS 样式」旁的「编辑样式」：打开样式库窗口并定位到下拉当前选中的样式。
 function openAssStyleManagerForStyle(select) {
@@ -464,30 +482,30 @@ function openAssStyleManagerForStyle(select) {
   assStyleManagerSetSelection('style', select.value);
   assStyleFloatingPanel.open();
 }
-mainAssStyleEditButton?.addEventListener('click', () => openAssStyleManagerForStyle(mainAssStyleSelect));
+__mawImportedBindings0.mainAssStyleEditButton?.addEventListener('click', () => openAssStyleManagerForStyle(__mawImportedBindings0.mainAssStyleSelect));
 document.getElementById('ass-special-style-edit')?.addEventListener('click', async () => {
   assStyleFloatingPanel.open();
-  await loadAssStyleLibrary({ force: true });
-  if (!assStyleWindow.classList.contains('show')) return;
-  const profileId = ASS_STYLE_LIBRARY.assignments?.assExportProfileId || 'ass';
-  const profile = ASS_STYLE_LIBRARY.assProfiles?.find((entry) => entry.id === profileId);
+  await __mawImportedBindings1.loadAssStyleLibrary({ force: true });
+  if (!__mawImportedBindings0.assStyleWindow.classList.contains('show')) return;
+  const profileId = __mawImportedBindings1.ASS_STYLE_LIBRARY.assignments?.assExportProfileId || 'ass';
+  const profile = __mawImportedBindings1.ASS_STYLE_LIBRARY.assProfiles?.find((entry) => entry.id === profileId);
   assStyleManagerSetSelection('style', profile?.styleId || 'ass');
   requestAnimationFrame(() => {
     document.getElementById('ass-style-emphasis-section')?.scrollIntoView({ block: 'start', inline: 'nearest' });
   });
 });
-extensionAssStyleEditButton?.addEventListener('click', () => openAssStyleManagerForStyle(extensionAssStyleSelect));
+__mawImportedBindings0.extensionAssStyleEditButton?.addEventListener('click', () => openAssStyleManagerForStyle(__mawImportedBindings0.extensionAssStyleSelect));
 // 「读取本机字体」：与设置页共用同一个本机字体扫描；扫描结果进入共享的
 // subtitleLocalFontFamilies，ASS 字体下拉在下次展开时即包含这些字体。
-assStyleLocalFontScanButton?.addEventListener('click', async () => {
-  if (assStyleLocalFontScanButton.disabled) return;
-  assStyleLocalFontScanButton.disabled = true;
+__mawImportedBindings0.assStyleLocalFontScanButton?.addEventListener('click', async () => {
+  if (__mawImportedBindings0.assStyleLocalFontScanButton.disabled) return;
+  __mawImportedBindings0.assStyleLocalFontScanButton.disabled = true;
   try {
     await MaweAppearance.scanSubtitleLocalFonts();
   } finally {
-    assStyleLocalFontScanButton.disabled = false;
+    __mawImportedBindings0.assStyleLocalFontScanButton.disabled = false;
   }
-  rebuildAssFontNameOptions();
+  __mawImportedBindings2.rebuildAssFontNameOptions();
   const hintByState = {
     success: () => MaweHint.flashHint(`已读取 ${MaweAppearance.subtitleFontFamilyScanCount} 种本机字体`, 'success'),
     empty: () => MaweHint.flashHint('未读取到可用的本机字体', 'warning'),
@@ -506,7 +524,7 @@ function showAssListContextMenu(event, kind) {
   event.preventDefault();
   event.stopPropagation();
   assStyleManagerSetSelection(kind, button.dataset.assSelectionId);
-  const collection = kind === 'profile' ? ASS_STYLE_LIBRARY.assProfiles : ASS_STYLE_LIBRARY.styles;
+  const collection = kind === 'profile' ? __mawImportedBindings1.ASS_STYLE_LIBRARY.assProfiles : __mawImportedBindings1.ASS_STYLE_LIBRARY.styles;
   const item = collection?.find((candidate) => candidate.id === button.dataset.assSelectionId);
   if (!item) return;
   MaweDom.ctxmenu.innerHTML = '';
@@ -560,27 +578,27 @@ function showAssListContextMenu(event, kind) {
   MaweDom.ctxmenu.style.left = `${nx}px`;
   MaweDom.ctxmenu.style.top = `${ny}px`;
 }
-assStyleList?.addEventListener('contextmenu', (event) => showAssListContextMenu(event, 'style'));
-assProfileList?.addEventListener('contextmenu', (event) => showAssListContextMenu(event, 'profile'));
-assStyleForm?.addEventListener('input', (event) => {
+__mawImportedBindings0.assStyleList?.addEventListener('contextmenu', (event) => showAssListContextMenu(event, 'style'));
+__mawImportedBindings0.assProfileList?.addEventListener('contextmenu', (event) => showAssListContextMenu(event, 'profile'));
+__mawImportedBindings0.assStyleForm?.addEventListener('input', (event) => {
   const field = event.target.closest('[data-ass-style-field]');
   if (!field) return;
   if (field.type === 'radio' && !field.checked) return;
   updateAssStyleField(field.dataset.assStyleField, assStyleFormValue(field));
 });
-assStyleForm?.addEventListener('change', (event) => {
+__mawImportedBindings0.assStyleForm?.addEventListener('change', (event) => {
   const field = event.target.closest('[data-ass-style-field]');
   if (field && (field.type !== 'radio' || field.checked)) {
     updateAssStyleField(field.dataset.assStyleField, assStyleFormValue(field));
   }
 });
-assProfileForm?.addEventListener('input', (event) => {
+__mawImportedBindings0.assProfileForm?.addEventListener('input', (event) => {
   const field = event.target.closest('[data-ass-profile-field], [data-ass-animation]');
   if (!field) return;
   const path = field.dataset.assProfileField || field.dataset.assAnimation;
   updateAssProfileField(path, assStyleFormValue(field));
 });
-assProfileForm?.addEventListener('change', (event) => {
+__mawImportedBindings0.assProfileForm?.addEventListener('change', (event) => {
   const field = event.target.closest('[data-ass-profile-field], [data-ass-animation]');
   if (field) updateAssProfileField(field.dataset.assProfileField || field.dataset.assAnimation, assStyleFormValue(field));
 });
@@ -590,31 +608,31 @@ function syncSubtitleStyleAssControls() {
   // 样式库选择器；主字幕选择即当前 ASS 输出方案关联的样式，与样式库窗口
   // 中的选择同步，副字幕选择对应库中的「副字幕样式」槽位。
   const assMode = MaweSettings.EDITOR_SETTINGS.assMode === true;
-  if (assInlineTextSettings) assInlineTextSettings.hidden = !assMode;
-  if (assInlineTextTitle) assInlineTextTitle.hidden = !assMode;
-  assInlineTextToggles.forEach((input) => {
+  if (__mawImportedBindings0.assInlineTextSettings) __mawImportedBindings0.assInlineTextSettings.hidden = !assMode;
+  if (__mawImportedBindings0.assInlineTextTitle) __mawImportedBindings0.assInlineTextTitle.hidden = !assMode;
+  __mawImportedBindings0.assInlineTextToggles.forEach((input) => {
     if (input) input.disabled = !assMode;
   });
-  if (subtitleStyleAssModeHint) subtitleStyleAssModeHint.hidden = !assMode;
-  if (mainSubtitleCssFields) mainSubtitleCssFields.hidden = assMode;
-  if (mainAssStyleFields) mainAssStyleFields.hidden = !assMode;
-  if (extensionSubtitleCssFields) extensionSubtitleCssFields.hidden = assMode;
+  if (__mawImportedBindings0.subtitleStyleAssModeHint) __mawImportedBindings0.subtitleStyleAssModeHint.hidden = !assMode;
+  if (__mawImportedBindings0.mainSubtitleCssFields) __mawImportedBindings0.mainSubtitleCssFields.hidden = assMode;
+  if (__mawImportedBindings0.mainAssStyleFields) __mawImportedBindings0.mainAssStyleFields.hidden = !assMode;
+  if (__mawImportedBindings0.extensionSubtitleCssFields) __mawImportedBindings0.extensionSubtitleCssFields.hidden = assMode;
   // 副字幕 ASS 样式只在 ASS 模式 + 双语字幕（多重字幕）启用时才有意义。
-  if (extensionAssStyleFields) extensionAssStyleFields.hidden = !assMode || !MaweMultiSubtitleCore.multiSubtitleVisible();
-  const library = window.AsrEditorUtils.normalizeAssStyleLibrary(ASS_STYLE_LIBRARY);
+  if (__mawImportedBindings0.extensionAssStyleFields) __mawImportedBindings0.extensionAssStyleFields.hidden = !assMode || !MaweMultiSubtitleCore.multiSubtitleVisible();
+  const library = window.AsrEditorUtils.normalizeAssStyleLibrary(__mawImportedBindings1.ASS_STYLE_LIBRARY);
   const styles = library.styles || [];
-  if (mainAssStyleSelect) {
-    mainAssStyleSelect.replaceChildren();
-    styles.forEach((style) => appendAssStyleOption(mainAssStyleSelect, style.id, style.name));
+  if (__mawImportedBindings0.mainAssStyleSelect) {
+    __mawImportedBindings0.mainAssStyleSelect.replaceChildren();
+    styles.forEach((style) => appendAssStyleOption(__mawImportedBindings0.mainAssStyleSelect, style.id, style.name));
     const profile = window.AsrEditorUtils.assProfileForId(
       library, library.assignments?.assExportProfileId || 'ass',
     );
-    mainAssStyleSelect.value = profile.styleId;
+    __mawImportedBindings0.mainAssStyleSelect.value = profile.styleId;
   }
-  if (extensionAssStyleSelect) {
-    extensionAssStyleSelect.replaceChildren();
-    styles.forEach((style) => appendAssStyleOption(extensionAssStyleSelect, style.id, style.name));
-    extensionAssStyleSelect.value = library.assignments?.assExtensionStyleId || 'ass-extension';
+  if (__mawImportedBindings0.extensionAssStyleSelect) {
+    __mawImportedBindings0.extensionAssStyleSelect.replaceChildren();
+    styles.forEach((style) => appendAssStyleOption(__mawImportedBindings0.extensionAssStyleSelect, style.id, style.name));
+    __mawImportedBindings0.extensionAssStyleSelect.value = library.assignments?.assExtensionStyleId || 'ass-extension';
   }
 }
 
@@ -623,10 +641,10 @@ function syncAssModeDependentControls() {
   // 「颜色字幕样式」在「字幕颜色」页替代「预览颜色样式」，只在 ASS 模式下显示。
   const assMode = MaweSettings.EDITOR_SETTINGS.assMode === true;
   if (MaweDom.subtitleColorUnderlineInput) MaweDom.subtitleColorUnderlineInput.disabled = assMode;
-  if (subtitleColorAssModeHint) subtitleColorAssModeHint.hidden = !assMode;
-  if (assColorStyleRow) assColorStyleRow.hidden = !assMode;
-  if (assColorSpeakerHint) {
-    assColorSpeakerHint.hidden = !assMode || assColorStyleSelect?.value !== 'speaker';
+  if (__mawImportedBindings0.subtitleColorAssModeHint) __mawImportedBindings0.subtitleColorAssModeHint.hidden = !assMode;
+  if (__mawImportedBindings0.assColorStyleRow) __mawImportedBindings0.assColorStyleRow.hidden = !assMode;
+  if (__mawImportedBindings0.assColorSpeakerHint) {
+    __mawImportedBindings0.assColorSpeakerHint.hidden = !assMode || __mawImportedBindings0.assColorStyleSelect?.value !== 'speaker';
   }
   if (MaweDom.subtitleColorStyleControl) {
     MaweDom.subtitleColorStyleControl.hidden = assMode
@@ -681,29 +699,29 @@ function syncAssModeControl() {
   syncAssSymbolRule();
   syncAssModeDependentControls();
   updateAssStylePreviewModeHints();
-  assInlineTextToggles.forEach((input) => {
+  __mawImportedBindings0.assInlineTextToggles.forEach((input) => {
     const key = input.dataset.assInlineSetting;
     input.checked = key === 'assEmphasisSyntax' ? MaweSettings.EDITOR_SETTINGS[key] !== 'none' : MaweSettings.EDITOR_SETTINGS[key] !== false;
   });
-  if (assStyleForm && !assStyleForm.hidden) syncAssStyleForm(selectedAssStyle());
-  if (!assModeToggle) return;
-  assModeToggle.checked = MaweSettings.EDITOR_SETTINGS.assMode === true;
-  assModeToggle.setAttribute('aria-checked', String(assModeToggle.checked));
+  if (__mawImportedBindings0.assStyleForm && !__mawImportedBindings0.assStyleForm.hidden) syncAssStyleForm(selectedAssStyle());
+  if (!__mawImportedBindings0.assModeToggle) return;
+  __mawImportedBindings0.assModeToggle.checked = MaweSettings.EDITOR_SETTINGS.assMode === true;
+  __mawImportedBindings0.assModeToggle.setAttribute('aria-checked', String(__mawImportedBindings0.assModeToggle.checked));
 }
 
-assModeToggle?.addEventListener('change', () => {
+__mawImportedBindings0.assModeToggle?.addEventListener('change', () => {
   MaweHistory.pushPreviewUndo('切换 ASS 字幕模式', MaweHistory.snapshotPreviewState());
-  MaweSettings.updateEditorSettings({ assMode: assModeToggle.checked });
+  MaweSettings.updateEditorSettings({ assMode: __mawImportedBindings0.assModeToggle.checked });
   syncAssModeControl();
   MawePreviewGeometry.refreshPreviewGeometryEditable();
   MawePlaybackLoop.refreshSubtitlePreview();
-  MaweHint.flashHint(assModeToggle.checked ? '已开启 ASS 字幕模式预览' : '已恢复原有字幕预览', 'success');
+  MaweHint.flashHint(__mawImportedBindings0.assModeToggle.checked ? '已开启 ASS 字幕模式预览' : '已恢复原有字幕预览', 'success');
 });
 
-document.getElementById('ass-mode-quick-toggle')?.addEventListener('click', () => assModeToggle?.click());
-document.getElementById('ass-style-quick-open')?.addEventListener('click', () => assStyleManagerOpenButton?.click());
+document.getElementById('ass-mode-quick-toggle')?.addEventListener('click', () => __mawImportedBindings0.assModeToggle?.click());
+document.getElementById('ass-style-quick-open')?.addEventListener('click', () => __mawImportedBindings0.assStyleManagerOpenButton?.click());
 
-assInlineTextToggles.forEach((input) => {
+__mawImportedBindings0.assInlineTextToggles.forEach((input) => {
   input.addEventListener('change', () => {
     const key = input.dataset.assInlineSetting;
     const value = key === 'assEmphasisSyntax' ? (input.checked ? 'both' : 'none') : input.checked;
@@ -712,3 +730,5 @@ assInlineTextToggles.forEach((input) => {
     MawePlaybackLoop.refreshSubtitlePreview();
   });
 });
+
+}

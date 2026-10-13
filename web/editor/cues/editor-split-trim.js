@@ -1,3 +1,6 @@
+
+export function* initialize() {
+yield;
 // 拆分修剪符号表：修剪字符配置、持久化与网格 UI。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweSplitTrim 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -99,3 +102,5 @@
     refreshSplitTrimExtraInput
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

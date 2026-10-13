@@ -1,3 +1,6 @@
+
+export function* initialize() {
+yield;
 // 「标记与区段」管理窗：搜索、过滤、定位试听与逐项编辑。
 // 列表与编辑卡片全部由本模块渲染（textContent 组装，不拼 HTML 字符串）；
 // 数据变更一律经 MaweMarkerEditing，撤销/重做、保存脏标记与波形轨道刷新
@@ -772,3 +775,5 @@
   });
   document.addEventListener('mawe:languagechange', refreshAiCleanupReviewMuteButtons);
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

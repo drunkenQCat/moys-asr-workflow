@@ -1,3 +1,21 @@
+import { legacyBindings as __mawImportedBindings0 } from "../ui/editor-wiring-dom-panels.js";
+import { legacyBindings as __mawImportedBindings1 } from "./editor-wiring-ass-manager.js";
+export let legacyBindings;
+export function* initialize() {
+legacyBindings = Object.freeze({
+get ASS_COLOR_STYLE_VALUES() { return ASS_COLOR_STYLE_VALUES; },
+get DEFAULT_ASS_COLOR_STYLE() { return DEFAULT_ASS_COLOR_STYLE; },
+get ASS_BUILTIN_FONT_SUGGESTIONS() { return ASS_BUILTIN_FONT_SUGGESTIONS; },
+get ASS_STYLE_LIBRARY() { return ASS_STYLE_LIBRARY; }, set ASS_STYLE_LIBRARY(value) { ASS_STYLE_LIBRARY = value; },
+get ASS_STYLE_LIBRARY_READY() { return ASS_STYLE_LIBRARY_READY; }, set ASS_STYLE_LIBRARY_READY(value) { ASS_STYLE_LIBRARY_READY = value; },
+get assStyleLibraryRevision() { return assStyleLibraryRevision; }, set assStyleLibraryRevision(value) { assStyleLibraryRevision = value; },
+get setAssStyleLibrary() { return setAssStyleLibrary; }, set setAssStyleLibrary(value) { setAssStyleLibrary = value; },
+get updateAssStyleLibrarySummary() { return updateAssStyleLibrarySummary; }, set updateAssStyleLibrarySummary(value) { updateAssStyleLibrarySummary = value; },
+get scheduleAssStyleLibrarySave() { return scheduleAssStyleLibrarySave; }, set scheduleAssStyleLibrarySave(value) { scheduleAssStyleLibrarySave = value; },
+get persistAssStyleLibrary() { return persistAssStyleLibrary; }, set persistAssStyleLibrary(value) { persistAssStyleLibrary = value; },
+get loadAssStyleLibrary() { return loadAssStyleLibrary; }, set loadAssStyleLibrary(value) { loadAssStyleLibrary = value; }
+});
+yield;
 
 
 
@@ -94,9 +112,9 @@ function assStyleLibrarySummary() {
 }
 
 function updateAssStyleLibrarySummary() {
-  if (assStyleSummary) {
+  if (__mawImportedBindings0.assStyleSummary) {
     const summary = assStyleLibrarySummary();
-    assStyleSummary.textContent = window.MAWE_I18N?.translateText?.(summary) || summary;
+    __mawImportedBindings0.assStyleSummary.textContent = window.MAWE_I18N?.translateText?.(summary) || summary;
   }
 }
 
@@ -130,7 +148,7 @@ function assStyleLibraryPostOptions(body, { keepalive = false } = {}) {
 function flushAssStyleLibraryOnUnload() {
   clearTimeout(assStyleLibrarySaveTimer);
   assStyleLibrarySaveTimer = 0;
-  if (!assStyleLibraryDirty || !assStyleLibraryUsesServerStorage()) return;
+  if (!assStyleLibraryDirty || !__mawImportedBindings1.assStyleLibraryUsesServerStorage()) return;
   if (assStyleLibrarySaveInFlight && assStyleLibraryInFlightRevision === assStyleLibraryRevision) return;
   const normalized = window.AsrEditorUtils.normalizeAssStyleLibrary(ASS_STYLE_LIBRARY);
   try {
@@ -146,7 +164,7 @@ window.addEventListener('pagehide', flushAssStyleLibraryOnUnload);
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') {
     flushAssStyleLibraryOnUnload();
-  } else if (assStyleLibraryDirty && !assStyleLibrarySaveTimer && assStyleLibraryUsesServerStorage()) {
+  } else if (assStyleLibraryDirty && !assStyleLibrarySaveTimer && __mawImportedBindings1.assStyleLibraryUsesServerStorage()) {
     // 切后台时的 flush 可能保留了 dirty（存在在途旧修订写入）；回到前台后补一次常规保存。
     scheduleAssStyleLibrarySave();
   }
@@ -157,13 +175,13 @@ async function persistAssStyleLibrary() {
   assStyleLibrarySaveTimer = 0;
   const revision = assStyleLibraryRevision;
   const normalized = setAssStyleLibrary(ASS_STYLE_LIBRARY, { persistLocal: true });
-  if (!assStyleLibraryUsesServerStorage()) {
+  if (!__mawImportedBindings1.assStyleLibraryUsesServerStorage()) {
     if (revision === assStyleLibraryRevision) {
       assStyleLibraryDirty = false;
       ASS_STYLE_LIBRARY_READY = true;
     }
-    setAssStyleLibraryStatus('', 'success');
-    syncAssStyleManager?.();
+    __mawImportedBindings1.setAssStyleLibraryStatus('', 'success');
+    __mawImportedBindings1.syncAssStyleManager?.();
     return normalized;
   }
   assStyleLibrarySaveInFlight = true;
@@ -177,20 +195,20 @@ async function persistAssStyleLibrary() {
       setAssStyleLibrary(payload, { persistLocal: true });
       assStyleLibraryDirty = false;
       ASS_STYLE_LIBRARY_READY = true;
-      setAssStyleLibraryStatus('', 'success');
+      __mawImportedBindings1.setAssStyleLibraryStatus('', 'success');
     } else {
       // A newer edit was made while this request was in flight.  Keep the
       // current local state and let its debounced save publish the newer
       // revision instead of rolling the form back to an older response.
       ASS_STYLE_LIBRARY_READY = false;
-      setAssStyleLibraryStatus('本地有更新改动，等待再次同步', 'warning');
+      __mawImportedBindings1.setAssStyleLibraryStatus('本地有更新改动，等待再次同步', 'warning');
     }
-    syncAssStyleManager?.();
+    __mawImportedBindings1.syncAssStyleManager?.();
     return ASS_STYLE_LIBRARY;
   } catch (error) {
     // 本地副本仍然可用；状态会在管理窗中明确显示为未同步。
     ASS_STYLE_LIBRARY_READY = false;
-    setAssStyleLibraryStatus(`本地已保存，服务器同步失败：${error?.message || '未知错误'}`, 'warning');
+    __mawImportedBindings1.setAssStyleLibraryStatus(`本地已保存，服务器同步失败：${error?.message || '未知错误'}`, 'warning');
     return normalized;
   } finally {
     assStyleLibrarySaveInFlight = false;
@@ -203,22 +221,22 @@ async function loadAssStyleLibrary({ force = false } = {}) {
   if (force && assStyleLibraryDirty) {
     // The manager may be reopened while a debounced save is pending.  A
     // forced read must never replace those unsaved edits with the old file.
-    syncAssStyleManager?.();
+    __mawImportedBindings1.syncAssStyleManager?.();
     MawePlaybackLoop.refreshSubtitlePreview?.();
     return ASS_STYLE_LIBRARY;
   }
   setAssStyleLibrary(readLocalAssStyleLibrary());
-  setAssStyleLibraryStatus('正在加载…', 'pending');
+  __mawImportedBindings1.setAssStyleLibraryStatus('正在加载…', 'pending');
   assStyleLibraryLoadPromise = (async () => {
     // 让出一轮微任务再继续：便携（无服务器）分支没有任何真正的 await，
     // 会同步执行到底；启动早期调用时脚本后部的预览声明（如
     // renderedStickerOverlayEnabled）仍在暂时性死区，同步刷新预览会抛
     // ReferenceError。先等待一轮，保证回调都在脚本求值完成后运行。
     await Promise.resolve();
-    if (!assStyleLibraryUsesServerStorage()) {
+    if (!__mawImportedBindings1.assStyleLibraryUsesServerStorage()) {
       ASS_STYLE_LIBRARY_READY = true;
-      setAssStyleLibraryStatus('', 'success');
-      syncAssStyleManager?.();
+      __mawImportedBindings1.setAssStyleLibraryStatus('', 'success');
+      __mawImportedBindings1.syncAssStyleManager?.();
       MawePlaybackLoop.refreshSubtitlePreview?.();
       assStyleLibraryLoadPromise = null;
       return ASS_STYLE_LIBRARY;
@@ -232,19 +250,19 @@ async function loadAssStyleLibrary({ force = false } = {}) {
       if (!assStyleLibraryDirty) {
         setAssStyleLibrary(payload, { persistLocal: true });
         ASS_STYLE_LIBRARY_READY = true;
-        setAssStyleLibraryStatus('', 'success');
+        __mawImportedBindings1.setAssStyleLibraryStatus('', 'success');
       } else {
         // A form edit happened while GET was in flight.  The local edit is
         // authoritative until its own POST succeeds.
         ASS_STYLE_LIBRARY_READY = false;
-        setAssStyleLibraryStatus('本地有更新改动，等待再次同步', 'warning');
+        __mawImportedBindings1.setAssStyleLibraryStatus('本地有更新改动，等待再次同步', 'warning');
       }
     } catch (_) {
       // localhost 服务暂不可用时沿用本地副本；下次打开编辑器会再次尝试读取。
       ASS_STYLE_LIBRARY_READY = false;
-      setAssStyleLibraryStatus('使用本地副本，服务器同步失败', 'warning');
+      __mawImportedBindings1.setAssStyleLibraryStatus('使用本地副本，服务器同步失败', 'warning');
     }
-    syncAssStyleManager?.();
+    __mawImportedBindings1.syncAssStyleManager?.();
     MawePlaybackLoop.refreshSubtitlePreview?.();
     // Do not cache either a successful or failed request: each subsequent
     // manager open can observe changes made by another Editor or Launcher.
@@ -252,4 +270,6 @@ async function loadAssStyleLibrary({ force = false } = {}) {
     return ASS_STYLE_LIBRARY;
   })();
   return assStyleLibraryLoadPromise;
+}
+
 }

@@ -1,3 +1,6 @@
+
+export function* initialize() {
+yield;
 // 非模态浮层前置栈：层级管理、激活绑定与通用浮动面板工厂（settings-panels 加载期依赖）。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweFloatingPanel 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -261,3 +264,5 @@
     createFloatingPanel
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

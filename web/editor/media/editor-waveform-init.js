@@ -1,3 +1,10 @@
+import { legacyBindings as __mawImportedBindings0 } from "../cues/editor-wiring-overlay-transfer.js";
+import { legacyBindings as __mawImportedBindings1 } from "../cues/editor-wiring-cue-panel.js";
+import { legacyBindings as __mawImportedBindings2 } from "../ui/editor-wiring-context-menus.js";
+import { legacyBindings as __mawImportedBindings3 } from "./editor-wiring-keyboard-guards.js";
+import { legacyBindings as __mawImportedBindings4 } from "../cues/editor-wiring-overlay-split-merge.js";
+export function* initialize() {
+yield;
 // 波形初始化：WaveformEditor 装配与 reapeaks 懒加载。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweWaveformInit 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -23,7 +30,7 @@
     getSegments: (track = 'main') => track === 'extension'
       ? (MaweMultiSubtitleCore.getActiveExtensionTrack()?.segments || [])
       : track === 'overlay'
-        ? (overlayTrackVisible() ? (getOverlayTrack()?.segments || []) : [])
+        ? (__mawImportedBindings0.overlayTrackVisible() ? (__mawImportedBindings0.getOverlayTrack()?.segments || []) : [])
         : MaweBoot.DATA.segments,
     getExtensionSegments: (trackId = null) => MaweMultiSubtitleCore.getExtensionTrack(trackId)?.segments || [],
     getCrossTrackSnapTargets: (track = 'main', excludedSegments = new Set()) => {
@@ -40,14 +47,14 @@
         return targets;
       }
       if (!MaweMultiSubtitleCore.multiSubtitleVisible()) {
-        return track === 'main' && overlayTrackVisible()
-          ? collectEdges(getOverlayTrack()?.segments)
+        return track === 'main' && __mawImportedBindings0.overlayTrackVisible()
+          ? collectEdges(__mawImportedBindings0.getOverlayTrack()?.segments)
           : [];
       }
       const otherSegments = track === 'extension'
         ? MaweBoot.DATA.segments : (MaweMultiSubtitleCore.getActiveExtensionTrack()?.segments || []);
       const targets = collectEdges(otherSegments);
-      if (track === 'main' && overlayTrackVisible()) targets.push(...collectEdges(getOverlayTrack()?.segments));
+      if (track === 'main' && __mawImportedBindings0.overlayTrackVisible()) targets.push(...collectEdges(__mawImportedBindings0.getOverlayTrack()?.segments));
       return targets;
     },
     getSelection: (track = 'main') => track === 'extension' ? MaweSelection.selectedExtensionIdxs
@@ -71,26 +78,26 @@
       MaweCuePanel.focusCuePanelText(idx, 'extension');
     },
     selectOverlayCue: (idx) => {
-      selectOverlayCueRow(idx);
+      __mawImportedBindings1.selectOverlayCueRow(idx);
       MaweState.selection.overlayAnchor = idx;
     },
-    toggleOverlaySelection: (idx) => toggleOverlaySelection(idx),
+    toggleOverlaySelection: (idx) => __mawImportedBindings1.toggleOverlaySelection(idx),
     selectOverlayRange: (idx) => {
-      if (MaweState.selection.overlayAnchor >= 0) selectOverlayRange(MaweState.selection.overlayAnchor, idx);
-      else selectOverlayCueRow(idx);
+      if (MaweState.selection.overlayAnchor >= 0) __mawImportedBindings1.selectOverlayRange(MaweState.selection.overlayAnchor, idx);
+      else __mawImportedBindings1.selectOverlayCueRow(idx);
       MaweState.selection.overlayAnchor = idx;
     },
     activateOverlayCue: (idx) => {
       MaweCuePanel.setCuePanelTarget('overlay', idx);
     },
     enterOverlayCueEditor: (idx) => {
-      selectOverlayCueRow(idx, { focusEditor: true });
+      __mawImportedBindings1.selectOverlayCueRow(idx, { focusEditor: true });
     },
     // Shift+拖动逃逸：主轨邻居挡路时把被拖字幕迁入叠加轨，返回新下标。
-    convertCueToOverlay: (idx) => convertMainCueToOverlayForDrag(idx),
+    convertCueToOverlay: (idx) => __mawImportedBindings0.convertMainCueToOverlayForDrag(idx),
     // Shift+拖动往返：叠加轨字幕拖回主轨空隙时移回主轨，返回新下标。
-    convertOverlayCueToMainDrag: (idx) => convertOverlayCueToMainForDrag(idx),
-    showOverlayContextMenu: (x, y, idx) => showOverlayContextMenu(x, y, idx),
+    convertOverlayCueToMainDrag: (idx) => __mawImportedBindings0.convertOverlayCueToMainForDrag(idx),
+    showOverlayContextMenu: (x, y, idx) => __mawImportedBindings2.showOverlayContextMenu(x, y, idx),
     selectCue: (idx) => {
       MaweBindingAlign.selectCueByClick(idx);
       MaweSelection.lastClickedIdx = idx;
@@ -133,7 +140,7 @@
       MaweTextCleanup.seekFromWaveform(timeSec, options);
       if (!options.dragPreview) MaweCueListAnchor.resumeCueListFollowing();
     },
-    isPlaybackActive: () => isPlaybackActive(),
+    isPlaybackActive: () => __mawImportedBindings3.isPlaybackActive(),
     onPlayheadDragStateChange: (active) => {
       MawePlaybackLoop.waveformPlayheadDragging = active === true;
       if (!active) MaweCueListAnchor.resumeCueListFollowing();
@@ -168,7 +175,7 @@
     ),
     // 叠加轨启用（勾选「叠加字幕」）时，主轨占用位置按 Ctrl(Cmd)+拖动可
     // 直接创建叠加字幕；由波形侧改道创建轨道，这里只提供开关状态。
-    getOverlayCreateEnabled: () => getOverlayTrack()?.enabled === true,
+    getOverlayCreateEnabled: () => __mawImportedBindings0.getOverlayTrack()?.enabled === true,
     onCueCreateRejected: (reason) => {
       if (reason === 'too-short') MaweHint.flashHint('该空白区域不足 100ms，无法新增字幕', 'warning');
       if (reason === 'occupied') MaweHint.flashHint('该位置已有字幕，无法新增字幕', 'warning');
@@ -176,7 +183,7 @@
     // 剃刀工具：在波形指针位置安全拆分字幕。复用右键菜单的波形时间拆分路径；
     // 有可靠主轨字词时间码时沿用字词锚点，否则在弹窗中保留指针的绝对切点。
     splitCueAtTime: (idx, timeMs) => MaweSplitContext.splitFromContextMenu(idx, 0, 0, timeMs),
-    splitOverlayCueAtTime: (idx, timeMs) => openOverlaySplitModal(
+    splitOverlayCueAtTime: (idx, timeMs) => __mawImportedBindings4.openOverlaySplitModal(
       idx, Number.isFinite(timeMs) ? MaweTimeline.timelineFrameAlignedMilliseconds(timeMs) : timeMs,
     ),
     getClickBehavior: () => MaweSettings.EDITOR_SETTINGS.clickBehavior,
@@ -225,7 +232,7 @@
       MaweMultiSubtitleCore.markMainSegmentsDirty(mainIndices.map((idx) => MaweBoot.DATA.segments[idx]).filter(Boolean));
       const overlayIndices = editedTracks.find((entry) => entry.track === 'overlay')?.indices;
       if (overlayIndices) {
-        const overlay = getOverlayTrack();
+        const overlay = __mawImportedBindings0.getOverlayTrack();
         if (overlay) {
           overlay._dirty = true;
           overlayIndices.forEach((idx) => { if (overlay.segments[idx]) overlay.segments[idx]._dirty = true; });
@@ -331,3 +338,5 @@
     set deferredReapeaksEpoch(v) { deferredReapeaksEpoch = v; }
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

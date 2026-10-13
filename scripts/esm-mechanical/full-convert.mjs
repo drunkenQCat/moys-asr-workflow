@@ -26,10 +26,18 @@ export async function convertAll(root, { rewriteShared = true } = {}) {
     throw new Error('Conversion is restricted to an isolated research copy');
   }
   const files = readManifest(root);
+  // 工厂时代的适配：清单里已有真 ESM 工厂（export function create*，注册由构建
+  // 入口按清单序注入）。它们不参与 classic 词法共享（其绑定不裸漏），原样透传。
+  // E8/E9 等语义夹具没有 editor-modules.json：缺省视为全部 classic。
+  const modulesPath = path.join(root, 'web/editor-modules.json');
+  const modulesConfig = fs.existsSync(modulesPath)
+    ? JSON.parse(fs.readFileSync(modulesPath, 'utf8')) : { modules: [] };
+  const factoryByFile = new Map(modulesConfig.modules.map(item => [item.file, item]));
   const sources = files.map(file => {
     const source = fs.readFileSync(path.join(root, 'web', file), 'utf8');
+    if (factoryByFile.has(file)) return { file, source, kind: 'esm', ast: null, declarations: [] };
     const ast = acorn.parse(source, { ecmaVersion: 16, sourceType: 'script', ranges: true });
-    return { file, source, ast, declarations: declarations(ast) };
+    return { file, source, kind: 'classic', ast, declarations: declarations(ast) };
   });
   const owners = new Map();
   for (const item of sources) for (const declaration of item.declarations) {
@@ -53,6 +61,7 @@ export async function convertAll(root, { rewriteShared = true } = {}) {
   }
   const refsByFile = new Map();
   for (const item of sources) {
+    if (item.kind === 'esm') { refsByFile.set(item.file, []); continue; }
     const refs = unresolvedRefs(item.source).filter(ref => owners.has(ref.name));
     refsByFile.set(item.file, refs);
     for (const ref of refs) {
@@ -62,6 +71,13 @@ export async function convertAll(root, { rewriteShared = true } = {}) {
   }
   const outputs = new Map(), records = [];
   for (const item of sources) {
+    if (item.kind === 'esm') {
+      // 真 ESM 工厂：原样透传；注册由构建入口按清单序注入（保持现有 interleaving）。
+      outputs.set(item.file, item.source);
+      records.push({ file: item.file, factory: true, passthrough: true, importedBindings: 0,
+        providers: [], publishedBindings: [] });
+      continue;
+    }
     const refs = refsByFile.get(item.file);
     const providerFiles = [...new Set(refs.map(ref => owners.get(ref.name).file))];
     const aliases = new Map(providerFiles.map((file, i) => [file, `__mawImportedBindings${i}`]));
@@ -122,9 +138,13 @@ export function adaptConsumers(root) {
   const pythonPath = path.join(root, 'edit.py');
   const before = fs.readFileSync(pythonPath, 'utf8');
   const original = 'return "\\n\\n".join(read_web_asset(name).rstrip() for name in read_editor_script_manifest())';
-  if (!before.includes(original)) throw new Error('Unknown Python assembly shape');
-  fs.writeFileSync(pythonPath, before.replace(original,
-    'return read_web_asset("editor/boot/editor-bundle.js").rstrip()'));
+  // 消费端切 bundle 已在上游完成（bundle 退 Git 批次），此处幂等：已切则跳过。
+  if (before.includes(original)) {
+    fs.writeFileSync(pythonPath, before.replace(original,
+      'return read_web_asset("editor/boot/editor-bundle.js").rstrip()'));
+  } else if (!before.includes('read_web_asset("editor/boot/editor-bundle.js")')) {
+    throw new Error('Unknown Python assembly shape');
+  }
   // Keep source manifest for research audit; consumers no longer use it.
 }
 

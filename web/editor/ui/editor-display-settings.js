@@ -1,3 +1,8 @@
+import { legacyBindings as __mawImportedBindings0 } from "../cues/editor-wiring-overlay-transfer.js";
+import { legacyBindings as __mawImportedBindings1 } from "./editor-wiring-dom-panels.js";
+import { legacyBindings as __mawImportedBindings2 } from "../styles/editor-wiring-ass-manager.js";
+export function* initialize() {
+yield;
 // 显示设置：字幕列表/编辑区显示项应用、多重字幕行高联动与平台按键标签。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweDisplaySettings 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -23,7 +28,7 @@
   MaweCoreState.container.classList.toggle('hide-cue-time', !MaweSettings.EDITOR_SETTINGS.cueListShowTime);
   // 设置保留用户的显示偏好；当前工程完全没有表情包时，整列仍自动收起，
   // 分配首个表情包时由本函数根据最新数据直接恢复。
-  const overlaySegments = getOverlayTrack()?.segments || [];
+  const overlaySegments = __mawImportedBindings0.getOverlayTrack()?.segments || [];
   const projectHasStickers = MaweBoot.DATA.segments.some(segment => segment.sticker || segment.sticker_ref)
     || overlaySegments.some(segment => segment.sticker || segment.sticker_ref);
   MaweCoreState.container.classList.toggle('hide-cue-sticker',
@@ -98,8 +103,8 @@
   function updateMultiSubtitleUi() {
   // 「允许字幕重叠」开关常驻工具栏；勾选状态跟随用户意图（overlay.enabled），
   // 不要求叠加轨已有字幕，否则空轨道时勾选会被立即弹回。
-  if (overlayTrackSeparator) overlayTrackSeparator.hidden = MaweBoot.DATA.segments.length === 0;
-  if (overlayTrackToggle) overlayTrackToggle.checked = getOverlayTrack()?.enabled === true;
+  if (__mawImportedBindings1.overlayTrackSeparator) __mawImportedBindings1.overlayTrackSeparator.hidden = MaweBoot.DATA.segments.length === 0;
+  if (__mawImportedBindings1.overlayTrackToggle) __mawImportedBindings1.overlayTrackToggle.checked = __mawImportedBindings0.getOverlayTrack()?.enabled === true;
   const track = MaweMultiSubtitleCore.getActiveExtensionTrack();
   const hasTrack = Boolean(track && Array.isArray(track.segments));
   const enabled = hasTrack && MaweMultiSubtitleCore.getMultiSubtitleState().enabled === true;
@@ -154,7 +159,7 @@
   }
   const overlayQuickToggle = document.getElementById('overlay-quick-toggle');
   if (overlayQuickToggle) {
-    const overlayEnabled = getOverlayTrack()?.enabled === true;
+    const overlayEnabled = __mawImportedBindings0.getOverlayTrack()?.enabled === true;
     overlayQuickToggle.classList.toggle('active', overlayEnabled);
     overlayQuickToggle.setAttribute('aria-pressed', String(overlayEnabled));
   }
@@ -211,8 +216,8 @@
   MaweCoreState.container.dataset.multiDisplayMode = enabled ? (MaweMultiSubtitleCore.getMultiSubtitleState().display_mode || 'both') : 'main';
   // 多重字幕开合影响副字幕相关的 ASS 样式入口（设置页副字幕组、样式库
   // 副字幕槽位），同步刷新它们的可见性与选项。
-  syncAssModeDependentControls();
-  syncAssStyleManager();
+  __mawImportedBindings2.syncAssModeDependentControls();
+  __mawImportedBindings2.syncAssStyleManager();
 }
 
 
@@ -324,3 +329,5 @@
     applyPlatformKeyLabels
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

@@ -1,17 +1,16 @@
-// 清单内全部脚本的语法检查：不依赖任何 devDependency，任何环境都必须能跑。
-// tests/test_editor_script_order.mjs 用 acorn 做顺序断言，但 acorn 缺失时整体
-// skip；这里用 vm.Script 只做编译不执行，保证「语法」这一层永远不会静默失守，
-// 取代此前只检查 editor.js / waveform.js 两个历史入口的 node --check。
+// 清单内全部源的语法检查（终态契约）。
+//
+// 迁移前：源码是 classic script，用 vm.Script 编译（零依赖，任何环境可跑）。
+// 终态：清单源全部是 ESM 模块——源码一律按 module 解析；「classic 产物」这一
+// 保证移交 test_editor_bundle：产物 bundle 用 vm.Script 编译（classic）+ 构建器
+// 的入口校验。acorn 为 devDependency（package.json 显式声明），缺失时本测试
+// 直接崩红而非静默 skip——语法层不许无声失守。
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import test from "node:test";
-import vm from "node:vm";
 import { fileURLToPath } from "node:url";
-import * as acorn from 'acorn';
-
-const modules = new Set(JSON.parse(readFileSync(new URL('../web/editor-modules.json',import.meta.url),'utf8'))
-  .modules.map(item => item.file));
+import * as acorn from "acorn";
 
 const webDir = join(dirname(fileURLToPath(import.meta.url)), "..", "web");
 
@@ -20,18 +19,17 @@ const manifest = readFileSync(join(webDir, "editor-scripts.txt"), "utf8")
   .map((line) => line.split("#", 1)[0].trim())
   .filter(Boolean);
 
-test("editor-scripts.txt 内每个脚本都是合法的 classic script", () => {
+test("editor-scripts.txt 内每个源都是合法 ESM 模块", () => {
   assert.ok(manifest.length > 1, "清单不应为空");
   const broken = [];
   for (const entry of manifest) {
     const source = readFileSync(join(webDir, ...entry.split("/")), "utf8");
     try {
-      // 只编译，不执行：与 node --check 同等语法覆盖，不要求目标脚本能独立运行。
-      if (modules.has(entry)) acorn.parse(source,{ecmaVersion:'latest',sourceType:'module'});
-      else new vm.Script(source, { filename: entry });
+      // 只解析，不执行：与 node --check 同等语法覆盖，不要求源文件能独立运行。
+      acorn.parse(source, { ecmaVersion: "latest", sourceType: "module" });
     } catch (error) {
       broken.push(`${entry}: ${error.message}`);
     }
   }
-  assert.deepEqual(broken, [], "存在语法错误的编辑器脚本");
+  assert.deepEqual(broken, [], "存在语法错误的编辑器源");
 });

@@ -1,3 +1,7 @@
+import { legacyBindings as __mawImportedBindings0 } from "./editor-wiring-cue-panel.js";
+import { legacyBindings as __mawImportedBindings1 } from "./editor-wiring-overlay-transfer.js";
+export function* initialize() {
+yield;
 // 选择状态：主/副选中集、点击锚点与多选类刷新。
 // 状态由 MaweState 持有；保留旧接口供尚未迁移的消费者使用，外部仅经
 // window.MaweSelection 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -221,7 +225,7 @@
   MaweState.selection.add('extension', index);
   if (syncPair) syncBoundSelection('extension', index, track);
   updateMultiSelectionClasses();
-  updateSelectionCountText();
+  __mawImportedBindings0.updateSelectionCountText();
   MaweState.selection.extensionAnchor = index;
   MaweCoreState.waveformEditor?.updateSelection();
   MaweCuePanel.setCurrentCuePanelExtensionIndex(index, track);
@@ -238,7 +242,7 @@
     syncBoundSelection('extension', index, track);
   }
   updateMultiSelectionClasses();
-  updateSelectionCountText();
+  __mawImportedBindings0.updateSelectionCountText();
   MaweState.selection.extensionAnchor = index;
   MaweCoreState.waveformEditor?.updateSelection();
   MaweCuePanel.setCurrentCuePanelExtensionIndex(index, track);
@@ -261,7 +265,7 @@
     lastSelected = index;
   }
   updateMultiSelectionClasses();
-  updateSelectionCountText();
+  __mawImportedBindings0.updateSelectionCountText();
   if (lastSelected < 0) return;
   MaweState.selection.extensionAnchor = lastSelected;
   MaweCoreState.waveformEditor?.updateSelection();
@@ -282,7 +286,7 @@
     if (el) el.classList.add('selected');
     syncBoundSelection('main', idx);
   }
-  updateSelectionCountText();
+  __mawImportedBindings0.updateSelectionCountText();
   if (MaweCoreState.waveformEditor) MaweCoreState.waveformEditor.updateSelection();
   updateMultiSelectionClasses();
   MaweCuePanel.setCurrentCuePanelIndex(selectedIdxs.has(idx) ? idx : (selectedIdxs.values().next().value ?? -1));
@@ -301,7 +305,7 @@
     syncBoundSelection('main', i);
   }
   applyMainSelectionClasses((el) => el.classList.add('selected'));
-  updateSelectionCountText();
+  __mawImportedBindings0.updateSelectionCountText();
   if (MaweCoreState.waveformEditor) MaweCoreState.waveformEditor.updateSelection();
   updateMultiSelectionClasses();
   MaweCuePanel.setCurrentCuePanelIndex(selectedIdxs.has(b) ? b : (selectedIdxs.values().next().value ?? -1));
@@ -322,7 +326,7 @@
   if (syncPair) syncBoundSelection('main', idx);
   const el = MaweCoreState.container.querySelector(`.cue[data-idx="${idx}"]`);
   if (el) el.classList.add('selected');
-  updateSelectionCountText();
+  __mawImportedBindings0.updateSelectionCountText();
   if (MaweCoreState.waveformEditor) MaweCoreState.waveformEditor.updateSelection();
   updateMultiSelectionClasses();
   MaweCuePanel.setCurrentCuePanelIndex(idx);
@@ -337,7 +341,7 @@
   syncBoundSelection('main', idx);
   const el = MaweCoreState.container.querySelector(`.cue[data-idx="${idx}"]`);
   if (el) el.classList.add('selected');
-  updateSelectionCountText();
+  __mawImportedBindings0.updateSelectionCountText();
   if (MaweCoreState.waveformEditor) MaweCoreState.waveformEditor.updateSelection();
   MaweCuePanel.setCurrentCuePanelIndex(idx);
 }
@@ -349,7 +353,7 @@
   MaweState.selection.add('extension', index);
   syncBoundSelection('extension', index, track);
   updateMultiSelectionClasses();
-  updateSelectionCountText();
+  __mawImportedBindings0.updateSelectionCountText();
   MaweCoreState.waveformEditor?.updateSelection();
   MaweCuePanel.setCurrentCuePanelExtensionIndex(index, track);
 }
@@ -368,7 +372,7 @@
   MaweNavPreview.hideCueSplitPreview();
   added.forEach((idx) => syncBoundSelection('main', idx));
   applyMainSelectionClasses((el) => el.classList.add('selected'));
-  updateSelectionCountText();
+  __mawImportedBindings0.updateSelectionCountText();
   if (MaweCoreState.waveformEditor) MaweCoreState.waveformEditor.updateSelection();
   MaweCuePanel.setCurrentCuePanelIndex(added[added.length - 1]);
 }
@@ -384,7 +388,7 @@
   MaweCueElements.releaseTemporaryVisibleSplitCuesUnless('extension', added[added.length - 1], track);
   added.forEach((index) => syncBoundSelection('extension', index, track));
   updateMultiSelectionClasses();
-  updateSelectionCountText();
+  __mawImportedBindings0.updateSelectionCountText();
   MaweCoreState.waveformEditor?.updateSelection();
   MaweCuePanel.setCurrentCuePanelExtensionIndex(added[added.length - 1], track);
 }
@@ -406,13 +410,13 @@
     MaweState.selection.add('extension', idx);
     syncBoundSelection('extension', idx, extensionTrack);
   });
-  (getOverlayTrack()?.segments || []).forEach((_, idx) => {
-    if (isHiddenDisabled(idx, getOverlayTrack())) return;
+  (__mawImportedBindings1.getOverlayTrack()?.segments || []).forEach((_, idx) => {
+    if (isHiddenDisabled(idx, __mawImportedBindings1.getOverlayTrack())) return;
     MaweState.selection.add('overlay', idx);
   });
-  syncOverlaySelectionClasses();
+  __mawImportedBindings0.syncOverlaySelectionClasses();
   updateMultiSelectionClasses();
-  updateSelectionCountText();
+  __mawImportedBindings0.updateSelectionCountText();
   if (MaweCoreState.waveformEditor) MaweCoreState.waveformEditor.updateSelection();
   const last = MaweBoot.DATA.segments.length - 1;
   if (last >= 0 && selectedIdxs.has(last)) {
@@ -469,3 +473,5 @@
     selectAll
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

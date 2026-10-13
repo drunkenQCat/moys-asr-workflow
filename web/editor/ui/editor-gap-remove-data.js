@@ -1,3 +1,6 @@
+
+export function* initialize() {
+yield;
 // 空隙移除数据层：默认参数、规范化缓存与空隙/移除区间派生。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweGapRemoveData 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -153,3 +156,5 @@
     getRemovedGapRanges
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

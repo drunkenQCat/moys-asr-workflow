@@ -1,3 +1,6 @@
+
+export function* initialize() {
+yield;
 // Compose replaceable host capabilities without touching browser APIs at startup.
 window.MAWE.register('editor-host', function createEditorHost(dependencies) {
   'use strict';
@@ -13,3 +16,5 @@ window.MAWE.register('editor-host', function createEditorHost(dependencies) {
   });
 });
 window.MaweHost = window.MAWE.resolve('editor-host', { browser: window, environment: globalThis });
+
+}

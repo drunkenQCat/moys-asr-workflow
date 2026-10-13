@@ -1,3 +1,7 @@
+import { legacyBindings as __mawImportedBindings0 } from "./editor-wiring-overlay-transfer.js";
+import { legacyBindings as __mawImportedBindings1 } from "../media/editor-wiring-keyboard-guards.js";
+export function* initialize() {
+yield;
 // 文本清理与 seek：标点规整、分组时间同步、媒体 seek 助手。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweTextCleanup 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -59,7 +63,7 @@
   sync(MaweBoot.DATA.segments, 'color', 'color_ref');
   // 叠加轨自持 head 的范围随段拖动自动归位：换轨瞬间物化的颜色快照
   // 记录的是当时的位置，以 onCommitEdit 的这次同步为准。
-  const overlay = getOverlayTrack();
+  const overlay = __mawImportedBindings0.getOverlayTrack();
   if (overlay?.segments?.length) {
     sync(overlay.segments, 'sticker', 'sticker_ref');
     sync(overlay.segments, 'color', 'color_ref');
@@ -80,7 +84,7 @@
   }
   try {
     MaweCoreState.player.currentTime = Math.max(0, timeSec);
-    if (mouseClick) pausePlaybackAfterMouseClick();
+    if (mouseClick) __mawImportedBindings1.pausePlaybackAfterMouseClick();
     if (!dragPreview) {
       MawePlaybackLoop.update();
       // currentTime 的 seeked/timeupdate 事件是异步触发的；先同步刷新波形，
@@ -117,3 +121,5 @@
     flushPendingMediaSeek
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

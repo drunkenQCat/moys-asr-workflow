@@ -1,3 +1,6 @@
+
+export function* initialize() {
+yield;
 // Personal default directory and project override share the existing validated server endpoint.
 (function initStickerRoot(global) {
   'use strict';
@@ -94,3 +97,5 @@
     defaultInput, defaultButton, projectInput, projectButton, overrideToggle,
   });
 })(window);
+
+}

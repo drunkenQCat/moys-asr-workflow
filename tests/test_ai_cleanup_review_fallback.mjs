@@ -3,11 +3,14 @@ import fs from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import { loadEditorModule } from './helpers/editor-module-loader.mjs';
+import { compileEditorFixture } from './helpers/editor-module-loader.mjs';
 
 const plain = (value) => JSON.parse(JSON.stringify(value));
 
 function fixture(markerShape) {
-  const context = { window: {}, document: { querySelectorAll: () => [], getElementById: () => null } };
+  const context = { window: { addEventListener() {}, removeEventListener() {} },
+    document: { querySelectorAll: () => [], getElementById: () => null, addEventListener() {},
+      documentElement: { style: { setProperty() {} }, dataset: {} } } };
   loadEditorModule(context, 'shared/editor-utils.js');
   const core = context.window.AsrGapRemoveCore;
   const rows = [['我', 0, 110], ['我这个', 130, 400], ['，', 410, 430], ['功能', 500, 800],
@@ -34,8 +37,14 @@ function fixture(markerShape) {
       script_alignment: [{ start: 3000, end: 3050 }],
     }, manual_overrides: [{ id: 'manual-late', start: 1500, end: 1600, removed: true }] } },
   };
-  context.MaweBoot = { DATA: project };
-  vm.runInNewContext(fs.readFileSync(new URL('../web/editor/io/editor-json-repair.js', import.meta.url), 'utf8'), context);
+  context.MaweBoot = { DATA: project, maweDomContractCheck: () => [], maweDebug() {} };
+  context.MaweMultiSubtitleCore = {
+    MULTI: 'main', getActiveExtensionTrack: () => ({ segments: [] }),
+    getExtensionSubtitleSplitMode: () => 'word', getMainSubtitleSplitMode: () => 'word',
+    getMultiSubtitleState: () => ({ enabled: false, tracks: [] }),
+    normalizeMultiSubtitleState: (state) => state ?? { enabled: false, tracks: [] },
+  };
+  vm.runInNewContext(compileEditorFixture('editor/io/editor-json-repair.js'), context);
   return { context, core, project };
 }
 

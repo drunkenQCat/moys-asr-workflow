@@ -1,3 +1,6 @@
+
+export function* initialize() {
+yield;
 // 右键拆分入口：从右键菜单/波形位置安全拆分。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweSplitContext 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -83,3 +86,5 @@
     splitFromContextMenu
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

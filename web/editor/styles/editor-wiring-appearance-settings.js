@@ -1,16 +1,19 @@
+import { legacyBindings as __mawImportedBindings0 } from "../ui/editor-wiring-dom-panels.js";
+export function* initialize() {
+yield;
 MaweDom.subtitleFontSizeSelect?.addEventListener('change', () => {
   const value = MaweDom.subtitleFontSizeSelect.value;
   MaweHistory.pushPreviewUndo('调整字幕字号', MaweHistory.snapshotPreviewState());
   MaweAppearance.setSubtitleAppearance({ font_size: value === 'auto' ? null : Number(value) });
 });
-subtitleFontFamilyInput?.addEventListener('change', () => {
+__mawImportedBindings0.subtitleFontFamilyInput?.addEventListener('change', () => {
   MaweHistory.pushPreviewUndo('调整字幕字体', MaweHistory.snapshotPreviewState());
-  MaweAppearance.setSubtitleAppearance({ font_family: MaweAppearance.subtitleFontFamilyInputToStored(subtitleFontFamilyInput.value) });
+  MaweAppearance.setSubtitleAppearance({ font_family: MaweAppearance.subtitleFontFamilyInputToStored(__mawImportedBindings0.subtitleFontFamilyInput.value) });
   MaweAppearance.syncSubtitleAppearanceControls();
 });
-assColorStyleSelect?.addEventListener('change', () => {
+__mawImportedBindings0.assColorStyleSelect?.addEventListener('change', () => {
   MaweHistory.pushPreviewUndo('调整 ASS 颜色字幕样式', MaweHistory.snapshotPreviewState());
-  MaweAppearance.setSubtitleAppearance({ ass_color_style: assColorStyleSelect.value });
+  MaweAppearance.setSubtitleAppearance({ ass_color_style: __mawImportedBindings0.assColorStyleSelect.value });
   MawePlaybackLoop.update();
 });
 MaweColors.subtitleColorPaletteEnabledInput?.addEventListener('change', () => {
@@ -45,10 +48,10 @@ MaweDom.subtitleColorUnderlineInput?.addEventListener('change', () => {
   MawePlaybackLoop.update();
 });
 // 提示中的「ASS 字幕模式」是链接：跳到设置窗口的「字幕样式」tab。
-subtitleColorAssModeHintLink?.addEventListener('click', () => {
+__mawImportedBindings0.subtitleColorAssModeHintLink?.addEventListener('click', () => {
   MaweSettingsPanels.openEditorSettingsAtTab('editor-settings-tab-subtitle-style');
 });
-assColorSpeakerExportLink?.addEventListener('click', (event) => {
+__mawImportedBindings0.assColorSpeakerExportLink?.addEventListener('click', (event) => {
   event.preventDefault();
   MaweSettingsPanels.openEditorSettingsAtTab('editor-settings-tab-project-color');
   MaweDom.exportSpeakerLabelsToggle?.focus();
@@ -133,3 +136,5 @@ MaweDom.extensionOverlayToggle?.addEventListener('change', () => {
   MawePreviewGeometry.refreshPreviewGeometryEditable();
   MawePlaybackLoop.update();
 });
+
+}

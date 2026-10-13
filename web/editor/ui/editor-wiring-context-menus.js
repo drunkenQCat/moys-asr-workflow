@@ -1,3 +1,12 @@
+import { legacyBindings as __mawImportedBindings0 } from "../cues/editor-wiring-overlay-transfer.js";
+import { legacyBindings as __mawImportedBindings1 } from "../cues/editor-wiring-overlay-split-merge.js";
+import { legacyBindings as __mawImportedBindings2 } from "../cues/editor-wiring-overlay-actions.js";
+export let legacyBindings;
+export function* initialize() {
+legacyBindings = Object.freeze({
+get showOverlayContextMenu() { return showOverlayContextMenu; }, set showOverlayContextMenu(value) { showOverlayContextMenu = value; }
+});
+yield;
 
 
 // === 右键菜单 ===
@@ -6,7 +15,7 @@
 
 // 叠加字幕块的右键菜单：转为主字幕 / 删除。叠加轨不参与拆分合并与绑定。
 function showOverlayContextMenu(x, y, index) {
-  const overlay = getOverlayTrack();
+  const overlay = __mawImportedBindings0.getOverlayTrack();
   const segment = overlay?.segments?.[index];
   if (!segment) return;
   // 主轨同时间段已有字幕时，转回去会产生主轨重叠，置灰禁用；
@@ -43,15 +52,15 @@ function showOverlayContextMenu(x, y, index) {
   }
   // 试听：只播放该叠加字幕自身的时间范围，到终点自动暂停。
   addItem('试听', () => MaweMediaPlayback.auditionRange(segment.start, segment.end));
-  addItem('拆分此叠加字幕', () => openOverlaySplitModal(index, null));
-  addItem('转为主字幕', () => convertOverlayCueToMain(index), { disabled: mainOccupied });
+  addItem('拆分此叠加字幕', () => __mawImportedBindings1.openOverlaySplitModal(index, null));
+  addItem('转为主字幕', () => __mawImportedBindings0.convertOverlayCueToMain(index), { disabled: mainOccupied });
   addSep();
   // 组 2：外观（表情包与颜色），交互与主字幕菜单对齐（1~5 快捷键同源）。
   // 表情包功能总开关关闭时隐藏分配入口，工程数据保留。
   const stickersEnabled = MaweSettings.EDITOR_SETTINGS.stickersEnabled !== false;
   if (stickersEnabled) addItem('分配表情包…', () => MaweStickerPicker.openStickerPicker([index], false, { overlay: true }));
   if (stickersEnabled && (segment.sticker || segment.sticker_ref)) {
-    addItem('删除表情包', () => clearOverlaySticker(index));
+    addItem('删除表情包', () => __mawImportedBindings2.clearOverlaySticker(index));
   }
   const colorRow = document.createElement('div');
   colorRow.className = 'item';
@@ -78,14 +87,14 @@ function showOverlayContextMenu(x, y, index) {
     swatch.addEventListener('click', (e) => {
       e.stopPropagation();
       MaweDom.ctxmenu.classList.remove('show');
-      assignOverlayColor([index], c.name);
+      __mawImportedBindings2.assignOverlayColor([index], c.name);
     });
     swatches.appendChild(swatch);
   });
   colorRow.appendChild(swatches);
   MaweDom.ctxmenu.appendChild(colorRow);
   if (segment.color || segment.color_ref) {
-    addItem('清除颜色', () => clearOverlayColorOnTargets([index]), { danger: true });
+    addItem('清除颜色', () => __mawImportedBindings2.clearOverlayColorOnTargets([index]), { danger: true });
   }
   addSep();
   // 组 3：状态与删除（Alt+点击波形块亦可切换，此处为菜单入口）
@@ -94,7 +103,7 @@ function showOverlayContextMenu(x, y, index) {
     () => MaweStickerPicker.toggleDisabled([index], 'overlay'),
   );
   addSep();
-  addItem('删除此叠加字幕', () => deleteOverlayCues([index]), { danger: true });
+  addItem('删除此叠加字幕', () => __mawImportedBindings0.deleteOverlayCues([index]), { danger: true });
   MaweDom.ctxmenu.classList.add('show');
   const rect = MaweDom.ctxmenu.getBoundingClientRect();
   let nx = x, ny = y;
@@ -127,3 +136,5 @@ document.addEventListener('keydown', (e) => {
     MaweDom.ctxmenu.classList.remove('show');
   }
 });
+
+}

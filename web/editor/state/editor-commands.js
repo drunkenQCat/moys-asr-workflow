@@ -1,3 +1,6 @@
+
+export function* initialize() {
+yield;
 // Stage a snapshot; publish history only after a real, successful mutation.
 window.MAWE.register('editor-commands', function createEditorCommands(dependencies) {
   'use strict';
@@ -78,3 +81,5 @@ window.MAWE.register('editor-commands', function createEditorCommands(dependenci
     refresh: invalidation => MaweViewUpdates.invalidate({ save: true, ...invalidation }),
   });
 })();
+
+}

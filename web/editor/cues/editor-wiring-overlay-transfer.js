@@ -1,3 +1,19 @@
+import { legacyBindings as __mawImportedBindings0 } from "../boot/editor.js";
+import { legacyBindings as __mawImportedBindings1 } from "./editor-wiring-cue-panel.js";
+export let legacyBindings;
+export function* initialize() {
+legacyBindings = Object.freeze({
+get getOverlayTrack() { return getOverlayTrack; }, set getOverlayTrack(value) { getOverlayTrack = value; },
+get overlayTrackVisible() { return overlayTrackVisible; }, set overlayTrackVisible(value) { overlayTrackVisible = value; },
+get detachCuePanelFromTrackEdits() { return detachCuePanelFromTrackEdits; }, set detachCuePanelFromTrackEdits(value) { detachCuePanelFromTrackEdits = value; },
+get convertMainCuesToOverlay() { return convertMainCuesToOverlay; }, set convertMainCuesToOverlay(value) { convertMainCuesToOverlay = value; },
+get convertMainCueToOverlayForDrag() { return convertMainCueToOverlayForDrag; }, set convertMainCueToOverlayForDrag(value) { convertMainCueToOverlayForDrag = value; },
+get convertOverlayCueToMainForDrag() { return convertOverlayCueToMainForDrag; }, set convertOverlayCueToMainForDrag(value) { convertOverlayCueToMainForDrag = value; },
+get convertOverlayCueToMain() { return convertOverlayCueToMain; }, set convertOverlayCueToMain(value) { convertOverlayCueToMain = value; },
+get deleteOverlayCues() { return deleteOverlayCues; }, set deleteOverlayCues(value) { deleteOverlayCues = value; },
+get activeExtensionSegments() { return activeExtensionSegments; }, set activeExtensionSegments(value) { activeExtensionSegments = value; }
+});
+yield;
 
 
 
@@ -22,7 +38,7 @@ function moveSegmentToOverlayTrack(index) {
   const segment = MaweBoot.DATA.segments[index];
   const overlay = getOverlayTrack();
   if (!segment || !overlay || !Array.isArray(overlay.segments)) return -1;
-  const newIndex = MULTI_SUBTITLE_UTILS.moveSegmentBetweenTracks(MaweBoot.DATA.segments, overlay.segments, index);
+  const newIndex = __mawImportedBindings0.MULTI_SUBTITLE_UTILS.moveSegmentBetweenTracks(MaweBoot.DATA.segments, overlay.segments, index);
   if (newIndex < 0) return -1;
   overlay.enabled = true;
   overlay._dirty = true;
@@ -34,7 +50,7 @@ function moveOverlaySegmentToMainTrack(index) {
   const overlay = getOverlayTrack();
   const segment = overlay?.segments?.[index];
   if (!segment || !Array.isArray(MaweBoot.DATA.segments)) return -1;
-  const newIndex = MULTI_SUBTITLE_UTILS.moveSegmentBetweenTracks(overlay.segments, MaweBoot.DATA.segments, index);
+  const newIndex = __mawImportedBindings0.MULTI_SUBTITLE_UTILS.moveSegmentBetweenTracks(overlay.segments, MaweBoot.DATA.segments, index);
   if (newIndex < 0) return -1;
   overlay._dirty = true;
   segment._dirty = true;
@@ -211,7 +227,7 @@ function convertMainCueToOverlayForDrag(index) {
   applyCueStickerSnapshot(segment, stickerSnapshot);
   const { wasSelected, nextAnchor } = MaweState.selection.removeAndShift('main', index);
   MaweSelection.lastClickedIdx = nextAnchor;
-  updateSelectionCountText();
+  __mawImportedBindings1.updateSelectionCountText();
   if (panelWasHere) MaweCuePanel.setCuePanelTarget('overlay', newIndex);
   if (wasSelected) {
     MaweState.selection.add('overlay', newIndex);
@@ -245,7 +261,7 @@ function convertOverlayCueToMainForDrag(index) {
   shiftMainGroupRefsAfterInsert(newIndex);
   const { wasSelected, nextAnchor } = MaweState.selection.removeAndShift('overlay', index);
   MaweState.selection.overlayAnchor = nextAnchor;
-  updateSelectionCountText();
+  __mawImportedBindings1.updateSelectionCountText();
   if (panelWasHere) MaweCuePanel.setCuePanelTarget('main', newIndex);
   if (wasSelected && !MaweSelection.isHiddenDisabled(newIndex)) {
     MaweSelection.addMainIndexToSelection(newIndex);
@@ -406,3 +422,5 @@ MaweMultiSubtitleCore.normalizeMultiSubtitleState();
 // 原生 number 输入框以 min=10、step=100 计算大于 100 的向下步进时，
 // 会把 200 算成 110。把这个浏览器步进结果还原为用户看到的 100ms 档位，
 // 同时保留 100ms 向下 90ms、向上 200ms 的边界行为。
+
+}

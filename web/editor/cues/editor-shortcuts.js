@@ -1,3 +1,6 @@
+
+export function* initialize() {
+yield;
 // 快捷键共用件：拦截提示、空格拦截与播放速率档位格式化。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweShortcuts 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -42,3 +45,5 @@
     fmtRate
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

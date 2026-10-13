@@ -91,11 +91,11 @@ test('E5: invalid ESM exports and absent inputs are build failures', async () =>
       + before + '\nwindow.__missingExportCanary = definitelyMissingExport;\n');
     await assert.rejects(buildEditor(root), /No matching export/);
   } finally { fs.writeFileSync(sourcePath, before); }
-  const manifestPath = path.join(root, 'web/editor-sources.txt');
+  const manifestPath = path.join(root, 'web/editor-scripts.txt');
   const manifest = fs.readFileSync(manifestPath, 'utf8');
   try {
     fs.writeFileSync(manifestPath, manifest + '\nmissing-input.js\n');
-    await assert.rejects(buildEditor(root), /missing-input|Could not resolve|ENOENT/);
+    await assert.rejects(buildEditor(root), /missing-input|Could not resolve|ENOENT|Cannot find module/);
   } finally { fs.writeFileSync(manifestPath, manifest); }
 });
 

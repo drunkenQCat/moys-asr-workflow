@@ -1,3 +1,9 @@
+import { legacyBindings as __mawImportedBindings0 } from "./editor-wiring-font-geometry.js";
+import { legacyBindings as __mawImportedBindings1 } from "./editor-wiring-ass-storage.js";
+import { legacyBindings as __mawImportedBindings2 } from "../ui/editor-wiring-dom-panels.js";
+import { legacyBindings as __mawImportedBindings3 } from "./editor-wiring-ass-manager.js";
+export function* initialize() {
+yield;
 // 字幕外观：字体/颜色/背景规范化、本机字体扫描与主副字幕外观应用。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweAppearance 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -157,8 +163,8 @@
       option.textContent = subtitleFontFamilyDisplayName(option.value);
     });
   });
-  rebuildSubtitleFontFamilyOptions();
-  rebuildAssFontNameOptions();
+  __mawImportedBindings0.rebuildSubtitleFontFamilyOptions();
+  __mawImportedBindings0.rebuildAssFontNameOptions();
   syncSubtitleAppearanceControls();
 }
 
@@ -187,7 +193,7 @@
   if (color) result.color = color;
   const colorStyle = normalizeSubtitleColorStyle(value?.color_style);
   if (colorStyle) result.color_style = colorStyle;
-  const assColorStyle = normalizeAssColorStyleValue(value?.ass_color_style);
+  const assColorStyle = __mawImportedBindings0.normalizeAssColorStyleValue(value?.ass_color_style);
   if (assColorStyle) result.ass_color_style = assColorStyle;
   if (value?.color_underline === false) result.color_underline = false;
   return result;
@@ -201,7 +207,7 @@
     color: result.color || MaweSettings.DEFAULT_SUBTITLE_COLOR,
     color_underline: result.color_underline !== false,
     color_style: result.color_style || MaweSettings.DEFAULT_SUBTITLE_COLOR_STYLE,
-    ass_color_style: result.ass_color_style || DEFAULT_ASS_COLOR_STYLE,
+    ass_color_style: result.ass_color_style || __mawImportedBindings1.DEFAULT_ASS_COLOR_STYLE,
   };
 }
 
@@ -247,16 +253,16 @@
   if (MaweDom.subtitleColorUnderlineInput) {
     MaweDom.subtitleColorUnderlineInput.checked = appearance.color_underline !== false;
   }
-  if (assColorStyleSelect) {
-    assColorStyleSelect.value = appearance.ass_color_style || DEFAULT_ASS_COLOR_STYLE;
+  if (__mawImportedBindings2.assColorStyleSelect) {
+    __mawImportedBindings2.assColorStyleSelect.value = appearance.ass_color_style || __mawImportedBindings1.DEFAULT_ASS_COLOR_STYLE;
   }
   // 「预览颜色样式」的显隐由 syncAssModeDependentControls 统一处理（含 ASS 开关切换）。
-  syncAssModeDependentControls();
+  __mawImportedBindings3.syncAssModeDependentControls();
   if (MaweDom.subtitleColorStyleSelect) {
     MaweDom.subtitleColorStyleSelect.value = appearance.color_style || MaweSettings.DEFAULT_SUBTITLE_COLOR_STYLE;
   }
-  if (subtitleFontFamilyInput && document.activeElement !== subtitleFontFamilyInput) {
-    subtitleFontFamilyInput.value = subtitleFontFamilyStoredToInput(appearance.font_family || 'default');
+  if (__mawImportedBindings2.subtitleFontFamilyInput && document.activeElement !== __mawImportedBindings2.subtitleFontFamilyInput) {
+    __mawImportedBindings2.subtitleFontFamilyInput.value = subtitleFontFamilyStoredToInput(appearance.font_family || 'default');
   }
   if (MaweDom.subtitleBackgroundColorInput) {
     MaweDom.subtitleBackgroundColorInput.value = appearance.background_color
@@ -386,7 +392,7 @@
     if (colorStyle) next.color_style = colorStyle;
   }
   if (Object.prototype.hasOwnProperty.call(patch, 'ass_color_style')) {
-    const assColorStyle = normalizeAssColorStyleValue(patch.ass_color_style);
+    const assColorStyle = __mawImportedBindings0.normalizeAssColorStyleValue(patch.ass_color_style);
     if (assColorStyle) next.ass_color_style = assColorStyle;
   }
   if (!MaweBoot.DATA.preview || typeof MaweBoot.DATA.preview !== 'object') MaweBoot.DATA.preview = {};
@@ -435,8 +441,8 @@
     });
     select.append(fragment);
   }
-  rebuildSubtitleFontFamilyOptions();
-  rebuildAssFontNameOptions();
+  __mawImportedBindings0.rebuildSubtitleFontFamilyOptions();
+  __mawImportedBindings0.rebuildAssFontNameOptions();
   syncSubtitleAppearanceControls();
   syncExtensionSubtitleAppearanceControls();
 }
@@ -594,3 +600,5 @@
     subtitleFontFamilyPresetLabel
 });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

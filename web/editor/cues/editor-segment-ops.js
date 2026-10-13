@@ -1,3 +1,6 @@
+
+export function* initialize() {
+yield;
 // 段落操作：连续合并、主/副合并与范围延展。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweSegmentOps 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -768,3 +771,5 @@
     deleteExtensionSegments
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

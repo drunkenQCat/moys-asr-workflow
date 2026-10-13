@@ -1,3 +1,17 @@
+import { legacyBindings as __mawImportedBindings0 } from "./editor-wiring-overlay-transfer.js";
+import { legacyBindings as __mawImportedBindings1 } from "../media/editor-wiring-keyboard-guards.js";
+import { legacyBindings as __mawImportedBindings2 } from "../ui/editor-wiring-context-menus.js";
+export let legacyBindings;
+export function* initialize() {
+legacyBindings = Object.freeze({
+get updateSelectionCountText() { return updateSelectionCountText; }, set updateSelectionCountText(value) { updateSelectionCountText = value; },
+get syncOverlaySelectionClasses() { return syncOverlaySelectionClasses; }, set syncOverlaySelectionClasses(value) { syncOverlaySelectionClasses = value; },
+get selectOverlayCueRow() { return selectOverlayCueRow; }, set selectOverlayCueRow(value) { selectOverlayCueRow = value; },
+get selectOverlayRange() { return selectOverlayRange; }, set selectOverlayRange(value) { selectOverlayRange = value; },
+get toggleOverlaySelection() { return toggleOverlaySelection; }, set toggleOverlaySelection(value) { toggleOverlaySelection = value; },
+get buildOverlayCueEl() { return buildOverlayCueEl; }, set buildOverlayCueEl(value) { buildOverlayCueEl = value; }
+});
+yield;
 
 
 
@@ -225,12 +239,12 @@ function selectOverlayCueRow(index, { focusEditor = false } = {}) {
 }
 
 function selectOverlayRange(fromIndex, toIndex) {
-  const segments = getOverlayTrack()?.segments || [];
+  const segments = __mawImportedBindings0.getOverlayTrack()?.segments || [];
   const from = Math.max(0, Math.min(fromIndex, toIndex));
   const to = Math.min(segments.length - 1, Math.max(fromIndex, toIndex));
   MaweState.selection.clear('overlay');
   for (let index = from; index <= to; index += 1) {
-    if (MaweSelection.isHiddenDisabled(index, getOverlayTrack())) continue;
+    if (MaweSelection.isHiddenDisabled(index, __mawImportedBindings0.getOverlayTrack())) continue;
     MaweState.selection.add('overlay', index);
   }
   MaweCuePanel.setCuePanelTarget('overlay', toIndex);
@@ -241,7 +255,7 @@ function selectOverlayRange(fromIndex, toIndex) {
 }
 
 function toggleOverlaySelection(index) {
-  if (MaweSelection.isHiddenDisabled(index, getOverlayTrack())) return;  // 隐藏禁用项不参与选择
+  if (MaweSelection.isHiddenDisabled(index, __mawImportedBindings0.getOverlayTrack())) return;  // 隐藏禁用项不参与选择
   const row = MaweCoreState.container.querySelector(`.cue[data-overlay-idx="${index}"]`);
   if (MaweState.selection.indices('overlay').has(index)) {
     MaweState.selection.remove('overlay', index);
@@ -274,12 +288,12 @@ function buildOverlayCueEl(seg, index) {
       return;
     }
     selectOverlayCueRow(index);
-    const segment = getOverlayTrack()?.segments?.[index];
+    const segment = __mawImportedBindings0.getOverlayTrack()?.segments?.[index];
     if (!segment) return;
     const previousSuppress = MawePlaybackLoop.suppressCueListAutoScroll;
     // 与副字幕一致：点击后的 seek 会同步刷新主字幕 active 状态；这次刷新不能把
     // 列表从刚点击的叠加字幕行再次滚到对应的主字幕行。
-    const wasPlaying = isPlaybackActive();
+    const wasPlaying = __mawImportedBindings1.isPlaybackActive();
     MawePlaybackLoop.suppressCueListAutoScroll = true;
     try {
       MaweCoreState.waveformEditor?.revealTime(segment.start, true);
@@ -303,7 +317,7 @@ function buildOverlayCueEl(seg, index) {
   el.addEventListener('contextmenu', (event) => {
     event.preventDefault();
     event.stopPropagation();
-    showOverlayContextMenu(event.clientX, event.clientY, index);
+    __mawImportedBindings2.showOverlayContextMenu(event.clientX, event.clientY, index);
   });
   return el;
 }
@@ -321,3 +335,5 @@ function buildOverlayCueEl(seg, index) {
 
 
 // === 字数 ===
+
+}

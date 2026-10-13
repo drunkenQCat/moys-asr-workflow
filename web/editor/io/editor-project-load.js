@@ -1,3 +1,7 @@
+import { legacyBindings as __mawImportedBindings0 } from "./editor-wiring-export-context.js";
+import { legacyBindings as __mawImportedBindings1 } from "../boot/editor.js";
+export function* initialize() {
+yield;
 // 工程加载：规范化应用、检查点、SRT 解析与主轨替换。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweProjectLoad 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -79,8 +83,8 @@ function applyCanonicalProject(data, filename) {
   MaweCuePanelState.currentCuePanelTrackId = null;
   MaweCuePanelState.resetCuePanelEditState({ discard: true });
   resetLoadedMedia();
-  projectExtensionFields = Object.fromEntries(
-    Object.entries(data).filter(([key]) => !CANONICAL_PROJECT_FIELDS.has(key)),
+  __mawImportedBindings0.projectExtensionFields = Object.fromEntries(
+    Object.entries(data).filter(([key]) => !__mawImportedBindings0.CANONICAL_PROJECT_FIELDS.has(key)),
   );
   MaweBoot.DATA.schema = window.AsrEditorUtils.PROJECT_SCHEMA;
   MaweBoot.DATA.media = typeof data.media === 'string' ? data.media : '';
@@ -122,8 +126,8 @@ function applyCanonicalProject(data, filename) {
   MaweBoot.DATA.sticker_root = typeof data.sticker_root === 'string' ? data.sticker_root : '';
   MaweBoot.DATA.segments.length = 0;
   data.segments.forEach((segment) => MaweBoot.DATA.segments.push(segment));
-  MaweBoot.DATA.multi_subtitle = MULTI_SUBTITLE_UTILS.normalizeMultiSubtitle(data.multi_subtitle, MaweBoot.DATA.segments);
-  MaweBoot.DATA.overlay_track = MULTI_SUBTITLE_UTILS.normalizeOverlayTrack(data.overlay_track);
+  MaweBoot.DATA.multi_subtitle = __mawImportedBindings1.MULTI_SUBTITLE_UTILS.normalizeMultiSubtitle(data.multi_subtitle, MaweBoot.DATA.segments);
+  MaweBoot.DATA.overlay_track = __mawImportedBindings1.MULTI_SUBTITLE_UTILS.normalizeOverlayTrack(data.overlay_track);
   MaweTimeline.syncProjectTimebaseAndBindingOffsets(MaweBoot.DATA, { preferFrames: MaweBoot.DATA.timebase.unit === 'frames' });
   MaweHistory.editorHistory.clear();
   MaweHistory.updateUndoRedoButtons();
@@ -366,19 +370,19 @@ function applyCanonicalProject(data, filename) {
     // 替换语义同时接管叠加轨：导入双层 SRT 时第二层落到叠加轨；
     // 导入普通 SRT（未提供 overlaySegments）时清空旧叠加轨，避免残留混入新工程。
     const overlayLayer = Array.isArray(overlaySegments) ? overlaySegments : [];
-    MaweBoot.DATA.overlay_track = MULTI_SUBTITLE_UTILS.normalizeOverlayTrack({
+    MaweBoot.DATA.overlay_track = __mawImportedBindings1.MULTI_SUBTITLE_UTILS.normalizeOverlayTrack({
       enabled: overlayLayer.length > 0,
       segments: overlayLayer,
     });
     MaweBoot.DATA.overlay_track._dirty = true;
     MaweBoot.DATA.multi_subtitle = {
-      schema: MULTI_SUBTITLE_UTILS.MULTI_SUBTITLE_SCHEMA,
+      schema: __mawImportedBindings1.MULTI_SUBTITLE_UTILS.MULTI_SUBTITLE_SCHEMA,
       enabled: false,
       display_mode: 'both',
       tracks: [],
       bindings: [],
     };
-    MULTI_SUBTITLE_UTILS.normalizeMultiSubtitleProject(MaweBoot.DATA);
+    __mawImportedBindings1.MULTI_SUBTITLE_UTILS.normalizeMultiSubtitleProject(MaweBoot.DATA);
     MaweBoot.DATA.gap_remove = null;
     MaweHistory.gapRemoveDirty = false;
     MaweState.changes.markersDirty = false;
@@ -422,3 +426,5 @@ function applyCanonicalProject(data, filename) {
     replaceMainTrack
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

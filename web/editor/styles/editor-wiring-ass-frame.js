@@ -1,3 +1,6 @@
+
+export function* initialize() {
+yield;
 // Paused Server video previews use the same native libass frame as the floating
 // comparison window. Playback/file:// keep the immediate CSS approximation.
 (function initMaweAssFrame(global) {
@@ -379,3 +382,5 @@
   global.MaweAssFrame = Object.freeze({ syncAssFrameControls, renderAssFrame, syncPreview });
   syncAssFrameControls();
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

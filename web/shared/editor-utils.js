@@ -1,3 +1,6 @@
+
+export function* initialize() {
+yield;
 // Compatibility facade: initialize domain factories once and retain the historical API.
 (function () {
   'use strict';
@@ -605,3 +608,5 @@ window.AsrEditorUtils = {
     window.MAWE.register('editor-utils', () => window.AsrEditorUtils);
   }
 })();
+
+}

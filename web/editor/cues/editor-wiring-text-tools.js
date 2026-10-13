@@ -1,4 +1,7 @@
 
+export function* initialize() {
+yield;
+
 // === 批量替换 ===
 
 
@@ -474,3 +477,5 @@ MaweDom.timedTextEditApply?.addEventListener('click', () => {
     );
   });
 });
+
+}

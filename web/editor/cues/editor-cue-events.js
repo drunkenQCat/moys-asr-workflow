@@ -1,3 +1,6 @@
+import { legacyBindings as __mawImportedBindings0 } from "../media/editor-wiring-keyboard-guards.js";
+export function* initialize() {
+yield;
 // 字幕行事件：行级监听绑定与拆分键配置。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweCueEvents 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -112,7 +115,7 @@
       MaweCueListAnchor.scrollCueToCenter(el);
     }
     MaweCoreState.waveformEditor?.revealTime(MaweBoot.DATA.segments[idx].start, true);
-    const wasPlaying = isPlaybackActive();
+    const wasPlaying = __mawImportedBindings0.isPlaybackActive();
     if (MaweSettings.EDITOR_SETTINGS.clickBehavior !== 'select-only') {
       // 默认只跳转不改动播放状态；“选中并跳转（自动播放）”会在暂停时启动播放。
       const previousSuppress = MawePlaybackLoop.suppressCueListAutoScroll;
@@ -173,3 +176,5 @@
     getConfiguredEnterAction
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

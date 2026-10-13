@@ -1,3 +1,20 @@
+import { legacyBindings as __mawImportedBindings0 } from "../boot/editor.js";
+import { legacyBindings as __mawImportedBindings1 } from "./editor-wiring-overlay-transfer.js";
+export let legacyBindings;
+export function* initialize() {
+legacyBindings = Object.freeze({
+get fallbackSplitOffset() { return fallbackSplitOffset; }, set fallbackSplitOffset(value) { fallbackSplitOffset = value; },
+get splitOffsetNearTimeForModal() { return splitOffsetNearTimeForModal; }, set splitOffsetNearTimeForModal(value) { splitOffsetNearTimeForModal = value; },
+get splitOffsetNearTextPositionForModal() { return splitOffsetNearTextPositionForModal; }, set splitOffsetNearTextPositionForModal(value) { splitOffsetNearTextPositionForModal = value; },
+get flashSplitAlignmentHint() { return flashSplitAlignmentHint; }, set flashSplitAlignmentHint(value) { flashSplitAlignmentHint = value; },
+get assessSplitAlignment() { return assessSplitAlignment; }, set assessSplitAlignment(value) { assessSplitAlignment = value; },
+get splitStateTrack() { return splitStateTrack; }, set splitStateTrack(value) { splitStateTrack = value; },
+get duplicateSplitTimingIsValid() { return duplicateSplitTimingIsValid; }, set duplicateSplitTimingIsValid(value) { duplicateSplitTimingIsValid = value; },
+get openOverlaySplitModal() { return openOverlaySplitModal; }, set openOverlaySplitModal(value) { openOverlaySplitModal = value; },
+get commitOverlaySplit() { return commitOverlaySplit; }, set commitOverlaySplit(value) { commitOverlaySplit = value; },
+get mergeOverlaySegments() { return mergeOverlaySegments; }, set mergeOverlaySegments(value) { mergeOverlaySegments = value; }
+});
+yield;
 
 
 
@@ -51,7 +68,7 @@ function splitOffsetNearTimeForModal(segment, timeMs, splitMode) {
 }
 
 function splitOffsetNearTextPositionForModal(text, offset, splitMode) {
-  const legalOffsets = MULTI_SUBTITLE_UTILS.subtitleSplitOffsets(text || '', splitMode);
+  const legalOffsets = __mawImportedBindings0.MULTI_SUBTITLE_UTILS.subtitleSplitOffsets(text || '', splitMode);
   const requested = Math.max(0, Math.min(String(text || '').length, Math.round(Number(offset) || 0)));
   if (legalOffsets.length) {
     return legalOffsets.reduce((best, candidate) => (
@@ -83,7 +100,7 @@ function splitOffsetNearTextPositionForModal(text, offset, splitMode) {
 function flashSplitAlignmentHint(alignment, { committed = true } = {}) {
   if (!alignment?.broken) return;
   const drift = Number(alignment.driftMs);
-  if (!Number.isFinite(drift) || drift <= SPLIT_ALIGNMENT_DRIFT_WARN_MS) return;
+  if (!Number.isFinite(drift) || drift <= __mawImportedBindings0.SPLIT_ALIGNMENT_DRIFT_WARN_MS) return;
   const message = committed
     ? `已拆分，但字幕文本与词时间戳不完全一致，切点与下刀位置相差约 ${Math.round(drift)} ms；如需贴合语音，可先校正文本或检查词时间戳`
     : `未完成拆分：字幕文本与词时间戳不完全一致，切点与下刀位置相差约 ${Math.round(drift)} ms；请调整切点或校正文本后重试`;
@@ -95,7 +112,7 @@ function assessSplitAlignment(segment, offset, cutMs, options = {}) {
   const itemParts = MaweSplitCore.splitItemsAtChar(segment, offset, cutMs, options);
   return {
     ...(itemParts.alignment || { total: 0, aligned: 0, broken: false }),
-    driftMs: MULTI_SUBTITLE_UTILS.splitAlignmentDriftMs(itemParts.leftEndMs, itemParts.rightStartMs, cutMs),
+    driftMs: __mawImportedBindings0.MULTI_SUBTITLE_UTILS.splitAlignmentDriftMs(itemParts.leftEndMs, itemParts.rightStartMs, cutMs),
   };
 }
 
@@ -170,7 +187,7 @@ function assessSplitAlignment(segment, offset, cutMs, options = {}) {
 
 // 拆分弹窗状态对应的轨：叠加轨拆分复用副轨弹窗机制，但轨解析走叠加轨。
 function splitStateTrack(state) {
-  if (state?.kind === 'overlay') return getOverlayTrack();
+  if (state?.kind === 'overlay') return __mawImportedBindings1.getOverlayTrack();
   return MaweMultiSubtitleCore.getExtensionTrack(state?.trackId);
 }
 
@@ -220,7 +237,7 @@ function duplicateSplitTimingIsValid(state) {
 // 叠加轨拆分：复用副轨的独立拆分弹窗机制（单 lane、无主副联动），
 // 但组引用（颜色/表情包）按主轨拆分规则在叠加轨数组内维护。
 function openOverlaySplitModal(index, timeMs, initial = {}) {
-  const track = getOverlayTrack();
+  const track = __mawImportedBindings1.getOverlayTrack();
   const segment = track?.segments?.[index];
   if (!segment) return false;
   if (segment.end - segment.start < MaweMultiSubtitleCore.SUBTITLE_MIN_DURATION_MS * 2) {
@@ -249,7 +266,7 @@ function commitOverlaySplit(
     successMessage = '已按选择的断点拆分叠加字幕',
   } = {},
 ) {
-  const track = getOverlayTrack();
+  const track = __mawImportedBindings1.getOverlayTrack();
   const overlayIndex = track?.segments?.findIndex((segment) => segment.id === state.extensionId) ?? -1;
   const segment = track?.segments?.[overlayIndex];
   if (!track || overlayIndex < 0 || !segment) return false;
@@ -335,7 +352,7 @@ function commitOverlaySplit(
 // 只合并叠加轨连续字幕。叠加轨的分组（颜色/表情包）引用叠加轨自身段，
 // 合并语义与主轨一致：全部成员同组时继承，混合组不继承。
 function mergeOverlaySegments(idxs) {
-  const track = getOverlayTrack();
+  const track = __mawImportedBindings1.getOverlayTrack();
   if (!track || !idxs?.length) return false;
   const sorted = [...new Set(idxs)].sort((a, b) => a - b);
   if (sorted.length < 2) {
@@ -359,7 +376,7 @@ function mergeOverlaySegments(idxs) {
     track.segments, sorted, 'color', 'color_ref',
   );
   const merged = {
-    id: MULTI_SUBTITLE_UTILS.uniqueStableSegmentId(
+    id: __mawImportedBindings0.MULTI_SUBTITLE_UTILS.uniqueStableSegmentId(
       track.segments,
       `${segments[0].id || track.id}-merged`,
       'overlay',
@@ -433,3 +450,5 @@ function mergeOverlaySegments(idxs) {
 //   当被删的是 head：前段为空，整段后段重组（与之前的"head 晋升"语义吻合）
 //   当被删的是 ref：head 仍是 head，但 group 被切成两块——这是用户原话
 //     "删除中间的 3 → 4 变 head，5 改 ref→4"
+
+}

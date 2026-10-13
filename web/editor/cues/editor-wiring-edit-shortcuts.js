@@ -1,3 +1,7 @@
+import { legacyBindings as __mawImportedBindings0 } from "./editor-wiring-overlay-actions.js";
+import { legacyBindings as __mawImportedBindings1 } from "./editor-wiring-overlay-transfer.js";
+export function* initialize() {
+yield;
 document.addEventListener('click', (event) => {
   if (event.detail === 0) return;
   const target = event.target instanceof Element ? event.target : null;
@@ -306,11 +310,11 @@ document.addEventListener('keydown', (e) => {
   if (MaweState.selection.indices('overlay').size > 0) {
     const overlayIdxs = [...MaweState.selection.indices('overlay')].sort((x, y) => x - y);
     if (e.key === '0') {
-      clearOverlayColorOnTargets(overlayIdxs);
+      __mawImportedBindings0.clearOverlayColorOnTargets(overlayIdxs);
       return;
     }
     const overlayColor = MaweColors.COLOR_PALETTE[Number(e.key) - 1];
-    if (overlayColor) assignOverlayColor(overlayIdxs, overlayColor.name);
+    if (overlayColor) __mawImportedBindings0.assignOverlayColor(overlayIdxs, overlayColor.name);
     return;
   }
   const idxs = [...MaweSelection.selectedIdxs].sort((x, y) => x - y);
@@ -372,7 +376,7 @@ document.addEventListener('keydown', (e) => {
     MaweState.selection.indices('overlay').size > 1
     && (currentTarget?.kind === 'overlay' || (MaweSelection.selectedIdxs.size === 0 && MaweSelection.selectedExtensionIdxs.size === 0))
   ) {
-    mergeOverlayCues([...MaweState.selection.indices('overlay')]);
+    __mawImportedBindings0.mergeOverlayCues([...MaweState.selection.indices('overlay')]);
     return;
   }
   if (
@@ -425,7 +429,7 @@ document.addEventListener('keydown', (e) => {
   if (MaweSelection.selectedIdxs.size === 0 && MaweSelection.selectedExtensionIdxs.size === 0 && MaweState.selection.indices('overlay').size > 0) {
     e.preventDefault();
     e.stopPropagation();
-    deleteOverlayCues([...MaweState.selection.indices('overlay')]);
+    __mawImportedBindings1.deleteOverlayCues([...MaweState.selection.indices('overlay')]);
     return;
   }
   if (MaweSelection.selectedIdxs.size === 0) return;
@@ -825,3 +829,5 @@ document.addEventListener('pointerdown', (e) => {
     !target || !MaweInlineEdit.extensionEditingState.textEl.contains(target)
   )) MaweInlineEdit.finishExtensionEdit(true);
 }, true);
+
+}

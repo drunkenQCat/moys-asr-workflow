@@ -1,3 +1,8 @@
+import { legacyBindings as __mawImportedBindings0 } from "../boot/editor.js";
+import { legacyBindings as __mawImportedBindings1 } from "./editor-wiring-overlay-split-merge.js";
+import { legacyBindings as __mawImportedBindings2 } from "../ui/editor-wiring-dom-panels.js";
+export function* initialize() {
+yield;
 // 拆分核心：拆分点计算、字词时间码回退与拆分会话状态。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweSplitCore 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -147,7 +152,7 @@
   // 其余词仍落回真实位置。旧实现一处失配就把全部对齐作废、退回顺序长度
   // 映射，会让切点随插入文本的长度漂移到错误的词边界（字拆对、时拆错的
   // 根因）。
-  const alignmentRecords = MULTI_SUBTITLE_UTILS.alignItemsToText(text, items);
+  const alignmentRecords = __mawImportedBindings0.MULTI_SUBTITLE_UTILS.alignItemsToText(text, items);
   const records = alignmentRecords.filter(Boolean);
   // 失配词（人工替换/删改遗留）没有可靠的文本位置，但顺序保持对齐给出了
   // 它在词序上最近的两个对齐锚点：两锚点之间的文字空位就是它的替换区。
@@ -327,7 +332,7 @@
       }
       return { ...item, start: range.start, end: range.end, side };
     });
-    const placed = MULTI_SUBTITLE_UTILS.placeUnalignedSplitItems(
+    const placed = __mawImportedBindings0.MULTI_SUBTITLE_UTILS.placeUnalignedSplitItems(
       leftItems,
       rightItems,
       unalignedRanges,
@@ -375,7 +380,7 @@
   }) {
     const left = {
       ...segment,
-      id: MULTI_SUBTITLE_UTILS.uniqueStableSegmentId([segment], `${idBase}-a`, 'segment'),
+      id: __mawImportedBindings0.MULTI_SUBTITLE_UTILS.uniqueStableSegmentId([segment], `${idBase}-a`, 'segment'),
       end: leftEnd,
       text: leftText,
       items: leftItems.length ? leftItems : null,
@@ -383,7 +388,7 @@
     };
     const right = {
       ...segment,
-      id: MULTI_SUBTITLE_UTILS.uniqueStableSegmentId([segment, left], `${idBase}-b`, 'segment'),
+      id: __mawImportedBindings0.MULTI_SUBTITLE_UTILS.uniqueStableSegmentId([segment, left], `${idBase}-b`, 'segment'),
       start: rightStart,
       text: rightText,
       items: rightItems.length ? rightItems : null,
@@ -425,13 +430,13 @@
   { preserveCutMs = false, forceCut = false, duplicateText = false, splitTextMode = null, headIndex } = {},
 ) {
   const text = String(segment?.text || '');
-  const mode = MULTI_SUBTITLE_UTILS.MULTI_SUBTITLE_SPLIT_MODES.has(splitMode)
-    ? splitMode : MULTI_SUBTITLE_UTILS.detectSubtitleSplitMode(text);
+  const mode = __mawImportedBindings0.MULTI_SUBTITLE_UTILS.MULTI_SUBTITLE_SPLIT_MODES.has(splitMode)
+    ? splitMode : __mawImportedBindings0.MULTI_SUBTITLE_UTILS.detectSubtitleSplitMode(text);
   const safeOffset = Math.max(0, Math.min(text.length, Math.round(Number(offset) || 0)));
   const duplicateOutputText = duplicateText || splitTextMode === 'duplicate';
   const parts = duplicateOutputText
     ? (text ? { left: text, right: text, offset: safeOffset } : null)
-    : MULTI_SUBTITLE_UTILS.splitSubtitleText(text, safeOffset, mode);
+    : __mawImportedBindings0.MULTI_SUBTITLE_UTILS.splitSubtitleText(text, safeOffset, mode);
   if (!parts) return null;
   if (splitTextMode === 'progressive') parts.right = text;
   const itemParts = splitItemsAtChar(
@@ -467,7 +472,7 @@
     splitMs,
     alignment: {
       ...(itemParts.alignment || { total: 0, aligned: 0, broken: false }),
-      driftMs: MULTI_SUBTITLE_UTILS.splitAlignmentDriftMs(itemParts.leftEndMs, itemParts.rightStartMs, cutMs),
+      driftMs: __mawImportedBindings0.MULTI_SUBTITLE_UTILS.splitAlignmentDriftMs(itemParts.leftEndMs, itemParts.rightStartMs, cutMs),
     },
   };
 }
@@ -491,7 +496,7 @@
   }
   const mainMode = MaweMultiSubtitleCore.getMainSubtitleSplitMode(main);
   const extensionMode = MaweMultiSubtitleCore.getExtensionSubtitleSplitMode(track, extension);
-  const hasMainWordTimestamps = MULTI_SUBTITLE_UTILS.hasUsableSplitTimestamps(main);
+  const hasMainWordTimestamps = __mawImportedBindings0.MULTI_SUBTITLE_UTILS.hasUsableSplitTimestamps(main);
   const initialTime = Number.isFinite(initial.timeMs)
     ? initial.timeMs
     : splitTimeForTextOffset(main, initial.mainOffset ?? Math.floor(String(main.text || '').length / 2));
@@ -505,14 +510,14 @@
   // 没有列表文字位置时（例如波形/播放头入口）才按时间寻找最近合法断点。
   const hasInitialTextPosition = Number.isFinite(initial.mainOffset);
   const initialMainOffset = hasInitialTextPosition
-    ? splitOffsetNearTextPositionForModal(main.text, initial.mainOffset, mainMode)
-    : splitOffsetNearTimeForModal(main, initialTime, mainMode);
+    ? __mawImportedBindings1.splitOffsetNearTextPositionForModal(main.text, initial.mainOffset, mainMode)
+    : __mawImportedBindings1.splitOffsetNearTimeForModal(main, initialTime, mainMode);
   const initialMainCutMs = fixedCutMs ?? (hasMainWordTimestamps
     ? splitTimeForTextOffset(main, initialMainOffset)
     : splitCutTime(main, initialMainOffset, false));
-  const initialOffset = MULTI_SUBTITLE_UTILS.nearestSubtitleSplitOffset(
+  const initialOffset = __mawImportedBindings0.MULTI_SUBTITLE_UTILS.nearestSubtitleSplitOffset(
     extension.text, initialMainCutMs, extension.start, extension.end, extensionMode,
-  ) ?? splitOffsetNearTimeForModal(extension, initialMainCutMs, extensionMode);
+  ) ?? __mawImportedBindings1.splitOffsetNearTimeForModal(extension, initialMainCutMs, extensionMode);
   return {
     kind: 'linked',
     splitTextMode: initial.splitTextMode || null,
@@ -550,12 +555,12 @@
   const main = MaweBoot.DATA.segments[mainIndex];
   if (!main) return null;
   const mainMode = MaweMultiSubtitleCore.getMainSubtitleSplitMode(main);
-  const hasMainWordTimestamps = MULTI_SUBTITLE_UTILS.hasUsableSplitTimestamps(main);
+  const hasMainWordTimestamps = __mawImportedBindings0.MULTI_SUBTITLE_UTILS.hasUsableSplitTimestamps(main);
   const initialTime = Number.isFinite(initial.timeMs)
     ? initial.timeMs
     : splitTimeForTextOffset(main, initial.mainOffset ?? Math.floor(String(main.text || '').length / 2));
   const fixedCutMs = Number.isFinite(initial.timeMs) ? Math.round(initial.timeMs) : null;
-  const initialOffset = splitOffsetNearTimeForModal(main, initialTime, mainMode);
+  const initialOffset = __mawImportedBindings1.splitOffsetNearTimeForModal(main, initialTime, mainMode);
   if (initialOffset == null) return null;
   return {
     kind: 'main',
@@ -594,10 +599,10 @@
     : splitTimeForTextOffset(extension, initial.extensionOffset ?? Math.floor(String(extension.text || '').length / 2));
   const fixedCutMs = Number.isFinite(initial.timeMs) ? Math.round(initial.timeMs) : null;
   const initialOffset = hasInitialTextPosition
-    ? splitOffsetNearTextPositionForModal(extension.text, initial.extensionOffset, extensionMode)
-    : MULTI_SUBTITLE_UTILS.nearestSubtitleSplitOffset(
+    ? __mawImportedBindings1.splitOffsetNearTextPositionForModal(extension.text, initial.extensionOffset, extensionMode)
+    : __mawImportedBindings0.MULTI_SUBTITLE_UTILS.nearestSubtitleSplitOffset(
       extension.text, initialTime, extension.start, extension.end, extensionMode,
-    ) ?? splitOffsetNearTimeForModal(extension, initialTime, extensionMode);
+    ) ?? __mawImportedBindings1.splitOffsetNearTimeForModal(extension, initialTime, extensionMode);
   if (!Number.isInteger(initialOffset)) return null;
   return {
     kind: 'extension',
@@ -1184,7 +1189,7 @@
   function updateLinkedSplitPreview(offset, lane = 'extension') {
   const state = pendingLinkedSplit;
   if (!state) return false;
-  const track = splitStateTrack(state);
+  const track = __mawImportedBindings1.splitStateTrack(state);
   const main = state.mainIndex >= 0 ? MaweBoot.DATA.segments[state.mainIndex] : null;
   const extension = MaweMultiSubtitleCore.extensionSegmentById(state.extensionId, track);
   const mainOnly = state.kind === 'main';
@@ -1193,14 +1198,14 @@
 
   if (lane === 'main' && main) {
     const requestedOffset = Math.max(0, Math.min(String(main.text || '').length, Math.round(Number(offset) || 0)));
-    const legalOffsets = MULTI_SUBTITLE_UTILS.subtitleSplitOffsets(main.text, state.mainMode);
+    const legalOffsets = __mawImportedBindings0.MULTI_SUBTITLE_UTILS.subtitleSplitOffsets(main.text, state.mainMode);
     state.mainOffset = legalOffsets.length
       ? legalOffsets.reduce((best, candidate) => (
         Math.abs(candidate - requestedOffset) < Math.abs(best - requestedOffset) ? candidate : best
       ), legalOffsets[0])
-      : fallbackSplitOffset(main.text, requestedOffset);
+      : __mawImportedBindings1.fallbackSplitOffset(main.text, requestedOffset);
     if (!Number.isInteger(state.mainOffset)) return false;
-    const mainHasWordTimestamps = MULTI_SUBTITLE_UTILS.hasUsableSplitTimestamps(main);
+    const mainHasWordTimestamps = __mawImportedBindings0.MULTI_SUBTITLE_UTILS.hasUsableSplitTimestamps(main);
     state.mainCutMs = Number.isFinite(state.fixedCutMs)
       ? state.fixedCutMs
       : mainHasWordTimestamps
@@ -1211,12 +1216,12 @@
       0,
       Math.min(String(extension.text || '').length, Math.round(Number(offset) || 0)),
     );
-    const legalOffsets = MULTI_SUBTITLE_UTILS.subtitleSplitOffsets(extension.text, state.extensionMode);
+    const legalOffsets = __mawImportedBindings0.MULTI_SUBTITLE_UTILS.subtitleSplitOffsets(extension.text, state.extensionMode);
     state.offset = legalOffsets.length
       ? legalOffsets.reduce((best, candidate) => (
         Math.abs(candidate - requestedOffset) < Math.abs(best - requestedOffset) ? candidate : best
       ), legalOffsets[0])
-      : fallbackSplitOffset(extension.text, requestedOffset);
+      : __mawImportedBindings1.fallbackSplitOffset(extension.text, requestedOffset);
     if (!Number.isInteger(state.offset)) return false;
     state.extensionCutMs = Number.isFinite(state.fixedCutMs)
       ? state.fixedCutMs : splitCutTime(extension, state.offset, false);
@@ -1226,10 +1231,10 @@
 
   const mainMode = state.mainMode || (main && MaweMultiSubtitleCore.getMainSubtitleSplitMode(main));
   const mainParts = main
-    ? MULTI_SUBTITLE_UTILS.splitSubtitleText(main.text, state.mainOffset, mainMode)
+    ? __mawImportedBindings0.MULTI_SUBTITLE_UTILS.splitSubtitleText(main.text, state.mainOffset, mainMode)
     : null;
   const extensionParts = extension
-    ? MULTI_SUBTITLE_UTILS.splitSubtitleText(extension.text, state.offset, state.extensionMode)
+    ? __mawImportedBindings0.MULTI_SUBTITLE_UTILS.splitSubtitleText(extension.text, state.offset, state.extensionMode)
     : null;
   const mainTextValid = !main || Boolean(mainParts);
   const extensionTextValid = !extension || Boolean(extensionParts);
@@ -1248,7 +1253,7 @@
   state.textValid = textValid;
   state.timingValid = mainTimingValid && extensionTimingValid;
   state.mainTimingValid = Boolean(mainTimingValid);
-  state.duplicateTimingValid = duplicateSplitTimingIsValid(state);
+  state.duplicateTimingValid = __mawImportedBindings1.duplicateSplitTimingIsValid(state);
   state.forceCutMs = textValid
     ? forceSplitCutForSegments(forceSegments, state.cutMs)
     : null;
@@ -1307,8 +1312,8 @@
   if (MaweDom.multiSubtitleSplitConfirm) {
     MaweDom.multiSubtitleSplitConfirm.disabled = !valid && !state.mainOnlyFallbackEligible;
   }
-  if (multiSubtitleSplitDuplicate) {
-    multiSubtitleSplitDuplicate.disabled = !state.duplicateTimingValid;
+  if (__mawImportedBindings2.multiSubtitleSplitDuplicate) {
+    __mawImportedBindings2.multiSubtitleSplitDuplicate.disabled = !state.duplicateTimingValid;
   }
   updateLinkedSplitLockVisual();
   return valid;
@@ -1401,14 +1406,14 @@
   );
   if (!pair) {
     if (!force && !duplicateText) {
-      flashSplitAlignmentHint(
-        assessSplitAlignment(main, state.mainOffset, splitMs, splitAlignmentOptions),
+      __mawImportedBindings1.flashSplitAlignmentHint(
+        __mawImportedBindings1.assessSplitAlignment(main, state.mainOffset, splitMs, splitAlignmentOptions),
         { committed: false },
       );
     }
     return false;
   }
-  if (!force && !duplicateText) flashSplitAlignmentHint(pair.alignment, { committed: true });
+  if (!force && !duplicateText) __mawImportedBindings1.flashSplitAlignmentHint(pair.alignment, { committed: true });
   const oldMainId = main.id;
   return MaweCommands.run(duplicateText ? '拆分字幕并保留原文' : '拆分字幕', (command) => {
     MaweSelection.clearSelection({ commitCuePanel: false });
@@ -1497,14 +1502,14 @@
   );
   if (!pair) {
     if (!force && !duplicateText) {
-      flashSplitAlignmentHint(
-        assessSplitAlignment(extension, state.offset, splitMs, splitAlignmentOptions),
+      __mawImportedBindings1.flashSplitAlignmentHint(
+        __mawImportedBindings1.assessSplitAlignment(extension, state.offset, splitMs, splitAlignmentOptions),
         { committed: false },
       );
     }
     return false;
   }
-  if (!force && !duplicateText) flashSplitAlignmentHint(pair.alignment, { committed: true });
+  if (!force && !duplicateText) __mawImportedBindings1.flashSplitAlignmentHint(pair.alignment, { committed: true });
 
   const oldExtensionId = extension.id;
   const wasBound = Boolean(MaweMultiSubtitleCore.bindingForExtensionIndex(extensionIndex, track));
@@ -1596,7 +1601,7 @@
     return;
   }
   if (state.kind === 'overlay') {
-    commitOverlaySplit(state, {
+    __mawImportedBindings1.commitOverlaySplit(state, {
       force,
       duplicateText,
       successMessage: duplicateText ? '已拆分叠加字幕并保留两侧原文' : undefined,
@@ -1639,8 +1644,8 @@
     return;
   }
   if (!force && !duplicateText) {
-    flashSplitAlignmentHint(mainPair.alignment, { committed: true });
-    flashSplitAlignmentHint(extensionPair.alignment, { committed: true });
+    __mawImportedBindings1.flashSplitAlignmentHint(mainPair.alignment, { committed: true });
+    __mawImportedBindings1.flashSplitAlignmentHint(extensionPair.alignment, { committed: true });
   }
   const oldMainId = main.id;
   const oldExtensionId = extension.id;
@@ -1650,8 +1655,8 @@
     if (track) replaceSegmentWithSplit(track.segments, extensionIndex, extensionPair);
     const multi = MaweMultiSubtitleCore.getMultiSubtitleState();
     multi.bindings.push(
-      MULTI_SUBTITLE_UTILS.buildSubtitleBinding(mainPair.left, extensionPair.left, track.id),
-      MULTI_SUBTITLE_UTILS.buildSubtitleBinding(mainPair.right, extensionPair.right, track.id),
+      __mawImportedBindings0.MULTI_SUBTITLE_UTILS.buildSubtitleBinding(mainPair.left, extensionPair.left, track.id),
+      __mawImportedBindings0.MULTI_SUBTITLE_UTILS.buildSubtitleBinding(mainPair.right, extensionPair.right, track.id),
     );
     multi.enabled = true;
     MaweMultiSubtitleCore.markMainSegmentsDirty([mainPair.left, mainPair.right]);
@@ -1997,3 +2002,5 @@
     flashSplitFeedback
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

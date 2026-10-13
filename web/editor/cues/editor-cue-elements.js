@@ -1,3 +1,6 @@
+import { legacyBindings as __mawImportedBindings0 } from "./editor-wiring-cue-panel.js";
+export function* initialize() {
+yield;
 // 字幕行元素构建：单列/双列 DOM、颜色与表情包呈现。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweCueElements 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -99,7 +102,7 @@
       if (!head) return;
       MaweCueListAnchor.scrollCueToCenter(head);
       if (isExtension) MaweSelection.selectOnlyExtension(headIndex, extensionTrack);
-      else if (overlayTrack) selectOverlayCueRow(headIndex);
+      else if (overlayTrack) __mawImportedBindings0.selectOverlayCueRow(headIndex);
       else MaweSelection.selectOnly(headIndex);
     });
     slotEl.appendChild(refEl);
@@ -496,3 +499,5 @@
     refreshAllCharCounts
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

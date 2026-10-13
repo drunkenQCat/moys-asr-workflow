@@ -1,3 +1,6 @@
+
+export function* initialize() {
+yield;
 // 外观输入：主/副字幕背景色与不透明度输入应用。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweAppearanceInputs 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -67,3 +70,5 @@
     applyExtensionSubtitleBackgroundAlphaInput
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

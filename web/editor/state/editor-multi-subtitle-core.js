@@ -1,3 +1,6 @@
+import { legacyBindings as __mawImportedBindings0 } from "../cues/editor-wiring-cue-panel.js";
+export function* initialize() {
+yield;
 // 多重字幕核心：副轨状态、绑定关系、范围钳制与双轨联动计算。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweMultiSubtitleCore 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -375,7 +378,7 @@
   }
   MaweSelection.lastClickedExtensionIdx = snapshot.lastClickedId
     ? track.segments.findIndex((segment) => segment?.id === snapshot.lastClickedId) : -1;
-  updateSelectionCountText();
+  __mawImportedBindings0.updateSelectionCountText();
 }
 
 
@@ -682,3 +685,5 @@
     constrainBoundExtensionPanelEdit
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

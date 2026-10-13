@@ -1,3 +1,6 @@
+import { legacyBindings as __mawImportedBindings0 } from "../ui/editor-wiring-dom-panels.js";
+export function* initialize() {
+yield;
 
 // === 加载媒体 ===
 // 通过浏览器文件选择器选本地媒体（视频/音频），用 blob URL 替换播放器源。
@@ -92,7 +95,7 @@ MaweDom.multiSubtitleImportModal?.addEventListener('click', (event) => {
   if (event.target === MaweDom.multiSubtitleImportModal) MaweMultiImport.closeMultiSubtitleImportModal();
 });
 MaweDom.multiSubtitleSplitCancel?.addEventListener('click', MaweSplitCore.closeLinkedSplitModal);
-multiSubtitleSplitDuplicate?.addEventListener('click', () => MaweSplitCore.confirmLinkedSplit({ duplicateText: true }));
+__mawImportedBindings0.multiSubtitleSplitDuplicate?.addEventListener('click', () => MaweSplitCore.confirmLinkedSplit({ duplicateText: true }));
 MaweDom.multiSubtitleSplitConfirm?.addEventListener('click', MaweSplitCore.confirmLinkedSplit);
 MaweDom.multiSubtitleSplitModal?.addEventListener('click', (event) => {
   if (event.target === MaweDom.multiSubtitleSplitModal) MaweSplitCore.closeLinkedSplitModal();
@@ -200,3 +203,5 @@ MaweProjectMediaInputs.loadMediaFileInput.addEventListener('change', async (e) =
 MaweProjectMediaInputs.loadMediaFileInput.addEventListener('cancel', () => {
   MaweProjectMediaInputs.pendingProjectMediaSelection = null;
 });
+
+}

@@ -1,3 +1,6 @@
+
+export function* initialize() {
+yield;
 (function initMaweI18n(global) {
   'use strict';
 
@@ -1858,3 +1861,5 @@
     start();
   }
 })(window);
+
+}

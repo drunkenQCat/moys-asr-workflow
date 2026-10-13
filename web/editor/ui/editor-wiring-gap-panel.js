@@ -1,4 +1,7 @@
 
+export function* initialize() {
+yield;
+
 
 MaweBehaviorHints.refreshClickBehaviorHint();
 document.addEventListener('mawe:languagechange', MaweBehaviorHints.refreshClickBehaviorHint);
@@ -184,3 +187,5 @@ MaweDom.gapRemoveSkipPlayback?.addEventListener('change', () => {
 
 
 // 合成表情包文件的操作系统绝对路径（用于导出表情包 OTIO）。
+
+}

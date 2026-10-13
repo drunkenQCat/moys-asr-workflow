@@ -1,3 +1,6 @@
+import { legacyBindings as __mawImportedBindings0 } from "./editor-wiring-export-context.js";
+export function* initialize() {
+yield;
 // 服务器保存：保存目标、校验预览、自动保存调度。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweServerSave 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -304,7 +307,7 @@
       MaweDom.saveProjectAsButton.title = '另存为工程文件（Ctrl(Cmd)+Shift+S）';
     }
     MaweStickerOtioExport.syncStickerOtioExportMode();
-    syncProjectBackupControls();
+    __mawImportedBindings0.syncProjectBackupControls();
   }
 
 
@@ -594,3 +597,5 @@
     configureServerProjectSettings
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

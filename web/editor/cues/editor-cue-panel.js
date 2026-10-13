@@ -1,3 +1,9 @@
+import { legacyBindings as __mawImportedBindings0 } from "../boot/editor.js";
+import { legacyBindings as __mawImportedBindings1 } from "./editor-wiring-overlay-transfer.js";
+import { legacyBindings as __mawImportedBindings2 } from "./editor-wiring-cue-panel.js";
+import { legacyBindings as __mawImportedBindings3 } from "./editor-wiring-overlay-split-merge.js";
+export function* initialize() {
+yield;
 // 当前字幕面板：renderAll 协调、目标切换与时间/items 重映射。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweCuePanel 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -10,9 +16,9 @@
   // === 渲染 ===
   function renderAll({ waveform = 'overlay', preserveCueListScroll = true, cueListAnchor } = {}) {
   // 旧工程或新增字幕也必须在生成 DOM 前拥有唯一身份；复用工程既有规范化规则。
-  MULTI_SUBTITLE_UTILS.ensureStableSegmentIds(MaweBoot.DATA.segments, 'main');
+  __mawImportedBindings0.MULTI_SUBTITLE_UTILS.ensureStableSegmentIds(MaweBoot.DATA.segments, 'main');
   (MaweMultiSubtitleCore.getMultiSubtitleState().tracks || []).forEach(track => {
-    MULTI_SUBTITLE_UTILS.ensureStableSegmentIds(track.segments, `${track.id}-segment`);
+    __mawImportedBindings0.MULTI_SUBTITLE_UTILS.ensureStableSegmentIds(track.segments, `${track.id}-segment`);
   });
   // 其它编辑入口仍以毫秒修改工程对象；在重绘前把它们投影回当前时间基准，
   // 保证帧模式下保存的数据和下一次帧操作保持一致。
@@ -35,11 +41,11 @@
   }
   const cueFragment = document.createDocumentFragment();
   const multiVisible = MaweMultiSubtitleCore.multiSubtitleVisible();
-  const overlayVisible = overlayTrackVisible();
+  const overlayVisible = __mawImportedBindings1.overlayTrackVisible();
   const displayMode = MaweMultiSubtitleCore.getMultiSubtitleState().display_mode || 'both';
   // 叠加行在单轨和多重字幕的所有显示模式下都要渲染：按 start 归并插入，
   // 同 start 时主/副行在前、叠加行在后（与 mergeMainAndOverlaySegments 一致）。
-  const overlaySegments = overlayVisible ? getOverlayTrack().segments : [];
+  const overlaySegments = overlayVisible ? __mawImportedBindings1.getOverlayTrack().segments : [];
   const rows = [];
   if (!multiVisible || displayMode === 'main') {
     MaweBoot.DATA.segments.forEach((seg, i) => rows.push({ start: seg.start, order: 0, el: MaweCueElements.buildCueEl(seg, i) }));
@@ -48,7 +54,7 @@
     track.segments.forEach((seg, i) => rows.push({ start: seg.start, order: 0, el: MaweCueElements.buildExtensionCueEl(seg, i, track) }));
   } else {
     const track = MaweMultiSubtitleCore.getActiveExtensionTrack();
-    const displayRows = MULTI_SUBTITLE_UTILS.buildMultiDisplayRows(MaweBoot.DATA.segments, track.segments, MaweMultiSubtitleCore.getMultiSubtitleState().bindings);
+    const displayRows = __mawImportedBindings0.MULTI_SUBTITLE_UTILS.buildMultiDisplayRows(MaweBoot.DATA.segments, track.segments, MaweMultiSubtitleCore.getMultiSubtitleState().bindings);
     displayRows.forEach((row) => {
       const mainSeg = row.mainIndex == null ? null : MaweBoot.DATA.segments[row.mainIndex];
       const extensionSeg = row.extensionIndex == null ? null : track.segments[row.extensionIndex];
@@ -59,7 +65,7 @@
       });
     });
   }
-  overlaySegments.forEach((seg, i) => rows.push({ start: seg.start, order: 1, el: buildOverlayCueEl(seg, i) }));
+  overlaySegments.forEach((seg, i) => rows.push({ start: seg.start, order: 1, el: __mawImportedBindings2.buildOverlayCueEl(seg, i) }));
   rows.sort((a, b) => a.start - b.start || a.order - b.order);
   rows.forEach((row) => cueFragment.appendChild(row.el));
   MaweCoreState.container.appendChild(cueFragment);
@@ -159,7 +165,7 @@
       : null;
   }
   if (MaweCuePanelState.currentCuePanelKind === 'overlay') {
-    const track = getOverlayTrack();
+    const track = __mawImportedBindings1.getOverlayTrack();
     const segment = track?.segments?.[index];
     return segment ? { kind: 'overlay', index, trackId: null, track, segment } : null;
   }
@@ -201,7 +207,7 @@
       nextTrackId = track.id;
     }
   } else if (nextKind === 'overlay') {
-    if (!getOverlayTrack()?.segments?.[nextIndex]) nextIndex = -1;
+    if (!__mawImportedBindings1.getOverlayTrack()?.segments?.[nextIndex]) nextIndex = -1;
   } else if (!MaweBoot.DATA.segments[nextIndex]) {
     nextIndex = -1;
   }
@@ -574,7 +580,7 @@
     commitCuePanelEdit();
     const cursorOffset = MaweDom.cuePanelText.selectionStart;
     const splitTime = MaweSplitCore.splitTimeForTextOffset(target.segment, cursorOffset);
-    openOverlaySplitModal(target.index, splitTime);
+    __mawImportedBindings3.openOverlaySplitModal(target.index, splitTime);
     return;
   }
   if (target.kind === 'extension') {
@@ -642,7 +648,7 @@
   function cueListRowSortKey(el) {
   const overlayIdx = el.dataset.overlayIdx != null ? Number(el.dataset.overlayIdx) : NaN;
   if (Number.isInteger(overlayIdx)) {
-    const segment = getOverlayTrack()?.segments?.[overlayIdx];
+    const segment = __mawImportedBindings1.getOverlayTrack()?.segments?.[overlayIdx];
     return segment ? segment.start * 2 + 1 : Number.MAX_SAFE_INTEGER;
   }
   const mainIdx = el.dataset.idx != null ? Number(el.dataset.idx) : NaN;
@@ -676,7 +682,7 @@
   MaweStickerOverlay.stickerOverlayDataVersion += 1;
   const mainSet = new Set(mainIndices);
   const overlaySet = new Set(overlayIndices);
-  const overlaySegments = getOverlayTrack()?.segments || [];
+  const overlaySegments = __mawImportedBindings1.getOverlayTrack()?.segments || [];
   const rows = [];
   MaweCoreState.container.querySelectorAll(':scope > .cue').forEach((el) => {
     rows.push(el);
@@ -719,3 +725,5 @@
     splitCuePanelAtCursor
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

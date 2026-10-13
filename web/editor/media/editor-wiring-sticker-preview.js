@@ -1,4 +1,11 @@
 
+export let legacyBindings;
+export function* initialize() {
+legacyBindings = Object.freeze({
+get activeStickerHasOverlay() { return activeStickerHasOverlay; }, set activeStickerHasOverlay(value) { activeStickerHasOverlay = value; }
+});
+yield;
+
 // === 表情包预览（视频画面内）===
 // 层位置/尺寸由 preview.sticker 几何驱动（默认右上角）；点击后可拖动/缩放，与字幕预览同一套交互。
 
@@ -83,3 +90,5 @@ MaweDom.overlayToggle.addEventListener('change', () => {
   if (!MaweDom.overlayToggle.checked) MaweDom.overlayEl.classList.add('hidden');
   else MawePlaybackLoop.update();
 });
+
+}

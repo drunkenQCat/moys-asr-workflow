@@ -1,3 +1,6 @@
+
+export function* initialize() {
+yield;
 (() => {
 const helpOnboardingButton = document.getElementById('help-onboarding');
 const onboardingLayer = document.getElementById('onboarding-layer');
@@ -657,3 +660,5 @@ document.addEventListener('keydown', (event) => {
   window.MAWE?.register('onboarding', () => window.MAWE_ONBOARDING);
   scheduleOnboardingAfterRender();
 })();
+
+}

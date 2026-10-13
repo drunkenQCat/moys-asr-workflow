@@ -1,3 +1,4 @@
+import { compileEditorFixture } from './helpers/editor-module-loader.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -17,7 +18,7 @@ function loadHost(environment = {}) {
   for (const file of ['editor/boot/editor-runtime.js', 'shared/host/storage.js',
     'shared/host/files.js', 'shared/host/server-api.js', 'editor/boot/editor-host.js']) {
     if (factories.has(file)) context.window.MAWE.register(...factories.get(file));
-    else vm.runInNewContext(readFileSync(new URL('../web/' + file, import.meta.url), 'utf8'), context);
+    else vm.runInNewContext(compileEditorFixture(file), context);
   }
   return context;
 }

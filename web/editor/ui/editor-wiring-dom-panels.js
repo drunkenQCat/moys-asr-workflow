@@ -1,4 +1,87 @@
 
+export let legacyBindings;
+export function* initialize() {
+legacyBindings = Object.freeze({
+get overlayTrackTextEl() { return overlayTrackTextEl; },
+get overlayTrackSpeakerLabelEl() { return overlayTrackSpeakerLabelEl; },
+get overlayTrackTextNode() { return overlayTrackTextNode; },
+get subtitleFontFamilyInput() { return subtitleFontFamilyInput; },
+get subtitleFontFamilyToggle() { return subtitleFontFamilyToggle; },
+get subtitleFontFamilyOptions() { return subtitleFontFamilyOptions; },
+get subtitleFontFamilyCombobox() { return subtitleFontFamilyCombobox; }, set subtitleFontFamilyCombobox(value) { subtitleFontFamilyCombobox = value; },
+get assFontNameCombobox() { return assFontNameCombobox; }, set assFontNameCombobox(value) { assFontNameCombobox = value; },
+get subtitleColorAssModeHint() { return subtitleColorAssModeHint; },
+get subtitleColorAssModeHintLink() { return subtitleColorAssModeHintLink; },
+get assColorStyleRow() { return assColorStyleRow; },
+get assColorStyleSelect() { return assColorStyleSelect; },
+get assColorSpeakerHint() { return assColorSpeakerHint; },
+get assColorSpeakerExportLink() { return assColorSpeakerExportLink; },
+get assModeToggle() { return assModeToggle; },
+get assInlineTextSettings() { return assInlineTextSettings; },
+get assInlineTextTitle() { return assInlineTextTitle; },
+get assInlineTextToggles() { return assInlineTextToggles; },
+get assStyleManagerOpenButton() { return assStyleManagerOpenButton; },
+get assStyleSummary() { return assStyleSummary; },
+get helpOpenEditorSettingsButtons() { return helpOpenEditorSettingsButtons; },
+get pauseOnMouseClickToggle() { return pauseOnMouseClickToggle; },
+get lottieExportCustomSize() { return lottieExportCustomSize; },
+get lottieExportCustomWidth() { return lottieExportCustomWidth; },
+get lottieExportCustomHeight() { return lottieExportCustomHeight; },
+get ografExportCustomSize() { return ografExportCustomSize; },
+get ografExportCustomWidth() { return ografExportCustomWidth; },
+get ografExportCustomHeight() { return ografExportCustomHeight; },
+get overlayTrackToggle() { return overlayTrackToggle; },
+get overlayTrackSeparator() { return overlayTrackSeparator; },
+get multiSubtitleSplitDuplicate() { return multiSubtitleSplitDuplicate; },
+get assStyleWindow() { return assStyleWindow; },
+get assStyleDragHandle() { return assStyleDragHandle; },
+get assStyleWindowClose() { return assStyleWindowClose; },
+get assStyleWindowCloseFooter() { return assStyleWindowCloseFooter; },
+get assStyleLibraryStatus() { return assStyleLibraryStatus; },
+get assStyleLocalFontScanButton() { return assStyleLocalFontScanButton; },
+get assStyleFontToggle() { return assStyleFontToggle; },
+get assStyleFontOptions() { return assStyleFontOptions; },
+get assStyleCount() { return assStyleCount; },
+get assProfileCount() { return assProfileCount; },
+get assStyleList() { return assStyleList; },
+get assProfileList() { return assProfileList; },
+get assStyleNewButton() { return assStyleNewButton; },
+get assStyleDuplicateButton() { return assStyleDuplicateButton; },
+get assProfileNewButton() { return assProfileNewButton; },
+get assSrtDefaultStyleSelect() { return assSrtDefaultStyleSelect; },
+get assDefaultProfileSelect() { return assDefaultProfileSelect; },
+get subtitleStyleAssModeHint() { return subtitleStyleAssModeHint; },
+get mainSubtitleCssFields() { return mainSubtitleCssFields; },
+get mainAssStyleFields() { return mainAssStyleFields; },
+get mainAssStyleSelect() { return mainAssStyleSelect; },
+get mainAssStyleEditButton() { return mainAssStyleEditButton; },
+get extensionSubtitleCssFields() { return extensionSubtitleCssFields; },
+get extensionAssStyleFields() { return extensionAssStyleFields; },
+get extensionAssStyleSelect() { return extensionAssStyleSelect; },
+get extensionAssStyleEditButton() { return extensionAssStyleEditButton; },
+get assStyleForm() { return assStyleForm; },
+get assProfileForm() { return assProfileForm; },
+get assProfileStyleSelect() { return assProfileStyleSelect; },
+get assProfileExtensionStyleField() { return assProfileExtensionStyleField; },
+get assProfileExtensionStyleSelect() { return assProfileExtensionStyleSelect; },
+get assStyleEditorEmpty() { return assStyleEditorEmpty; },
+get assStyleFormTitle() { return assStyleFormTitle; },
+get assProfileFormTitle() { return assProfileFormTitle; },
+get assStyleSrtHint() { return assStyleSrtHint; },
+get assStylePreviewModeHint() { return assStylePreviewModeHint; },
+get assStyleSettingsLink() { return assStyleSettingsLink; },
+get assStyleBuiltinBadge() { return assStyleBuiltinBadge; },
+get assProfileBuiltinBadge() { return assProfileBuiltinBadge; },
+get assStyleDeleteSlot() { return assStyleDeleteSlot; },
+get assProfileDeleteSlot() { return assProfileDeleteSlot; },
+get assStylePreviewSample() { return assStylePreviewSample; },
+get assProfilePreviewSummary() { return assProfilePreviewSummary; },
+get assStyleSaveButton() { return assStyleSaveButton; },
+get assStyleDeleteButton() { return assStyleDeleteButton; },
+get assStyleLibraryPathHint() { return assStyleLibraryPathHint; }
+});
+yield;
+
 
 
 
@@ -485,3 +568,5 @@ const assStyleLibraryPathHint = document.getElementById('ass-style-library-path-
 
 // 全局设置窗口：复用 createFloatingPanel 获得拖动、位置持久化、Esc 关闭与按钮 active 态；
 // 窗口内部用左侧垂直标签页切换不同分区，并记忆用户上次停留的分区。
+
+}

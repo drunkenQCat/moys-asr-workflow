@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import test from 'node:test';
+import { compileEditorFixture, makeDocumentStub } from './helpers/editor-module-loader.mjs';
+import { makeFacadeStub } from './helpers/editor-module-loader.mjs';
 
 function playbackHarness() {
   const listeners = new Map();
@@ -19,7 +21,8 @@ function playbackHarness() {
   function emit(name) { for (const fn of listeners.get(name) || []) fn(); }
   const updates = [];
   const context = {
-    window: {}, document: {},
+    window: { addEventListener() {}, removeEventListener() {} },
+    document: { addEventListener() {}, getElementById: () => null, querySelector: () => null, querySelectorAll: () => [] },
     setTimeout(fn) { timers.set(++nextTimer, fn); return nextTimer; },
     clearTimeout(id) { timers.delete(id); }, cancelAnimationFrame() {},
     MaweCoreState: { player }, MaweDom: {},
@@ -33,7 +36,7 @@ function playbackHarness() {
           && player.currentTime >= 2 && player.currentTime < 4) player.currentTime = 4;
     } },
   };
-  vm.runInNewContext(fs.readFileSync(new URL('../web/editor/media/editor-media-playback.js', import.meta.url), 'utf8'), context);
+  vm.runInNewContext(compileEditorFixture('editor/media/editor-media-playback.js'), context);
   const api = context.window.MaweMediaPlayback;
   api.bindPlayerEvents(player);
   return { api, player, emit, updates, timers };
@@ -82,15 +85,24 @@ test('both playback refresh paths suspend gap skipping only while auditioning', 
   let captured;
   const sentinel = new Error('skip captured');
   const context = {
-    window: { AsrGapRemoveCore: { getGapPlaybackSkip(_ranges, _time, options) {
+    MaweBoot: { DATA: {}, maweDomContractCheck: () => [], maweDebug() {} },
+    MaweDom: makeFacadeStub(),
+    MaweMultiSubtitleCore: { MULTI: 'main', getActiveExtensionTrack: () => ({ segments: [] }),
+      getExtensionSubtitleSplitMode: () => 'word', getMainSubtitleSplitMode: () => 'word',
+      getMultiSubtitleState: () => ({ enabled: false, tracks: [] }),
+      normalizeMultiSubtitleState: (state) => state ?? { enabled: false, tracks: [] } },
+    window: { addEventListener() {}, removeEventListener() {},
+      AsrEditorUtils: { defaultAssStyleLibrary: () => ({ styles: [], assProfiles: [] }) },
+      AsrGapRemoveCore: { getGapPlaybackSkip(_ranges, _time, options) {
       captured = options; throw sentinel;
     } } },
+    document: makeDocumentStub(),
     MaweCoreState: { player: { currentTime: 3, paused: false } },
     MaweCuePanelState: {},
     MaweGapRemoveData: { getGapRemoveData: () => ({ skip_playback: true }), getRemovedGapRanges: () => [] },
     MaweMediaPlayback: { get isAuditioning() { return auditioning; } },
   };
-  vm.runInNewContext(fs.readFileSync(new URL('../web/editor/media/editor-playback-loop.js', import.meta.url), 'utf8'), context);
+  vm.runInNewContext(compileEditorFixture('editor/media/editor-playback-loop.js'), context);
   for (const name of ['update', 'updatePlaybackFrame']) {
     for (const active of [true, false]) {
       auditioning = active;

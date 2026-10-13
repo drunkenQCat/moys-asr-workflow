@@ -1,3 +1,8 @@
+import { legacyBindings as __mawImportedBindings0 } from "./editor-wiring-export-context.js";
+import { legacyBindings as __mawImportedBindings1 } from "../boot/editor.js";
+import { legacyBindings as __mawImportedBindings2 } from "../cues/editor-wiring-overlay-transfer.js";
+export function* initialize() {
+yield;
 // 工程 JSON 构建、时间码修复与分组重建。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweJsonRepair 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -16,7 +21,7 @@
   MaweTimeline.syncProjectTimebaseAndBindingOffsets(MaweBoot.DATA, { preferFrames: false });
   const out = {
     schema: window.AsrEditorUtils.PROJECT_SCHEMA,
-    ...projectExtensionFields,
+    ...__mawImportedBindings0.projectExtensionFields,
     media: MaweBoot.DATA.media || '',
     language: MaweBoot.DATA.language || '',
     model: MaweBoot.DATA.model || '',
@@ -49,7 +54,7 @@
   }
   const multi = MaweMultiSubtitleCore.getMultiSubtitleState();
   out.multi_subtitle = {
-    schema: multi.schema || MULTI_SUBTITLE_UTILS.MULTI_SUBTITLE_SCHEMA,
+    schema: multi.schema || __mawImportedBindings1.MULTI_SUBTITLE_UTILS.MULTI_SUBTITLE_SCHEMA,
     enabled: multi.enabled === true,
     display_mode: multi.display_mode || 'both',
     main_split_mode: MaweMultiSubtitleCore.isConfiguredSubtitleSplitMode(multi.main_split_mode)
@@ -88,7 +93,7 @@
       end_offset_ms: binding.end_offset_ms || 0,
     })),
   };
-  const overlay = getOverlayTrack();
+  const overlay = __mawImportedBindings2.getOverlayTrack();
   if (overlay?.enabled === true || overlay?.segments?.length) {
     out.overlay_track = {
       enabled: overlay.enabled === true,
@@ -334,13 +339,13 @@
     result.changed.push(...repaired.changed);
     return result;
   }, { fixed: 0, changed: [] });
-  const overlay = repairTimingGroup(getOverlayTrack()?.segments);
+  const overlay = repairTimingGroup(__mawImportedBindings2.getOverlayTrack()?.segments);
   const fixed = main.fixed + extension.fixed + overlay.fixed;
   if (fixed > 0) {
     MaweMultiSubtitleCore.markMainSegmentsDirty(main.changed);
     extension.changed.forEach((segment) => { segment._dirty = true; });
     overlay.changed.forEach((segment) => { segment._dirty = true; });
-    if (overlay.changed.length) getOverlayTrack()._dirty = true;
+    if (overlay.changed.length) __mawImportedBindings2.getOverlayTrack()._dirty = true;
     if (main.changed.length || extension.changed.length) MaweMultiSubtitleCore.markMultiSubtitleStateDirty();
     MaweMultiSubtitleCore.syncBindingOffsets();
   }
@@ -355,3 +360,5 @@
     repairCurrentProjectTimings
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

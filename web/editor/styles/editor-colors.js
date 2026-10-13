@@ -1,3 +1,6 @@
+
+export function* initialize() {
+yield;
 // 调色板：颜色标签、窗口注入的 ASR_EDITOR_PALETTE、内置/自定义五色与应用控件同步。
 // 由 split-cluster codemod 自 editor.js 拆出；main #135（ASS 样式库）引入自定义
 // 五色后，调色板变为可变状态（let），随设置联动重建并同步给波形运行时。
@@ -162,3 +165,5 @@
     setSubtitleColorPaletteValue,
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

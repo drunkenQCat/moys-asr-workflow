@@ -1,3 +1,6 @@
+
+export function* initialize() {
+yield;
 // One owner for project identity, selection, preferences and transient UI state.
 // The project is the original template object; no second subtitle source exists.
 window.MAWE.register('editor-state', function createEditorState(project) {
@@ -114,3 +117,5 @@ window.MAWE.register('editor-state', function createEditorState(project) {
     segmentsFingerprint, noteSavedSegments, markSaved, reconcileSegmentsDirty });
 });
 window.MaweState = window.MAWE.resolve('editor-state', window.MaweBoot.DATA);
+
+}

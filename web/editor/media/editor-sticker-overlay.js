@@ -1,3 +1,7 @@
+import { legacyBindings as __mawImportedBindings0 } from "../cues/editor-wiring-overlay-transfer.js";
+import { legacyBindings as __mawImportedBindings1 } from "./editor-wiring-sticker-preview.js";
+export function* initialize() {
+yield;
 // 表情包浮层：叠加层渲染与区间缓存。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweStickerOverlay 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -75,7 +79,7 @@
     });
   };
   collect(MaweBoot.DATA.segments, 'main');
-  collect(getOverlayTrack()?.segments || [], 'overlay');
+  collect(__mawImportedBindings0.getOverlayTrack()?.segments || [], 'overlay');
   stickerIntervals = intervals;
   stickerIntervalBoundaries = [...boundaries].sort((a, b) => a - b);
   stickerIntervalCacheVersion = stickerOverlayDataVersion;
@@ -83,7 +87,7 @@
   activeStickerCacheTime = -Infinity;
   activeStickerCacheUntil = -Infinity;
   activeStickerCache = [];
-  activeStickerHasOverlay = false;
+  __mawImportedBindings1.activeStickerHasOverlay = false;
 }
 
 
@@ -103,7 +107,7 @@
   });
   // 当前时刻是否有叠加轨表情包在显示（同名素材在主轨同时显示时也算——
   // 预览层展示的就是这张图，叠加归属用于决定预览内容区是否加高）。
-  activeStickerHasOverlay = stickerIntervals.some((interval) => (
+  __mawImportedBindings1.activeStickerHasOverlay = stickerIntervals.some((interval) => (
     interval.track === 'overlay'
     && time >= interval.start && time <= interval.end
     && found.has(interval.key)
@@ -144,11 +148,11 @@
   }
   const stickers = activeStickersAt(tMs);
   // 签名带上叠加归属：同名素材的显示集合不变但叠加状态翻转时也要切换 class。
-  const signature = `${activeStickerHasOverlay ? 'O' : ''}\u0001${
+  const signature = `${__mawImportedBindings1.activeStickerHasOverlay ? 'O' : ''}\u0001${
     stickers.map((sticker) => sticker.filename || sticker.name).join('\u0001')
   }`;
   if (renderedStickerOverlayEnabled && renderedStickerSignature === signature) return;
-  stickerOverlayContent.classList.toggle('has-overlay-sticker', activeStickerHasOverlay);
+  stickerOverlayContent.classList.toggle('has-overlay-sticker', __mawImportedBindings1.activeStickerHasOverlay);
   stickerOverlayContent.replaceChildren(...stickers.map((sticker) => {
     const img = document.createElement('img');
     img.src = MaweSelection.stickerUrl(sticker);
@@ -190,3 +194,5 @@
     renderStickerOverlay
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

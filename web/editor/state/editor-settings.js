@@ -1,3 +1,6 @@
+
+export function* initialize() {
+yield;
 // 编辑器设置：键名、默认值、localStorage 读写与 EDITOR_SETTINGS 中心可变对象。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweSettings 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -445,3 +448,5 @@
     updateEditorSettings
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

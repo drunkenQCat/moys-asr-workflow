@@ -1,3 +1,7 @@
+import { legacyBindings as __mawImportedBindings0 } from "./editor-wiring-overlay-actions.js";
+import { legacyBindings as __mawImportedBindings1 } from "../boot/editor.js";
+export function* initialize() {
+yield;
 // 波形空白处新增主/副字幕。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweAddCue 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -76,7 +80,7 @@
     return;
   }
   if (track === 'overlay') {
-    addOverlayRangeFromWaveform(requestedStart, requestedEnd, clickX, clickY);
+    __mawImportedBindings0.addOverlayRangeFromWaveform(requestedStart, requestedEnd, clickX, clickY);
     return;
   }
   const duration = MaweCoreState.waveformEditor?.durationMs || (Number.isFinite(MaweCoreState.player.duration) ? MaweCoreState.player.duration * 1000 : 0);
@@ -103,7 +107,7 @@
   MaweCuePanel.commitCuePanelEdit();
   return MaweCommands.run('新增字幕', (command) => {
     MaweBoot.DATA.segments.splice(index, 0, {
-      id: MULTI_SUBTITLE_UTILS.uniqueStableSegmentId(MaweBoot.DATA.segments, `main-${index + 1}`, 'main'),
+      id: __mawImportedBindings1.MULTI_SUBTITLE_UTILS.uniqueStableSegmentId(MaweBoot.DATA.segments, `main-${index + 1}`, 'main'),
       start: safeStart,
       end: safeEnd,
       text: '',
@@ -223,3 +227,5 @@
     addExtensionAtWaveformTime
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

@@ -1,3 +1,6 @@
+import { legacyBindings as __mawImportedBindings0 } from "../boot/editor.js";
+export function* initialize() {
+yield;
 // 多重字幕导入：导入选择弹窗、预览渲染与主副轨交换。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweMultiImport 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -134,18 +137,18 @@
   function commitMultiSubtitleImport() {
   const pending = pendingMultiImport;
   if (!pending) return false;
-  const match = pending.match || MULTI_SUBTITLE_UTILS.matchSubtitleSegments(
+  const match = pending.match || __mawImportedBindings0.MULTI_SUBTITLE_UTILS.matchSubtitleSegments(
     MaweBoot.DATA.segments, pending.segments, MaweMultiSubtitleCore.MULTI_SUBTITLE_TOLERANCE_MS,
   );
   const multi = MaweMultiSubtitleCore.getMultiSubtitleState();
   const replacing = Boolean(pending.existingTrackId);
   const oldTrack = replacing ? MaweMultiSubtitleCore.getExtensionTrack(pending.existingTrackId) : null;
-  const trackId = oldTrack?.id || MULTI_SUBTITLE_UTILS.uniqueStableSegmentId(
+  const trackId = oldTrack?.id || __mawImportedBindings0.MULTI_SUBTITLE_UTILS.uniqueStableSegmentId(
     multi.tracks || [], 'extension-1', 'extension',
   );
   const extensionSegments = pending.segments.map((segment, index) => ({
     ...segment,
-    id: MULTI_SUBTITLE_UTILS.uniqueStableSegmentId(
+    id: __mawImportedBindings0.MULTI_SUBTITLE_UTILS.uniqueStableSegmentId(
       pending.segments.slice(0, index), `${trackId}-segment-${String(index + 1).padStart(3, '0')}`, `${trackId}-segment`,
     ),
     _dirty: true,
@@ -156,7 +159,7 @@
     name: pending.file.name.replace(/\.[^.]+$/i, '') || '副字幕',
     language: '',
     source_name: pending.file.name,
-    split_mode: MULTI_SUBTITLE_UTILS.detectSubtitleSplitMode(
+    split_mode: __mawImportedBindings0.MULTI_SUBTITLE_UTILS.detectSubtitleSplitMode(
       extensionSegments.map((segment) => segment.text).join('\n'),
     ),
     segments: extensionSegments,
@@ -177,7 +180,7 @@
       const main = MaweBoot.DATA.segments[candidate.mainIndex];
       const extension = extensionSegments[candidate.extensionIndex];
       if (main && extension) multi.bindings.push(
-        MULTI_SUBTITLE_UTILS.buildSubtitleBinding(main, extension, trackId),
+        __mawImportedBindings0.MULTI_SUBTITLE_UTILS.buildSubtitleBinding(main, extension, trackId),
       );
     });
     multi.enabled = true;
@@ -212,7 +215,7 @@
     return false;
   }
   return MaweCommands.run('交换主副字幕', (command) => {
-    const result = MULTI_SUBTITLE_UTILS.swapMainAndExtensionSubtitle(MaweBoot.DATA, track.id);
+    const result = __mawImportedBindings0.MULTI_SUBTITLE_UTILS.swapMainAndExtensionSubtitle(MaweBoot.DATA, track.id);
     if (!result.swapped) {
       MaweHint.flashHint('交换主副字幕失败', 'warning');
       return false;
@@ -328,3 +331,5 @@ const expectedName = window.AsrEditorUtils.fileBasename(MaweBoot.DATA.media);
     openProjectFile
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

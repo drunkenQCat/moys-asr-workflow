@@ -1,3 +1,6 @@
+
+export function* initialize() {
+yield;
 // 时间基准与时间线：帧/毫秒换算、时码格式化、工程时间基准同步与步长取值。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweTimeline 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -574,3 +577,5 @@
     refreshAdjacentBoundaryModeUi
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

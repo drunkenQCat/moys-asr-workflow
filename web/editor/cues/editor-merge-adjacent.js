@@ -1,3 +1,7 @@
+import { legacyBindings as __mawImportedBindings0 } from "./editor-wiring-overlay-transfer.js";
+import { legacyBindings as __mawImportedBindings1 } from "./editor-wiring-overlay-split-merge.js";
+export function* initialize() {
+yield;
 // 相邻字幕合并。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweMergeAdjacent 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -14,7 +18,7 @@
   const track = extension ? target.track : null;
   const segments = extension
     ? track?.segments || []
-    : overlay ? (getOverlayTrack()?.segments || []) : MaweBoot.DATA.segments;
+    : overlay ? (__mawImportedBindings0.getOverlayTrack()?.segments || []) : MaweBoot.DATA.segments;
   let index = Number.isInteger(target?.index) ? target.index : -1;
   if (index < 0) {
     const selected = extension ? MaweSelection.selectedExtensionIdxs
@@ -30,7 +34,7 @@
   }
   const indices = direction < 0 ? [neighbor, index] : [index, neighbor];
   if (extension) return MaweSegmentOps.mergeExtensionSegments(indices, track);
-  if (overlay) return mergeOverlaySegments(indices);
+  if (overlay) return __mawImportedBindings1.mergeOverlaySegments(indices);
   MaweSegmentOps.mergeSegments(indices);
   return true;
 }
@@ -39,3 +43,5 @@
     mergeAdjacentSubtitle
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

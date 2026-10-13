@@ -1,3 +1,6 @@
+
+export function* initialize() {
+yield;
 // 说话人标签：设置应用、控件同步与导出选项。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweSpeakerLabels 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -135,3 +138,5 @@
     speakerLabelExportOptions
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

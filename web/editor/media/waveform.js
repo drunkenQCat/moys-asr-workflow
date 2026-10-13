@@ -1,3 +1,6 @@
+
+export function* initialize() {
+yield;
 // Waveform compatibility facade: compose algorithms and class methods once.
 (function () {
   'use strict';
@@ -276,3 +279,5 @@ window.AsrWaveform = {
     window.MAWE.register('waveform', () => window.AsrWaveform);
   }
 })();
+
+}

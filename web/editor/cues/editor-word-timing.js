@@ -1,3 +1,6 @@
+
+export function* initialize() {
+yield;
 (function initWordTiming(global) {
   'use strict';
   let enabled = false, selection = null, conversionTarget = null;
@@ -289,3 +292,5 @@
   global.MaweWordTiming = Object.freeze({ get enabled() { return enabled; }, setEnabled, reset, bind,
     select, getSelection, clearSelection, previewItems, merge, showMenu, openConversion, syncTextChange });
 })(window);
+
+}

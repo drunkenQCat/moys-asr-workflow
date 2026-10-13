@@ -99,7 +99,10 @@ test('assembly rejects invalid exports, effects, duplicate/unsafe paths and omit
   await assert.rejects(compileSources(root,['other.js'],[{file:'factory.js',name:'example',exportName:'createExample'}],
     () => ''), /manifest/i);
   await assert.rejects(compileSources(root,['constant.js'],[],() => 'const fixed=3; fixed++;'), /constant/i);
+  // 终态契约取代「classic 保持」：新增导入必须依赖闭合，缺失导出在构建期拒绝。
   await assert.rejects(buildEditor(root,{transform(file, source) {
-    return file === 'editor/boot/editor-runtime.js' ? source+'\nexport const accidental=1;' : source;
-  }}), /classic|export/i);
+    return file === 'editor/boot/editor-runtime.js'
+      ? source + '\nimport { definitelyMissingExport } from \'./editor-boot.js\';\nwindow.__canary = definitelyMissingExport;'
+      : source;
+  }}), /No matching export|Could not resolve/i);
 });

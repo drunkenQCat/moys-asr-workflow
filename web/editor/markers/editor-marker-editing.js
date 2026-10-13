@@ -1,3 +1,6 @@
+
+export function* initialize() {
+yield;
 // 通用 Marker / Region 编辑：全部数据变更收敛在这里。
 // 波形轨道与「标记与区段」管理窗都只调用本模块；撤销/重做（markers 历史
 // kind）、保存脏标记与视图刷新统一走 commitMarkerChange 一个入口，
@@ -285,3 +288,5 @@
     pendingReviewCount,
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

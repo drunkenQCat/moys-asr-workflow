@@ -1,3 +1,6 @@
+
+export function* initialize() {
+yield;
 // 行内编辑：主/副字幕就地编辑状态机与光标定位。
 // 状态由 MaweState 持有；保留旧接口供尚未迁移的消费者使用，外部仅经
 // window.MaweInlineEdit 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -346,3 +349,5 @@
     finishEdit
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

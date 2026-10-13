@@ -1,3 +1,6 @@
+
+export function* initialize() {
+yield;
 // Shared gap-remove data and playback helpers used by MAWE and the alignment UI.
 // Keep this module free of DOM, media elements, editor history, and rendering.
 (function initAsrGapRemoveCore(global) {
@@ -1515,3 +1518,5 @@
     buildGapRemovedIntervals,
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

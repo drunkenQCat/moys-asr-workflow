@@ -1,3 +1,6 @@
+import { legacyBindings as __mawImportedBindings0 } from "./editor-wiring-overlay-transfer.js";
+export function* initialize() {
+yield;
 // 搜索：过滤应用、防抖与清空按钮。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweSearch 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -29,7 +32,7 @@
       const extensionSeg = Number.isInteger(extIdx) && extIdx >= 0 && extensionTrack
         ? extensionTrack.segments[extIdx] : null;
       const overlaySeg = Number.isInteger(overlayIdx) && overlayIdx >= 0
-        ? getOverlayTrack()?.segments?.[overlayIdx] : null;
+        ? __mawImportedBindings0.getOverlayTrack()?.segments?.[overlayIdx] : null;
       const searchableText = [mainSeg?.text, extensionSeg?.text, overlaySeg?.text]
         .filter(Boolean).join('\n');
       if (!searchableText) {
@@ -90,3 +93,5 @@
     refreshSearchClearVisibility
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

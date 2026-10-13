@@ -1,3 +1,6 @@
+
+export function* initialize() {
+yield;
 // 整轨定时编辑：逐行 diff 呈现、时间映射与覆盖统计。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweTimedTextEdit 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -836,3 +839,5 @@
     openTimedTextEdit
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

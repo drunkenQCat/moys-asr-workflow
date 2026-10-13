@@ -1,3 +1,6 @@
+
+export function* initialize() {
+yield;
 // 工程与媒体文件输入：input 元素、Blob URL 与媒体选择弹窗。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweProjectMediaInputs 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -53,3 +56,5 @@
     showProjectMediaModal
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

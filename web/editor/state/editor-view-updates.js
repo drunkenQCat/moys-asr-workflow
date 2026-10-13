@@ -1,3 +1,6 @@
+
+export function* initialize() {
+yield;
 // Explicit project view effects, shared by commands and history adapters.
 window.MAWE.register('editor-view-updates', function createViewUpdates(dependencies) {
   'use strict';
@@ -19,3 +22,5 @@ window.MaweViewUpdates = window.MAWE.resolve('editor-view-updates', {
   refreshPreview: () => MawePlaybackLoop.refreshSubtitlePreview(),
   scheduleSave: () => MaweServerSave.scheduleAutoSaveFlush(),
 });
+
+}

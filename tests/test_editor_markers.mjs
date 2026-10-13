@@ -1,3 +1,4 @@
+import { compileEditorFixture } from './helpers/editor-module-loader.mjs';
 // markers：通用 Marker / Region 核心逻辑（规范化 / 过滤 / 几何换算）单测。
 // 覆盖 AGENTS 约定：整数毫秒、稳定 ID、Region 判定（end > start）、
 // 管理窗过滤、可见范围裁剪与波形跨行挑选 / 行内时间换算。
@@ -212,7 +213,7 @@ test('OTIO export writes marker fields as Marker.2 with name, comment and mapped
   const utilsWindow = loadEditorModule({ window: {}, TextDecoder, TextEncoder, Uint8Array }, 'shared/editor-utils.js');
   const context = {
     window: { AsrEditorUtils: utilsWindow.AsrEditorUtils, AsrGapRemoveCore: utilsWindow.AsrGapRemoveCore },
-    document: { querySelectorAll: () => [] },
+    document: { querySelectorAll: () => [], getElementById: () => null, addEventListener() {}, removeEventListener() {} },
     MaweBoot: { DATA: { markers: [] } },
     MaweSettings: { EDITOR_SETTINGS: {}, GAP_REMOVE_SCHEMA: 'moy.asr.gap_remove.v1' },
     MaweCoreState: {},
@@ -222,7 +223,7 @@ test('OTIO export writes marker fields as Marker.2 with name, comment and mapped
     MaweHint: { flashHint: () => {} },
     navigator: { userAgent: 'node' },
   };
-  vm.runInNewContext(readFileSync(exportPath, 'utf8'), context, { filename: 'editor-export-timeline.js' });
+  vm.runInNewContext(compileEditorFixture('editor/io/editor-export-timeline.js'), context, { filename: 'editor-export-timeline.js' });
   const otio = context.window.MaweExportTimeline;
   assert.ok(otio, 'MaweExportTimeline facade missing');
   const presetMarkers = utils.MARKER_PRESET_COLORS.map((color, index) => ({ id: `preset-${index}`, start: 1000 + index, color }));

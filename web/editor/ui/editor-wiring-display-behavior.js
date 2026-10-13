@@ -1,3 +1,7 @@
+import { legacyBindings as __mawImportedBindings0 } from "./editor-wiring-dom-panels.js";
+import { legacyBindings as __mawImportedBindings1 } from "../boot/editor.js";
+export function* initialize() {
+yield;
 MaweDisplaySettings.bindCueListDisplayToggle(MaweDom.cueListShowIndexToggle, 'cueListShowIndex');
 MaweDisplaySettings.bindCueListDisplayToggle(MaweDom.cueListShowTimeToggle, 'cueListShowTime');
 MaweDisplaySettings.bindCueListDisplayToggle(MaweDom.cueListShowStickerToggle, 'cueListShowSticker');
@@ -48,8 +52,8 @@ MaweDom.clickBehaviorSelect?.addEventListener('change', () => {
 MaweDom.clickTargetSelect?.addEventListener('change', () => {
   MaweSettings.updateEditorSettings({ clickTarget: MaweSettings.normalizeClickTarget(MaweDom.clickTargetSelect.value) });
 });
-pauseOnMouseClickToggle?.addEventListener('change', () => {
-  MaweSettings.updateEditorSettings({ pauseOnMouseClick: pauseOnMouseClickToggle.checked });
+__mawImportedBindings0.pauseOnMouseClickToggle?.addEventListener('change', () => {
+  MaweSettings.updateEditorSettings({ pauseOnMouseClick: __mawImportedBindings0.pauseOnMouseClickToggle.checked });
 });
 MaweDom.keyboardOperationReferenceSelect?.addEventListener('change', () => {
   const mode = MaweSettings.normalizeKeyboardOperationReferenceMode(MaweDom.keyboardOperationReferenceSelect.value);
@@ -125,7 +129,7 @@ MaweDom.mediaSeekStepInput?.addEventListener('change', () => {
 MaweDom.cueMoveStepInput?.addEventListener('change', () => {
   const frameMode = MaweTimeline.timelineIsFrameMode();
   const value = frameMode
-    ? EDITOR_SETTINGS_UTILS.clampTimelineFrameStep(MaweDom.cueMoveStepInput.value, 1)
+    ? __mawImportedBindings1.EDITOR_SETTINGS_UTILS.clampTimelineFrameStep(MaweDom.cueMoveStepInput.value, 1)
     : MaweSettings.clampCueMoveStepMs(MaweDom.cueMoveStepInput.value);
   MaweDom.cueMoveStepInput.value = String(value);
   MaweSettings.updateEditorSettings(frameMode ? { cueMoveStepFrames: value } : { cueMoveStepMs: value });
@@ -186,3 +190,5 @@ MaweDom.ninjaSlashRotateInput?.addEventListener('change', () => {
   MaweSettings.updateEditorSettings({ ninjaSlashRotateAmplitude: MaweSettings.clampNinjaSlashRotateAmplitude(MaweDom.ninjaSlashRotateInput.value) });
   MaweDom.ninjaSlashRotateInput.value = String(MaweSettings.EDITOR_SETTINGS.ninjaSlashRotateAmplitude);
 });
+
+}

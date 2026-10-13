@@ -3,6 +3,8 @@ import fs from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import { createWaveformModule } from '../web/editor/media/waveform/workspace.js';
+import { compileEditorFixture, makeDocumentStub } from './helpers/editor-module-loader.mjs';
+import { makeFacadeStub } from './helpers/editor-module-loader.mjs';
 
 test('row length updates controls, invalidates rows and persists only valid changes', () => {
   const saved = [];
@@ -28,8 +30,14 @@ function fixture() {
     setSecondsPerRow(value) { this.settings.secondsPerRow = value; },
   };
   const settings = { multiSubtitleRowHeight: 168, wordTimingRowHeight: 144, wordTimingSecondsPerRow: 5 };
-  const context = { window: {}, MaweCoreState: { waveformEditor: editor }, MaweSettings: { EDITOR_SETTINGS: settings } };
-  vm.runInNewContext(fs.readFileSync(new URL('../web/editor/ui/editor-display-settings.js', import.meta.url), 'utf8'), context);
+  const documentStub = makeDocumentStub();
+  const context = { window: { addEventListener() {}, removeEventListener() {}, document: documentStub },
+    document: documentStub,
+    localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
+    MaweDom: makeFacadeStub(),
+    MaweMultiSubtitleCore: { MULTI: 'main', getActiveExtensionTrack: () => ({ segments: [] }), getExtensionSubtitleSplitMode: () => 'word', getMainSubtitleSplitMode: () => 'word', getMultiSubtitleState: () => ({ enabled: false, tracks: [] }), normalizeMultiSubtitleState: (state) => state ?? { enabled: false, tracks: [] } },
+    MaweCoreState: { waveformEditor: editor }, MaweSettings: { EDITOR_SETTINGS: settings } };
+  vm.runInNewContext(compileEditorFixture('editor/ui/editor-display-settings.js'), context);
   const display = context.window.MaweDisplaySettings;
   return { editor, settings, display,
     toggle(mode, enabled) { display[mode === 'word' ? 'syncWordTimingWaveformSettings' : 'syncMultiSubtitleWaveformRowHeight'](enabled); },

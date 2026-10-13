@@ -1,3 +1,6 @@
+import { legacyBindings as __mawImportedBindings0 } from "../styles/editor-wiring-ass-manager.js";
+export function* initialize() {
+yield;
 // Project properties are read from the active project; preferences never override them.
 (function initProjectSettings(global) {
   'use strict';
@@ -37,10 +40,12 @@
     },
   });
   function syncControls() {
-    if (typeof syncAssModeControl === 'function') syncAssModeControl();
+    if (typeof __mawImportedBindings0.syncAssModeControl === 'function') __mawImportedBindings0.syncAssModeControl();
     if (MaweDom.exportSpeakerLabelsToggle) MaweDom.exportSpeakerLabelsToggle.checked = settings.exportSpeakerLabels;
     MaweSplitMode.refreshMergeJoinModeHint();
     global.MaweStickerRoot?.syncControls?.();
   }
   global.MaweProjectSettings = Object.freeze({ syncControls });
 })(window);
+
+}

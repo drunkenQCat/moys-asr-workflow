@@ -1,4 +1,7 @@
 
+export function* initialize() {
+yield;
+
 // === 工具栏导出下拉菜单 ===
 
 
@@ -15,3 +18,5 @@ MaweExportMenus.bindToolbarExportDropdown(
   'batch-operations-dropdown', 'batch-operations-btn', 'batch-operations-menu',
   MaweExportMenus.positionBatchOperationsMenu,
 );
+
+}

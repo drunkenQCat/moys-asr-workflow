@@ -1,3 +1,14 @@
+import { legacyBindings as __mawImportedBindings0 } from "./editor-wiring-ass-storage.js";
+import { legacyBindings as __mawImportedBindings1 } from "../ui/editor-wiring-dom-panels.js";
+import { legacyBindings as __mawImportedBindings2 } from "../media/editor-wiring-keyboard-guards.js";
+export let legacyBindings;
+export function* initialize() {
+legacyBindings = Object.freeze({
+get rebuildSubtitleFontFamilyOptions() { return rebuildSubtitleFontFamilyOptions; }, set rebuildSubtitleFontFamilyOptions(value) { rebuildSubtitleFontFamilyOptions = value; },
+get rebuildAssFontNameOptions() { return rebuildAssFontNameOptions; }, set rebuildAssFontNameOptions(value) { rebuildAssFontNameOptions = value; },
+get normalizeAssColorStyleValue() { return normalizeAssColorStyleValue; }, set normalizeAssColorStyleValue(value) { normalizeAssColorStyleValue = value; }
+});
+yield;
 
 // === 字幕预览几何（preview.subtitle）===
 // 归一化 {x,y,width,height} 存于 DATA.preview.subtitle。纯钳制/归一化逻辑在
@@ -216,39 +227,39 @@ function subtitleFontFamilyComboboxEntries() {
   return entries;
 }
 function assFontNameComboboxEntries() {
-  const entries = ASS_BUILTIN_FONT_SUGGESTIONS.map((name) => ({ value: name, label: name }));
+  const entries = __mawImportedBindings0.ASS_BUILTIN_FONT_SUGGESTIONS.map((name) => ({ value: name, label: name }));
   MaweAppearance.subtitleLocalFontFamilies.forEach((family) => {
     entries.push({ value: family, label: family });
   });
   return entries;
 }
 function getSubtitleFontFamilyCombobox() {
-  if (!subtitleFontFamilyCombobox) {
-    subtitleFontFamilyCombobox = createFontFamilyCombobox({
-      input: subtitleFontFamilyInput,
-      toggle: subtitleFontFamilyToggle,
-      options: subtitleFontFamilyOptions,
+  if (!__mawImportedBindings1.subtitleFontFamilyCombobox) {
+    __mawImportedBindings1.subtitleFontFamilyCombobox = createFontFamilyCombobox({
+      input: __mawImportedBindings1.subtitleFontFamilyInput,
+      toggle: __mawImportedBindings1.subtitleFontFamilyToggle,
+      options: __mawImportedBindings1.subtitleFontFamilyOptions,
       getEntries: subtitleFontFamilyComboboxEntries,
     });
   }
-  return subtitleFontFamilyCombobox;
+  return __mawImportedBindings1.subtitleFontFamilyCombobox;
 }
 function getAssFontNameCombobox() {
-  if (!assFontNameCombobox) {
+  if (!__mawImportedBindings1.assFontNameCombobox) {
     const assStyleFontNameInput = document.getElementById('ass-style-font-name');
     // 占位符跟随按操作系统选择的 ASS 默认字体，不再固定 Arial。
     if (assStyleFontNameInput) {
       const assDefaultFontName = window.AsrEditorUtils.ASS_DEFAULT_ASS_STYLE?.fontName;
       if (assDefaultFontName) assStyleFontNameInput.placeholder = assDefaultFontName;
     }
-    assFontNameCombobox = createFontFamilyCombobox({
+    __mawImportedBindings1.assFontNameCombobox = createFontFamilyCombobox({
       input: assStyleFontNameInput,
-      toggle: assStyleFontToggle,
-      options: assStyleFontOptions,
+      toggle: __mawImportedBindings1.assStyleFontToggle,
+      options: __mawImportedBindings1.assStyleFontOptions,
       getEntries: assFontNameComboboxEntries,
     });
   }
-  return assFontNameCombobox;
+  return __mawImportedBindings1.assFontNameCombobox;
 }
 function rebuildSubtitleFontFamilyOptions() {
   getSubtitleFontFamilyCombobox().refresh();
@@ -260,7 +271,7 @@ function rebuildAssFontNameOptions() {
 
 
 function normalizeAssColorStyleValue(value) {
-  return typeof value === 'string' && ASS_COLOR_STYLE_VALUES.includes(value)
+  return typeof value === 'string' && __mawImportedBindings0.ASS_COLOR_STYLE_VALUES.includes(value)
     ? value : null;
 }
 
@@ -363,7 +374,9 @@ document.addEventListener('pointerdown', (event) => {
 if (typeof ResizeObserver === 'function') {
   const previewResizeObserver = new ResizeObserver(() => {
     MawePreviewGeometry.applyPreviewGeometryToDom(MaweAppearance.getPreviewGeometry());
-    scheduleAssSubtitlePreviewRefresh();
+    __mawImportedBindings2.scheduleAssSubtitlePreviewRefresh();
   });
   previewResizeObserver.observe(MaweDom.playerStage);
+}
+
 }

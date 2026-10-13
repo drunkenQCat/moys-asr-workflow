@@ -1,3 +1,23 @@
+import { legacyBindings as __mawImportedBindings0 } from "./editor-wiring-overlay-transfer.js";
+import { legacyBindings as __mawImportedBindings1 } from "./editor-wiring-overlay-split-merge.js";
+import { legacyBindings as __mawImportedBindings2 } from "../boot/editor.js";
+import { legacyBindings as __mawImportedBindings3 } from "./editor-wiring-cue-panel.js";
+export let legacyBindings;
+export function* initialize() {
+legacyBindings = Object.freeze({
+get stickerTargetTrack() { return stickerTargetTrack; }, set stickerTargetTrack(value) { stickerTargetTrack = value; },
+get previewTrack() { return previewTrack; }, set previewTrack(value) { previewTrack = value; },
+get stickerSegmentsForTrack() { return stickerSegmentsForTrack; }, set stickerSegmentsForTrack(value) { stickerSegmentsForTrack = value; },
+get colorGroupHeadIndex() { return colorGroupHeadIndex; }, set colorGroupHeadIndex(value) { colorGroupHeadIndex = value; },
+get detachColorFromGroup() { return detachColorFromGroup; }, set detachColorFromGroup(value) { detachColorFromGroup = value; },
+get assignOverlayColor() { return assignOverlayColor; }, set assignOverlayColor(value) { assignOverlayColor = value; },
+get mergeOverlayCues() { return mergeOverlayCues; }, set mergeOverlayCues(value) { mergeOverlayCues = value; },
+get clearOverlayColorOnTargets() { return clearOverlayColorOnTargets; }, set clearOverlayColorOnTargets(value) { clearOverlayColorOnTargets = value; },
+get clearOverlaySticker() { return clearOverlaySticker; }, set clearOverlaySticker(value) { clearOverlaySticker = value; },
+get addOverlayRangeFromWaveform() { return addOverlayRangeFromWaveform; }, set addOverlayRangeFromWaveform(value) { addOverlayRangeFromWaveform = value; },
+get addOverlayAtWaveformTime() { return addOverlayAtWaveformTime; }, set addOverlayAtWaveformTime(value) { addOverlayAtWaveformTime = value; }
+});
+yield;
 
 // === 表情包 ===
   // 'single' | 'multi'
@@ -23,7 +43,7 @@ MaweDom.stickerModal?.addEventListener('click', (e) => { if (e.target === MaweDo
 
 let previewTrack = 'main';
 function stickerSegmentsForTrack(track) {
-  return track === 'overlay' ? (getOverlayTrack()?.segments || []) : MaweBoot.DATA.segments;
+  return track === 'overlay' ? (__mawImportedBindings0.getOverlayTrack()?.segments || []) : MaweBoot.DATA.segments;
 }
 
 document.getElementById('sticker-preview-close')?.addEventListener('click', () => MaweDom.stickerPreviewModal.classList.remove('show'));
@@ -104,7 +124,7 @@ function detachColorFromGroup(idx) {
 // 叠加段的颜色组只引用叠加轨自身段；这里按「单段自持 head」分配，
 // 不产生跨轨引用，也不走主轨的组拆分逻辑。
 function assignOverlayColor(idxs, colorName) {
-  const overlay = getOverlayTrack();
+  const overlay = __mawImportedBindings0.getOverlayTrack();
   const def = MaweColors.COLOR_BY_NAME[colorName];
   if (!overlay || !def) return;
   const targets = [...new Set(idxs)].filter((index) => Number.isInteger(index) && overlay.segments[index]);
@@ -130,13 +150,13 @@ function assignOverlayColor(idxs, colorName) {
 // 且仅按时间连续校验：混合组会丢标记，跳过中间段的合并会留下被新段覆盖
 // 的旧段，保存后违反相邻段 end <= next.start 的契约导致工程无法再打开。
 function mergeOverlayCues(idxs) {
-  detachCuePanelFromTrackEdits();
-  if (!mergeOverlaySegments(idxs)) return;
+  __mawImportedBindings0.detachCuePanelFromTrackEdits();
+  if (!__mawImportedBindings1.mergeOverlaySegments(idxs)) return;
   MaweViewUpdates.invalidate({ save: true });
 }
 
 function clearOverlayColorOnTargets(idxs) {
-  const overlay = getOverlayTrack();
+  const overlay = __mawImportedBindings0.getOverlayTrack();
   if (!overlay) return;
   const targets = [...new Set(idxs)].filter((index) => Number.isInteger(index) && overlay.segments[index]);
   if (!targets.length) return;
@@ -156,7 +176,7 @@ function clearOverlayColorOnTargets(idxs) {
 }
 
 function clearOverlaySticker(index) {
-  const overlay = getOverlayTrack();
+  const overlay = __mawImportedBindings0.getOverlayTrack();
   const segment = overlay?.segments?.[index];
   if (!segment || (!segment.sticker && !segment.sticker_ref)) return;
   segment.sticker = null;
@@ -188,7 +208,7 @@ function clearOverlaySticker(index) {
 // 叠加轨创建入口：与主轨不同，允许与主字幕时间重叠（这正是叠加轨的用途）；
 // 只要求不与叠加轨自身已有段重叠，范围夹进相邻叠加段之间。
 function addOverlayRangeFromWaveform(requestedStart, requestedEnd, clickX, clickY) {
-  const overlay = getOverlayTrack();
+  const overlay = __mawImportedBindings0.getOverlayTrack();
   if (!overlay || !Array.isArray(overlay.segments)) {
     MaweHint.flashHint('当前没有可用的叠加字幕轨', 'invalid');
     return;
@@ -217,7 +237,7 @@ function addOverlayRangeFromWaveform(requestedStart, requestedEnd, clickX, click
   MaweCuePanel.commitCuePanelEdit();
   return MaweCommands.run('新增叠加字幕', (command) => {
     overlay.segments.splice(index, 0, {
-      id: MULTI_SUBTITLE_UTILS.uniqueStableSegmentId(overlay.segments, `overlay-${index + 1}`, 'overlay'),
+      id: __mawImportedBindings2.MULTI_SUBTITLE_UTILS.uniqueStableSegmentId(overlay.segments, `overlay-${index + 1}`, 'overlay'),
       start: safeStart,
       end: safeEnd,
       text: '',
@@ -227,7 +247,7 @@ function addOverlayRangeFromWaveform(requestedStart, requestedEnd, clickX, click
     overlay._dirty = true;
     MaweSelection.clearSelection({ silent: true });
     command.commit({ cueList: true, preserveCueListScroll: false });
-    selectOverlayCueRow(index);
+    __mawImportedBindings3.selectOverlayCueRow(index);
     setTimeout(() => MaweCuePanel.focusCuePanelText(index, 'overlay'), 0);
     MaweCoreState.waveformEditor?.revealTime(safeStart, true);
 
@@ -238,7 +258,7 @@ function addOverlayRangeFromWaveform(requestedStart, requestedEnd, clickX, click
 // 右键菜单 / 后续菜单入口：在指针时间点创建一条默认时长的叠加字幕，
 // 范围夹进叠加轨相邻段之间（主轨是否占用不参与判断）。
 function addOverlayAtWaveformTime(timeMs, clickX, clickY) {
-  const overlay = getOverlayTrack();
+  const overlay = __mawImportedBindings0.getOverlayTrack();
   if (!overlay || !Array.isArray(overlay.segments)) {
     MaweHint.flashHint('当前没有可用的叠加字幕轨', 'invalid');
     return;
@@ -292,3 +312,5 @@ function addOverlayAtWaveformTime(timeMs, clickX, clickY) {
 
 
 // 右键波形背景：添加空隙、创建字幕，或按右键对应的音频位置拆分命中的字幕。
+
+}

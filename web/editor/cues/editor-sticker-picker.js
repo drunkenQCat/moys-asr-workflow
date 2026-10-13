@@ -1,3 +1,8 @@
+import { legacyBindings as __mawImportedBindings0 } from "./editor-wiring-overlay-actions.js";
+import { legacyBindings as __mawImportedBindings1 } from "./editor-wiring-overlay-transfer.js";
+import { legacyBindings as __mawImportedBindings2 } from "./editor-wiring-cue-panel.js";
+export function* initialize() {
+yield;
 // 表情包选择器：网格渲染、分配/清除与时长拓展。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweStickerPicker 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -22,7 +27,7 @@
   }
   stickerTargetMode = isMulti ? 'multi' : 'single';
   stickerTargetIdxs = idxs;
-  stickerTargetTrack = overlay ? 'overlay' : 'main';
+  __mawImportedBindings0.stickerTargetTrack = overlay ? 'overlay' : 'main';
   document.getElementById('sticker-modal-title').textContent =
     isMulti ? `分配表情包到 ${idxs.length} 条字幕（跨时间）` : `分配表情包到${overlay ? '叠加字幕' : '第'} ${idxs[0] + 1}${overlay ? '' : ' 条'}`;
   renderStickerGrid('');
@@ -56,11 +61,11 @@
 
 
   function assignSticker(sticker) {
-  const segments = stickerTargetTrack === 'overlay'
-    ? (getOverlayTrack()?.segments || null) : MaweBoot.DATA.segments;
+  const segments = __mawImportedBindings0.stickerTargetTrack === 'overlay'
+    ? (__mawImportedBindings1.getOverlayTrack()?.segments || null) : MaweBoot.DATA.segments;
   if (!segments) return;
   const hadStickers = MaweBoot.DATA.segments.some((segment) => segment.sticker || segment.sticker_ref)
-    || (getOverlayTrack()?.segments || []).some((segment) => segment.sticker || segment.sticker_ref);
+    || (__mawImportedBindings1.getOverlayTrack()?.segments || []).some((segment) => segment.sticker || segment.sticker_ref);
   return MaweCommands.run('分配表情包', () => {
     if (stickerTargetMode === 'multi' && stickerTargetIdxs.length > 1) {
       const sorted = [...stickerTargetIdxs].sort((a, b) => a - b);
@@ -89,8 +94,8 @@
     }
     MaweDom.stickerModal.classList.remove('show');
     // 叠加轨目标：同步脏标记与保存调度，否则分配只改内存、不落盘。
-    if (stickerTargetTrack === 'overlay') {
-      const overlay = getOverlayTrack();
+    if (__mawImportedBindings0.stickerTargetTrack === 'overlay') {
+      const overlay = __mawImportedBindings1.getOverlayTrack();
       if (overlay) {
         overlay._dirty = true;
         stickerTargetIdxs.forEach((idx) => {
@@ -130,11 +135,11 @@
 
 
   function openStickerPreview(idx, { overlay = false } = {}) {
-  const segments = stickerSegmentsForTrack(overlay ? 'overlay' : 'main');
+  const segments = __mawImportedBindings0.stickerSegmentsForTrack(overlay ? 'overlay' : 'main');
   const seg = segments[idx];
   if (!seg?.sticker) return;
   previewIdx = idx;
-  previewTrack = overlay ? 'overlay' : 'main';
+  __mawImportedBindings0.previewTrack = overlay ? 'overlay' : 'main';
   document.getElementById('sticker-preview-img').src = MaweSelection.stickerUrl(seg.sticker);
   document.getElementById('sticker-preview-name').textContent = seg.sticker.name;
   MaweDom.stickerPreviewModal.classList.add('show');
@@ -150,7 +155,7 @@
     // 走组拆分：被切除的 idx 后面的同 group ref 自动晋升新 head
     MaweSegmentOps.splitGroupsAtCutPoints(
       new Set([idx]), 'sticker', 'sticker_ref',
-      overlay ? (getOverlayTrack()?.segments || []) : MaweBoot.DATA.segments,
+      overlay ? (__mawImportedBindings1.getOverlayTrack()?.segments || []) : MaweBoot.DATA.segments,
     );
   });
 }
@@ -278,7 +283,7 @@
   // 统一切换语义：目标全部禁用 → 全部启用；否则全部禁用
   // 单条时即"切换这一条的状态"（Alt+点击 / 右键菜单均走这里）
   function toggleDisabled(idxs, track = 'main', { successDetail = null } = {}) {
-  const overlayTrackObj = track === 'overlay' ? getOverlayTrack() : null;
+  const overlayTrackObj = track === 'overlay' ? __mawImportedBindings1.getOverlayTrack() : null;
   const extensionTrack = track === 'extension'
     ? MaweMultiSubtitleCore.getActiveExtensionTrack()
     : (track?.segments ? track : null);
@@ -342,7 +347,7 @@
           ).forEach((el) => el.classList.remove('selected'));
         }));
         MaweSelection.updateMultiSelectionClasses();
-        updateSelectionCountText();
+        __mawImportedBindings2.updateSelectionCountText();
       }
     }
     const action = allDisabled ? '启用' : '禁用';
@@ -379,3 +384,5 @@
     toggleDisabled
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

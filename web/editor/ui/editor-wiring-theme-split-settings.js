@@ -1,3 +1,6 @@
+import { legacyBindings as __mawImportedBindings0 } from "../boot/editor.js";
+export function* initialize() {
+yield;
 
 
 
@@ -84,13 +87,13 @@ if (MaweDom.mergeJoinTextWordInput) MaweDom.mergeJoinTextWordInput.addEventListe
 MaweSplitTrim.renderSplitTrimSymbolGrid();
 MaweSplitTrim.refreshSplitTrimExtraInput();
 MaweSplitTrim.splitTrimExtraInput?.addEventListener('change', () => {
-  const extras = MULTI_SUBTITLE_UTILS.parseSplitTrimSymbolInput(MaweSplitTrim.splitTrimExtraInput.value);
+  const extras = __mawImportedBindings0.MULTI_SUBTITLE_UTILS.parseSplitTrimSymbolInput(MaweSplitTrim.splitTrimExtraInput.value);
   MaweSplitTrim.persistSplitTrimSymbols([...MaweSplitTrim.splitTrimPrimaryCheckedSet(), ...extras]);
   MaweSplitTrim.refreshSplitTrimExtraInput();
 });
 MaweSplitTrim.splitTrimSymbolsReset?.addEventListener('click', () => {
-  const defaults = MULTI_SUBTITLE_UTILS.setSplitTrimSymbols(
-    [...MULTI_SUBTITLE_UTILS.DEFAULT_SPLIT_TRIM_SYMBOLS],
+  const defaults = __mawImportedBindings0.MULTI_SUBTITLE_UTILS.setSplitTrimSymbols(
+    [...__mawImportedBindings0.MULTI_SUBTITLE_UTILS.DEFAULT_SPLIT_TRIM_SYMBOLS],
   );
   MaweSettings.updateEditorSettings({ splitTrimSymbols: defaults });
   MaweSplitTrim.renderSplitTrimSymbolGrid();
@@ -156,3 +159,5 @@ MaweDom.subtitleExtendPanel?.querySelectorAll('input[type="number"]').forEach((i
     }
   }, { passive: false });
 });
+
+}

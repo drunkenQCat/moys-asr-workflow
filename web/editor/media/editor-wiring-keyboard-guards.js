@@ -1,4 +1,13 @@
 
+export let legacyBindings;
+export function* initialize() {
+legacyBindings = Object.freeze({
+get isPlaybackActive() { return isPlaybackActive; }, set isPlaybackActive(value) { isPlaybackActive = value; },
+get pausePlaybackAfterMouseClick() { return pausePlaybackAfterMouseClick; }, set pausePlaybackAfterMouseClick(value) { pausePlaybackAfterMouseClick = value; },
+get scheduleAssSubtitlePreviewRefresh() { return scheduleAssSubtitlePreviewRefresh; }, set scheduleAssSubtitlePreviewRefresh(value) { scheduleAssSubtitlePreviewRefresh = value; }
+});
+yield;
+
 
 // === 全局键盘 ===
   // 'enter' or 'ctrl-enter'
@@ -155,3 +164,5 @@ if (typeof ResizeObserver === 'function' && MaweDom.playerStage) {
   assPreviewStageObserver.observe(MaweDom.playerStage);
 }
 window.addEventListener('resize', scheduleAssSubtitlePreviewRefresh);
+
+}

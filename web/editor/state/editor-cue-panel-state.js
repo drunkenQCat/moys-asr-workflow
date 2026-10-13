@@ -1,3 +1,6 @@
+
+export function* initialize() {
+yield;
 // 当前字幕面板运行态：面板索引/轨道、撤销暂存与编辑状态复位。
 // 状态由 MaweState 持有；保留旧接口供尚未迁移的消费者使用，外部仅经
 // window.MaweCuePanelState 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -36,3 +39,5 @@
     resetCuePanelEditState
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

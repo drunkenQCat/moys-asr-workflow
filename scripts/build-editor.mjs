@@ -37,7 +37,10 @@ export function readSources(root = ROOT) {
 }
 
 export function readModules(root = ROOT) {
-  return JSON.parse(fs.readFileSync(path.join(root,'web/editor-modules.json'),'utf8')).modules;
+  const modulesPath = path.join(root,'web/editor-modules.json');
+  // 语义夹具（E8/E9 probe）没有模块登记表：缺省视为全部 classic 转换体。
+  return fs.existsSync(modulesPath)
+    ? JSON.parse(fs.readFileSync(modulesPath,'utf8')).modules : [];
 }
 
 function validateModule(source, item) {
@@ -104,19 +107,78 @@ export async function compileSources(root, files, modules, read, options = {}) {
   return {code:result.outputFiles[0].text,metafile:result.metafile,sourceFiles:files,modules,entry};
 }
 
+// 终态装配：全部源码为真 ESM。工厂按 exportName 导入并在清单序位置注册；
+// classic 转换体（export function* initialize）两阶段驱动：先全量提升与闭包
+// 发布，再按清单序交错执行语句与注册，保持原拼接的提升/TDZ/时序语义。
+function bridgeOwnersOf(bridges) {
+  return [...new Set(bridges.map(b => b.file))].map((file, i) => [file, i]);
+}
+
+export function compileEsmEntry(files, modules, bridges) {
+  const factoryByFile = new Map(modules.map(item => [item.file, item]));
+  const owners = bridgeOwnersOf(bridges);
+  const imports = [], classicFiles = [], classicIndex = new Map();
+  files.forEach((file, i) => {
+    const factory = factoryByFile.get(file);
+    if (factory) imports.push(`import { ${factory.exportName} as factory${i} } from ${JSON.stringify('./' + file)};`);
+    else {
+      imports.push(`import { initialize as init${classicFiles.length} } from ${JSON.stringify('./' + file)};`);
+      classicIndex.set(file, classicFiles.length);
+      classicFiles.push(file);
+    }
+  });
+  imports.push(...owners.map(([file, i]) =>
+    `import { legacyBindings as externalBindings${i} } from ${JSON.stringify('./' + file)};`));
+  const calls = ['window.__mawEsmInitializationTrace = [];',
+    `const initializationSteps = [${classicFiles.map(f => `init${classicIndex.get(f)}()`).join(',')}];`,
+    ...classicFiles.map(f => `initializationSteps[${classicIndex.get(f)}].next();`)];
+  for (const bridge of bridges) {
+    const alias = `externalBindings${owners.findIndex(([f]) => f === bridge.file)}.${bridge.name}`;
+    const setter = bridge.mutable ? `${alias} = value;` : "throw new TypeError('Assignment to constant variable');";
+    calls.push(`Object.defineProperty(window, ${JSON.stringify(bridge.name)}, {configurable:true,`
+      + ` get: () => ${alias}, set: value => {${setter}}});`);
+  }
+  for (const file of files) {
+    const factory = factoryByFile.get(file);
+    if (factory) calls.push(`window.MAWE.register(${JSON.stringify(factory.name)}, factory${files.indexOf(file)});`);
+    else calls.push(`initializationSteps[${classicIndex.get(file)}].next();`);
+    calls.push(`window.__mawEsmInitializationTrace.push(${JSON.stringify(file)});`);
+  }
+  return [...imports, ...calls].join('\n') + '\n';
+}
+
+export async function compileEsmSources(root, files, modules, bridges, read, options = {}) {
+  validateSources(files);
+  const sources = new Map(files.map(file => [file, read(file)]));
+  const entry = compileEsmEntry(files, modules, bridges ?? []);
+  const result = await esbuild.build({absWorkingDir:path.resolve(root),
+    stdin:{contents:entry,resolveDir:path.resolve(root,'web'),sourcefile:'editor-entry.mjs',loader:'js'},
+    plugins:[{name:'maw-esm-sources',setup(build) {
+      // 经 read 注入源码：transform（类型门/新鲜度哈希）对产物可见。
+      build.onLoad({filter:/\.js$/}, args => {
+        const file = path.relative(path.resolve(root,'web'),args.path).replaceAll('\\','/');
+        if (!sources.has(file)) return null;
+        return {contents:sources.get(file),loader:'js',resolveDir:path.dirname(args.path)};
+      });
+    }}],
+    bundle:true,format:'iife',target:['es2022'],charset:'utf8',minify:true,write:false,
+    metafile:true,logLevel:'silent',legalComments:'none',banner:{js:"'use strict';"}});
+  return {code:result.outputFiles[0].text,metafile:result.metafile,sourceFiles:files,modules,entry};
+}
+
 export async function buildEditor(root = ROOT, options = {}) {
   const files = readSources(root), modules = readModules(root);
-  const configText = fs.readFileSync(path.join(root,'web/editor-modules.json'),'utf8');
+  const modulesPath = path.join(root,'web/editor-modules.json');
+  const configText = fs.existsSync(modulesPath) ? fs.readFileSync(modulesPath,'utf8') : '{}';
   const config = JSON.parse(configText), inputHashes = {};
-  const result = await compileSources(root,files,modules,file => {
+  const result = await compileEsmSources(root,files,modules,config.externalBridges,file => {
     const original = fs.readFileSync(path.join(root,'web',file),'utf8');
     const source = options.transform ? options.transform(file,original) : original;
     inputHashes[file] = sha(source); return source;
-  },{bridges:config.externalBridges,trace:true});
+  },{trace:true});
   const metadata = {format:1,esbuild:esbuild.version,sourceFiles:files,esmFactories:modules.length,
     inputs:inputHashes,configHash:sha(configText),builderHash:sha(fs.readFileSync(fileURLToPath(import.meta.url))),
-    // esbuild sees remaining classic sources as a single transitional scope.
-    // Explicit hashes above cover every source, including this virtual input.
+    // 全部源码经真 import 图装配；显式哈希覆盖每个源文件。
     metafile:result.metafile};
   const identity = `/* MAW ESM artifact: ${sha(result.code+json(metadata))} */`;
   return {...result,code:identity+'\n'+result.code,identity,metadata};

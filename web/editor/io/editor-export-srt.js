@@ -1,3 +1,8 @@
+import { legacyBindings as __mawImportedBindings0 } from "./editor-wiring-export-context.js";
+import { legacyBindings as __mawImportedBindings1 } from "../styles/editor-wiring-ass-storage.js";
+import { legacyBindings as __mawImportedBindings2 } from "../cues/editor-wiring-overlay-transfer.js";
+export function* initialize() {
+yield;
 // SRT 导出：主/副/去空隙 SRT、配色分拆与动态字幕数据。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweExportSrt 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -15,7 +20,7 @@
   }
 
   function cleanupMergedExportSegments() {
-    const merged = mergedExportSegments();
+    const merged = __mawImportedBindings0.mergedExportSegments();
     const main = cleanupMainSegments();
     const projection = new Map(MaweBoot.DATA.segments.map((segment, index) => [segment, main[index]]));
     return { ...merged, segments: merged.segments.map((segment) => projection.get(segment) || segment)
@@ -32,7 +37,7 @@
     alignFirstStart: MaweSettings.EDITOR_SETTINGS.exportStartAtZero,
     firstEnabledIndex,
     keepDisabledPlaceholder: EXPORT_KEEP_DISABLED_PLACEHOLDER,
-    colorContextResolver: exportColorContextResolver(overlaySet, overlaySegments),
+    colorContextResolver: __mawImportedBindings0.exportColorContextResolver(overlaySet, overlaySegments),
     ...MaweSpeakerLabels.speakerLabelExportOptions(),
     assSpecialSymbolRule: MaweSettings.EDITOR_SETTINGS.assSpecialSymbolRule,
     formatTime: MaweCueElements.fmtSrtTime,
@@ -71,7 +76,7 @@
     timeOffset: 0,
     alignFirstStart: MaweSettings.EDITOR_SETTINGS.exportStartAtZero,
     firstEnabledIndex,
-    colorContextResolver: exportColorContextResolver(overlaySet, overlaySegments),
+    colorContextResolver: __mawImportedBindings0.exportColorContextResolver(overlaySet, overlaySegments),
     mapTime: gapRemoved
       ? (timeMs) => window.AsrEditorUtils.mapGapRemovedTime(timeMs, removed)
       : undefined,
@@ -216,7 +221,7 @@
 
   function assExportOptions(appearance = MaweAppearance.getSubtitleAppearance()) {
   const resolution = currentAssVideoResolution();
-  const library = window.AsrEditorUtils.normalizeAssStyleLibrary(ASS_STYLE_LIBRARY);
+  const library = window.AsrEditorUtils.normalizeAssStyleLibrary(__mawImportedBindings1.ASS_STYLE_LIBRARY);
   const profileId = library.assignments?.assExportProfileId || 'ass';
   const assProfile = window.AsrEditorUtils.assProfileForId(library, profileId);
   const assStyle = window.AsrEditorUtils.assStyleForId(library, assProfile.styleId);
@@ -255,7 +260,7 @@
   const { overlaySegments } = cleanupMergedExportSegments();
   // 副字幕轨随 ASS 导出（多重字幕开启时才存在）；叠加轨与副字幕分层输出。
   const extensionSegments = preview && !MaweDom.extensionOverlayToggle?.checked
-    ? [] : activeExtensionSegments();
+    ? [] : __mawImportedBindings2.activeExtensionSegments();
   const firstEnabledIndex = window.AsrEditorUtils.getSrtExportFirstIndex(
     MaweBoot.DATA.segments,
     MaweSettings.EDITOR_SETTINGS.exportStartAtZero,
@@ -292,7 +297,7 @@
     return window.AsrEditorUtils.buildBilingualSrtPayload(segments,
       MaweMultiSubtitleCore.getActiveExtensionTrack()?.segments || [], {
         alignFirstStart: MaweSettings.EDITOR_SETTINGS.exportStartAtZero,
-        colorContextResolver: exportColorContextResolver(overlaySet, overlaySegments),
+        colorContextResolver: __mawImportedBindings0.exportColorContextResolver(overlaySet, overlaySegments),
         ...MaweSpeakerLabels.speakerLabelExportOptions(),
         assSpecialSymbolRule: MaweSettings.EDITOR_SETTINGS.assSpecialSymbolRule,
         formatTime: MaweCueElements.fmtSrtTime,
@@ -317,7 +322,7 @@
     firstEnabledIndex,
     mapTime: (timeMs) => window.AsrEditorUtils.mapGapRemovedTime(timeMs, removed),
     ensurePositiveDuration: true,
-    colorContextResolver: exportColorContextResolver(overlaySet, overlaySegments),
+    colorContextResolver: __mawImportedBindings0.exportColorContextResolver(overlaySet, overlaySegments),
     ...MaweSpeakerLabels.speakerLabelExportOptions(),
     assSpecialSymbolRule: MaweSettings.EDITOR_SETTINGS.assSpecialSymbolRule,
     formatTime: MaweCueElements.fmtSrtTime,
@@ -339,7 +344,7 @@
   // 去空隙 ASS 与常规 ASS 同一三轨契约：叠加轨与副字幕也随导出，
   // 时间统一经 mapGapRemovedTime 压缩。
   const { overlaySegments } = cleanupMergedExportSegments();
-  const extensionSegments = activeExtensionSegments();
+  const extensionSegments = __mawImportedBindings2.activeExtensionSegments();
   return window.AsrEditorUtils.buildAssPayload(cleanupMainSegments(), {
     ...assExportOptions(),
     alignFirstStart: MaweSettings.EDITOR_SETTINGS.exportStartAtZero,
@@ -355,7 +360,7 @@
 
   function usedSubtitleColors() {
   const { segments, overlaySet, overlaySegments } = cleanupMergedExportSegments();
-  const resolveColor = exportColorContextResolver(overlaySet, overlaySegments);
+  const resolveColor = __mawImportedBindings0.exportColorContextResolver(overlaySet, overlaySegments);
   const names = new Set(segments.filter((segment) => !segment.disabled).map((segment) => (
     window.AsrEditorUtils.effectiveColorName(segment, resolveColor(segment)) || 'default'
   )).filter((name) => name === 'default' || MaweColors.COLOR_BY_NAME[name]));
@@ -435,3 +440,5 @@
     buildGapRemovedRegionsJson
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

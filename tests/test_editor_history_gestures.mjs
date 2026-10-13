@@ -3,6 +3,11 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import { createUtilsModule } from '../web/shared/utils/history.js';
+import { compileEditorFixture, makeDocumentStub } from './helpers/editor-module-loader.mjs';
+import { createWaveformModule as cueCommandFactory } from '../web/editor/media/waveform/cue-commands.js';
+import { makeFacadeStub } from './helpers/editor-module-loader.mjs';
+// 真 ESM 导入的工厂在 Node 下无 window：测试期补全局（生产 bundle 运行于浏览器）
+globalThis.window = { addEventListener() {}, removeEventListener() {}, MAWE: { register() {}, resolve() { return {}; } } };
 
 const clone = value => JSON.parse(JSON.stringify(value));
 
@@ -14,21 +19,24 @@ function fixture() {
     multi_subtitle: { tracks: [{ segments: [{ id: 'extension', start: 1100, end: 2100 }] }] },
   };
   const buttons = { 'undo-btn': {}, 'redo-btn': {} };
-  const context = vm.createContext({ window: { AsrEditorUtils: {
+  const context = vm.createContext({ window: { addEventListener() {}, removeEventListener() {}, MAWE: { register() {}, resolve() { return {}; } }, AsrEditorUtils: {
     ...utils, normalizeMarkers: clone, cloneMarkerValue: clone,
-  }, removeEventListener() {} }, document: { getElementById: id => buttons[id] },
-  MaweBoot: { DATA: data }, MaweState: { changes: {} },
+  }, removeEventListener() {} }, document: makeDocumentStub((doc) => { const base = doc.getElementById.bind(doc);
+    return { getElementById: (id) => buttons[id] ?? base(id) }; }),
+  MaweDom: makeFacadeStub(),
+  MaweBoot: { DATA: data, maweDomContractCheck: () => [], maweDebug() {} },
+  MaweMultiSubtitleCore: { MULTI: 'main', getActiveExtensionTrack: () => ({ segments: [] }), getExtensionSubtitleSplitMode: () => 'word', getMainSubtitleSplitMode: () => 'word', getMultiSubtitleState: () => ({ enabled: false, tracks: [] }), normalizeMultiSubtitleState: (state) => state ?? { enabled: false, tracks: [] } },
+  MaweState: { changes: {} },
   MaweCoreState: {}, MaweHint: { flashHint() {} },
   MaweInlineEdit: { editingState: null },
   MaweWordTiming: { clearSelection() {} },
   MaweMarkerEditing: { afterExternalMarkersChange() {} },
   });
-  vm.runInContext(readFileSync(new URL('../web/editor/state/editor-history.js', import.meta.url), 'utf8'), context);
+  vm.runInContext(compileEditorFixture('editor/state/editor-history.js'), context);
   // Exercise the production cancellation path, including releasing the drag
   // and its transaction, rather than replacing cancelCueDrag with a spy.
-  vm.runInContext(readFileSync(new URL('../web/editor/media/waveform/cue-commands.js', import.meta.url), 'utf8')
-    .replace('export function createWaveformModule', 'function cueCommandFactory'), context);
-  const methods = context.cueCommandFactory({});
+  // 透传工厂改真 ESM 导入（bundle 内不再有 export 原文可替换）
+  const methods = cueCommandFactory({});
   let cancelled = 0;
   const waveform = {
     content: { querySelectorAll: () => [] }, pane: { classList: { remove() {} } },

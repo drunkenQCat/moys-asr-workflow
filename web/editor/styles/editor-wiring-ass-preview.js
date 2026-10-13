@@ -1,3 +1,15 @@
+import { legacyBindings as __mawImportedBindings0 } from "../boot/editor.js";
+import { legacyBindings as __mawImportedBindings1 } from "./editor-wiring-ass-storage.js";
+import { legacyBindings as __mawImportedBindings2 } from "../boot/editor-wiring-initial-config.js";
+import { legacyBindings as __mawImportedBindings3 } from "../ui/editor-wiring-dom-panels.js";
+import { legacyBindings as __mawImportedBindings4 } from "../cues/editor-wiring-overlay-transfer.js";
+export let legacyBindings;
+export function* initialize() {
+legacyBindings = Object.freeze({
+get restoreCssSubtitlePreview() { return restoreCssSubtitlePreview; }, set restoreCssSubtitlePreview(value) { restoreCssSubtitlePreview = value; },
+get applyAssSubtitlePreview() { return applyAssSubtitlePreview; }, set applyAssSubtitlePreview(value) { applyAssSubtitlePreview = value; }
+});
+yield;
 
 // === ASS 预览接线（Canvas 合成） + 当前行高亮 ===
 
@@ -78,13 +90,13 @@ function assPreviewMetrics() {
 function assPreviewStyleVariant(style, segment, segments, appearance) {
   // ASS 预览的颜色映射只跟随 ass_color_style；color_underline 只控制 CSS 预览。
   const colorName = segment
-    ? MULTI_SUBTITLE_UTILS.effectiveColorName(segment, segments) : null;
+    ? __mawImportedBindings0.MULTI_SUBTITLE_UTILS.effectiveColorName(segment, segments) : null;
   const paletteValue = MaweColors.COLOR_BY_NAME[colorName]?.value || '';
   if (!paletteValue || typeof window.AsrEditorUtils.assStyleVariant !== 'function') return style;
   return window.AsrEditorUtils.assStyleVariant(
     style,
     paletteValue,
-    appearance.ass_color_style || DEFAULT_ASS_COLOR_STYLE,
+    appearance.ass_color_style || __mawImportedBindings1.DEFAULT_ASS_COLOR_STYLE,
   );
 }
 
@@ -125,7 +137,7 @@ function assPreviewFontScale(style) {
 function assPreviewExportFontSize(style, metrics) {
   if (Number.isFinite(style.__assNativeFontSize)) return Math.max(1, style.__assNativeFontSize);
   return window.AsrEditorUtils.normalizeAssFontSize(
-    Number(style.fontSize) * metrics.resolution.height / ASS_PREVIEW_REFERENCE_HEIGHT,
+    Number(style.fontSize) * metrics.resolution.height / __mawImportedBindings2.ASS_PREVIEW_REFERENCE_HEIGHT,
   );
 }
 
@@ -168,7 +180,7 @@ function restoreCssSubtitlePreview() {
   window.MaweAssCanvas?.hide();
   clearAssEmphasisPreview(MaweDom.overlayTextEl);
   clearAssEmphasisPreview(MaweDom.overlayExtensionTextEl);
-  clearAssEmphasisPreview(overlayTrackTextEl);
+  clearAssEmphasisPreview(__mawImportedBindings3.overlayTrackTextEl);
   MaweDom.overlayEl.removeAttribute('data-ass-mode');
   MaweDom.overlayEl.classList.remove('ass-preview-active');
   delete MaweDom.overlayTextEl.dataset.colorUnderline;
@@ -252,9 +264,9 @@ function applyAssSubtitlePreview({ tMs, overlaySegments }) {
   // Snapshot only project inputs: measurements and animation envelopes are
   // computed once per revision, never once per playback frame. Direct edits
   // to mutable imported cue/style records also invalidate this snapshot.
-  const rawTracks = [MaweBoot.DATA.segments, activeExtensionSegments(), overlaySegments];
+  const rawTracks = [MaweBoot.DATA.segments, __mawImportedBindings4.activeExtensionSegments(), overlaySegments];
   const revision = assStackInputRevision([MaweExportSrt.cleanupMainSegments(), rawTracks[1], rawTracks[2]], rawTracks);
-  const key = JSON.stringify([revision, ASS_STYLE_LIBRARY, MaweSettings.EDITOR_SETTINGS,
+  const key = JSON.stringify([revision, __mawImportedBindings1.ASS_STYLE_LIBRARY, MaweSettings.EDITOR_SETTINGS,
     MaweAppearance.getSubtitleAppearance(), metrics.resolution, MaweColors.COLOR_PALETTE,
     MaweSpeakerLabels.getSpeakerLabelSettings(), MaweDom.overlayToggle.checked,
     MaweDom.extensionOverlayToggle?.checked, assStackFontRevision]);
@@ -283,7 +295,7 @@ function applyAssSubtitlePreview({ tMs, overlaySegments }) {
   MaweDom.overlayEl.style.height = `${metrics.stageHeight}px`;
   // ASS 文本由 Canvas 合成，DOM 文本元素整体隐藏（refreshSubtitlePreview
   // 在 CSS 模式下按可见性切换 hidden，这里每帧强制覆盖）。
-  [MaweDom.overlayTextEl, MaweDom.overlayExtensionTextEl, overlayTrackTextEl, MaweDom.overlayMainSpeakerLabelEl]
+  [MaweDom.overlayTextEl, MaweDom.overlayExtensionTextEl, __mawImportedBindings3.overlayTrackTextEl, MaweDom.overlayMainSpeakerLabelEl]
     .forEach((element) => {
       if (element && !element.classList.contains('hidden')) element.classList.add('hidden');
     });
@@ -317,7 +329,7 @@ function applyAssSubtitlePreview({ tMs, overlaySegments }) {
 }
 
 function restoreAssOverlayTrackPreview() {
-  if (!overlayTrackTextEl) return;
+  if (!__mawImportedBindings3.overlayTrackTextEl) return;
   [
     'position', 'left', 'right', 'top', 'bottom', 'white-space', 'word-break', 'text-align',
     'font-size', 'font-family', 'font-weight', 'font-style', 'text-decoration-line',
@@ -325,10 +337,10 @@ function restoreAssOverlayTrackPreview() {
     'paint-order', 'text-shadow', 'letter-spacing', 'line-height',
     'max-width', 'padding', 'background-color', 'border-radius', 'opacity',
     'transform-origin', 'transform',
-  ].forEach((property) => overlayTrackTextEl.style.removeProperty(property));
-  delete overlayTrackTextEl.dataset.colorUnderline;
-  delete overlayTrackTextEl.dataset.colorText;
-  delete overlayTrackTextEl.dataset.colorStroke;
+  ].forEach((property) => __mawImportedBindings3.overlayTrackTextEl.style.removeProperty(property));
+  delete __mawImportedBindings3.overlayTrackTextEl.dataset.colorUnderline;
+  delete __mawImportedBindings3.overlayTrackTextEl.dataset.colorText;
+  delete __mawImportedBindings3.overlayTrackTextEl.dataset.colorStroke;
 }
 
 // The manager also uses the calibrated font metrics after boot has completed;
@@ -348,3 +360,5 @@ window.MaweAssPreview = Object.freeze({
 // 再用被污染的 offsetTop 算出错误目标平滑滚走（页面放大倍率越高、真实
 // 行高与估算差异越大越容易触发）。这些操作是否滚动、滚到哪里都应由
 // 调用方显式决定（例如拆分按来源保持原位或居中新右半段）。
+
+}

@@ -1,4 +1,7 @@
 
+export function* initialize() {
+yield;
+
 
 
 
@@ -32,3 +35,5 @@ window.addEventListener('drop', (e) => {
   MaweDragDrop.dragOverlay.classList.remove('show');
   void MaweDragDrop.handleDroppedFiles(Array.from(e.dataTransfer.files));
 });
+
+}

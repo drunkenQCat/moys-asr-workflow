@@ -1,4 +1,7 @@
 
+export function* initialize() {
+yield;
+
 
 
 
@@ -86,3 +89,5 @@ document.getElementById('search-clear')?.addEventListener('click', () => {
 });
 
 // === 编辑 ===
+
+}

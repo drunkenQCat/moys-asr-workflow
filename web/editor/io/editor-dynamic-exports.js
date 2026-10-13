@@ -1,3 +1,8 @@
+import { legacyBindings as __mawImportedBindings0 } from "../cues/editor-wiring-overlay-transfer.js";
+import { legacyBindings as __mawImportedBindings1 } from "./editor-wiring-export-actions.js";
+import { legacyBindings as __mawImportedBindings2 } from "../ui/editor-wiring-dom-panels.js";
+export function* initialize() {
+yield;
 // 动态导出：FCP7XML、Lottie、Ograf 模态与导出。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweDynamicExports 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -18,7 +23,7 @@
   if (MaweInlineEdit.extensionEditingState) MaweInlineEdit.finishExtensionEdit(true);
   MaweCuePanel.commitCuePanelEdit();
   const extensionAvailable = Boolean(MaweMultiSubtitleCore.getActiveExtensionTrack());
-  const overlayAvailable = overlayTrackVisible();
+  const overlayAvailable = __mawImportedBindings0.overlayTrackVisible();
   const extensionOption = MaweDom.fcp7ExportSubtitleTracks.querySelector('option[value="main_and_extension"]');
   extensionOption.disabled = !extensionAvailable;
   const overlayOption = MaweDom.fcp7ExportSubtitleTracks.querySelector('option[value="overlay"]');
@@ -128,8 +133,8 @@
   const extensionAvailable = Boolean(MaweMultiSubtitleCore.getActiveExtensionTrack());
   if (extensionOption) extensionOption.disabled = !extensionAvailable;
   if (!extensionAvailable && MaweDom.lottieExportTrack) MaweDom.lottieExportTrack.value = 'main';
-  applyMediaSizeToResolutionModal(
-    MaweDom.lottieExportResolution, lottieExportCustomSize, lottieExportCustomWidth, lottieExportCustomHeight,
+  __mawImportedBindings1.applyMediaSizeToResolutionModal(
+    MaweDom.lottieExportResolution, __mawImportedBindings2.lottieExportCustomSize, __mawImportedBindings2.lottieExportCustomWidth, __mawImportedBindings2.lottieExportCustomHeight,
   );
   MaweDom.lottieExportModal?.classList.add('show');
   MaweDom.lottieExportTrack?.focus();
@@ -138,7 +143,7 @@
 
 
   function lottieExportCanvasSize() {
-  return dynamicExportCanvasSize(MaweDom.lottieExportResolution, lottieExportCustomWidth, lottieExportCustomHeight);
+  return __mawImportedBindings1.dynamicExportCanvasSize(MaweDom.lottieExportResolution, __mawImportedBindings2.lottieExportCustomWidth, __mawImportedBindings2.lottieExportCustomHeight);
 }
 
 
@@ -250,8 +255,8 @@
   const extensionAvailable = Boolean(MaweMultiSubtitleCore.getActiveExtensionTrack());
   if (extensionOption) extensionOption.disabled = !extensionAvailable;
   if (!extensionAvailable && MaweDom.ografExportTrack) MaweDom.ografExportTrack.value = 'main';
-  applyMediaSizeToResolutionModal(
-    MaweDom.ografExportResolution, ografExportCustomSize, ografExportCustomWidth, ografExportCustomHeight,
+  __mawImportedBindings1.applyMediaSizeToResolutionModal(
+    MaweDom.ografExportResolution, __mawImportedBindings2.ografExportCustomSize, __mawImportedBindings2.ografExportCustomWidth, __mawImportedBindings2.ografExportCustomHeight,
   );
   MaweDom.ografExportModal?.classList.add('show');
   MaweDom.ografExportTrack?.focus();
@@ -260,7 +265,7 @@
 
 
   function ografExportCanvasSize() {
-  return dynamicExportCanvasSize(MaweDom.ografExportResolution, ografExportCustomWidth, ografExportCustomHeight);
+  return __mawImportedBindings1.dynamicExportCanvasSize(MaweDom.ografExportResolution, __mawImportedBindings2.ografExportCustomWidth, __mawImportedBindings2.ografExportCustomHeight);
 }
 
 
@@ -345,3 +350,5 @@
     exportOgrafDynamicCaptions
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

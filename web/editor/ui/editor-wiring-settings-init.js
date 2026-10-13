@@ -1,3 +1,10 @@
+import { legacyBindings as __mawImportedBindings0 } from "./editor-wiring-dom-panels.js";
+import { legacyBindings as __mawImportedBindings1 } from "../cues/editor-wiring-overlay-transfer.js";
+import { legacyBindings as __mawImportedBindings2 } from "../styles/editor-wiring-ass-storage.js";
+import { legacyBindings as __mawImportedBindings3 } from "../styles/editor-wiring-ass-manager.js";
+import { legacyBindings as __mawImportedBindings4 } from "../boot/editor.js";
+export function* initialize() {
+yield;
 
 
 
@@ -60,14 +67,14 @@ if (MaweDom.editorSettingsPanel) {
 
 
 
-overlayTrackToggle?.addEventListener('change', () => {
-  const overlay = getOverlayTrack();
+__mawImportedBindings0.overlayTrackToggle?.addEventListener('change', () => {
+  const overlay = __mawImportedBindings1.getOverlayTrack();
   if (!overlay) return;
-  overlay.enabled = overlayTrackToggle.checked;
+  overlay.enabled = __mawImportedBindings0.overlayTrackToggle.checked;
   overlay._dirty = true;
   MaweViewUpdates.invalidate({ save: true });
   MaweCuePanel.renderAll({ waveform: 'full' });
-  if (overlayTrackToggle.checked) {
+  if (__mawImportedBindings0.overlayTrackToggle.checked) {
     MaweHint.flashHint('已允许字幕重叠；Ctrl+拖拽波形空白或用右键菜单可创建叠加字幕', 'success');
   }
 });
@@ -103,9 +110,9 @@ document.addEventListener('mawe:languagechange', () => {
   MaweTimeline.refreshTimelineSettingsUi();
   MaweMediaPlayback.refreshMediaSeekStepHelp();
   MaweMediaPlayback.refreshMediaSeekControlLabels();
-  updateAssStyleLibrarySummary();
-  updateAssStyleLibraryStatus();
-  updateAssStylePreviewModeHints();
+  __mawImportedBindings2.updateAssStyleLibrarySummary();
+  __mawImportedBindings3.updateAssStyleLibraryStatus();
+  __mawImportedBindings3.updateAssStylePreviewModeHints();
 });
 
 MaweDom.splitKeySel.value = MaweSettings.EDITOR_SETTINGS.splitKey;
@@ -143,7 +150,7 @@ if (MaweDom.autoSaveIntervalInput) MaweDom.autoSaveIntervalInput.value = String(
 if (MaweDom.stickerOverlayToggle) MaweDom.stickerOverlayToggle.checked = MaweSettings.EDITOR_SETTINGS.stickerOverlayEnabled;
 if (MaweDom.clickBehaviorSelect) MaweDom.clickBehaviorSelect.value = MaweSettings.EDITOR_SETTINGS.clickBehavior;
 if (MaweDom.clickTargetSelect) MaweDom.clickTargetSelect.value = MaweSettings.EDITOR_SETTINGS.clickTarget;
-if (pauseOnMouseClickToggle) pauseOnMouseClickToggle.checked = MaweSettings.EDITOR_SETTINGS.pauseOnMouseClick;
+if (__mawImportedBindings0.pauseOnMouseClickToggle) __mawImportedBindings0.pauseOnMouseClickToggle.checked = MaweSettings.EDITOR_SETTINGS.pauseOnMouseClick;
 if (MaweDom.keyboardOperationReferenceSelect) {
   MaweDom.keyboardOperationReferenceSelect.value = MaweSettings.EDITOR_SETTINGS.keyboardOperationReference;
 }
@@ -212,7 +219,7 @@ MaweDom.multiSubtitleDisplayMode?.addEventListener('change', () => {
   const previous = multi.display_mode;
   multi.display_mode = previous;
   return MaweCommands.run('切换双语字幕列表', (command) => {
-    multi.display_mode = MULTI_SUBTITLE_UTILS.MULTI_SUBTITLE_DISPLAY_MODES.has(next) ? next : 'both';
+    multi.display_mode = __mawImportedBindings4.MULTI_SUBTITLE_UTILS.MULTI_SUBTITLE_DISPLAY_MODES.has(next) ? next : 'both';
     multi._dirty = true;
     // 三种显示模式的行 DOM 结构互不相同，列表只能全量重建（长工程会明显卡顿）。
     // 这里不同步重建：先提交变更并让下拉框状态上屏，下一帧再重建列表，
@@ -268,7 +275,7 @@ document.getElementById('multi-subtitle-quick-toggle')?.addEventListener('click'
   MaweDom.multiSubtitleToggle?.click();
 });
 document.getElementById('overlay-quick-toggle')?.addEventListener('click', () => {
-  overlayTrackToggle?.click();
+  __mawImportedBindings0.overlayTrackToggle?.click();
 });
 MaweDom.multiSubtitleCrossTrackSnapToggle?.addEventListener('change', () => {
   MaweSettings.updateEditorSettings({ crossTrackSnap: MaweDom.multiSubtitleCrossTrackSnapToggle.checked });
@@ -291,7 +298,9 @@ MaweDom.multiSubtitleAlignButton?.addEventListener('click', () => {
 });
 MaweAppearance.applySubtitleAppearance();
 MaweAppearance.applyExtensionSubtitleAppearance();
-syncAssModeControl();
-syncAssStyleManager();
-void loadAssStyleLibrary();
+__mawImportedBindings3.syncAssModeControl();
+__mawImportedBindings3.syncAssStyleManager();
+void __mawImportedBindings2.loadAssStyleLibrary();
 // 开/关由 createFloatingPanel 的 manageButton 点击切换接管，这里只负责标签页与关闭按钮。
+
+}

@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import test from 'node:test';
 import { loadEditorModule } from './helpers/editor-module-loader.mjs';
+import { compileEditorFixture } from './helpers/editor-module-loader.mjs';
 
 const plain = (value) => JSON.parse(JSON.stringify(value));
 const source = () => ({ id: 'main-001', start: 0, end: 2000, text: '啊，我这……我这个功能呢',
@@ -28,8 +29,136 @@ test('ASS cache retains raw identity but invalidates equal-text selections with 
 });
 
 function runtime() {
-  const context = { window: {}, document: { querySelectorAll: () => [], getElementById: () => null } };
+  const neutralElement = () => {
+    const element = { style: new Proxy({ setProperty() {}, removeProperty() {} }, { get: (t, k) => t[k] ?? (() => '') }),
+      setAttribute() {}, removeAttribute() {}, toggleAttribute() {},
+      appendChild() {}, append() {}, removeChild() {}, replaceChildren() {}, replaceWith() {}, insertAdjacentHTML() {},
+      addEventListener() {}, removeEventListener() {},
+      classList: { add() {}, remove() {}, toggle() {}, contains: () => false, replace() {} },
+      dataset: {}, textContent: '', innerHTML: '', hidden: false, value: '', id: '', title: '', tabIndex: 0,
+      children: [], childNodes: [], firstChild: null, lastChild: null,
+      querySelector: () => neutralElement(), querySelectorAll: () => [],
+      closest: () => element, contains: () => false,
+      getBoundingClientRect: () => ({ width: 0, height: 0, top: 0, left: 0, right: 0, bottom: 0 }),
+      focus() {}, blur() {}, click() {}, remove() {}, scrollIntoView() {},
+      getContext: () => ({ fillRect() {}, clearRect() {}, drawImage() {}, getImageData: () => ({ data: [] }),
+        putImageData() {}, createLinearGradient: () => ({ addColorStop() {} }), measureText: () => ({ width: 0 }) }) };
+    element.closest = () => element;
+    element.attachShadow = () => { const root = neutralElement(); element.shadowRoot = root; return root; };
+    element.shadowRoot = null;
+    return element;
+  };
+  const neutralById = new Map();
+  const neutralByIdGet = (id) => (neutralById[id] ??= neutralElement());
+  const testDocument = { addEventListener() {}, querySelector: neutralByIdGet, querySelectorAll: () => [],
+    getElementById: neutralByIdGet, createTreeWalker: () => ({ nextNode: () => null }),
+    createElement: () => ({ style: { setProperty() {} }, setAttribute() {}, appendChild() {}, append() {}, removeChild() {}, replaceChildren() {}, classList: { add() {}, remove() {}, toggle() {}, contains: () => false }, dataset: {}, textContent: '' }),
+    createTextNode: (t) => ({ textContent: t }), dispatchEvent() {}, documentElement: { lang: '', setAttribute() {}, style: { setProperty() {} }, dataset: {} },
+    body: { appendChild() {} }, fonts: { addEventListener() {}, removeEventListener() {} },
+  };
+  const context = {
+    document: testDocument,
+    window: {
+      document: testDocument,
+      addEventListener() {}, removeEventListener() {},
+      MAWE: { register() {}, resolve(name) { return {}; } },
+      ASR_EDITOR_PALETTE: [{ name: '默认', colors: ['#ffffff', '#ffff00', '#00ff00', '#00ffff', '#ff00ff'] }],
+      location: { search: '', href: 'file://test' },
+      URLSearchParams, URL, setTimeout, clearTimeout,
+      MutationObserver: class { observe() {} disconnect() {} }, CustomEvent: class { constructor(t, i) { this.type = t; Object.assign(this, i ?? {}); } },
+      NodeFilter: { SHOW_ALL: 0xFFFFFFFF }, Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 },
+    },
+  };
+  context.document = context.window.document;
+  context.testDocument = testDocument;
+  // 域前置：utils 工厂最先（AsrEditorUtils 门面），随后 settings/dom/multi-subtitle/context-menus
+  context.window.MaweState = {
+    preferences: { editor: {}, assMode: {}, exportSpeakerLabels: {} },
+    changes: { projectImportDirty: false, gapRemoveDirty: false, previewGeometryDirty: false, markersDirty: false },
+    selection: { clear() {}, add() {}, remove() {} },
+    project: {},
+    markSaved() {}, segmentsFingerprint: () => '',
+  };
+  context.MaweState = context.window.MaweState;
+  // 其余门面一次性前置（后续 Object.assign 再覆写为行为桩）
+  const earlyFacades = {
+    MaweBoot: { DATA: { segments: [], gap_remove: {} }, maweDomContractCheck: () => [], maweDebug() {},
+      PROJECT_NAME: 'test', FILENAME_BASE: 'test', STICKERS: [], STICKER_ROOT: '', STICKER_URL_PREFIX: '',
+      SERVER_CONFIG: {}, NINJA_SFX_BASE_URL: '', MAWE_DEBUG_ENABLED: false },
+    MaweSettings: { EDITOR_SETTINGS: {} },
+    MaweDom: new Proxy({}, { get: (t, k) => t[k] ?? neutralElement(), has: () => true }),
+    MaweHint: { flashHint() {} },
+    MaweTimeline: { normalizeMediaMetadata: (m) => m },
+    MaweColors: { COLOR_PALETTE: [], COLOR_BY_NAME: {} },
+    MaweCueElements: { fmtSrtTime: (ms) => new Date(ms).toISOString().slice(11, 23).replace('.', ',') },
+    MaweSpeakerLabels: { speakerLabelExportOptions: () => ({}), subtitleExportText: (s2) => s2.text, getSpeakerLabelSettings: () => ({}) },
+    MaweAppearance: { getSubtitleAppearance: () => ({}) },
+    MaweGapRemoveData: { getRemovedGapRanges: () => [] },
+    MaweMultiSubtitleCore: { getActiveExtensionTrack: () => ({ segments: [] }), getMultiSubtitleState: () => ({ enabled: true }) },
+    MaweCoreState: { waveformEditor: null, player: null },
+    MaweCommands: { run: (_n, fn) => fn({}) },
+    MaweHistory: { captureSegmentsRecord: () => ({ segs: [] }), commitRecord() {}, applyHistoryRecord() {}, snapshotEditorSelection: () => null },
+    MaweViewUpdates: { invalidate() {} },
+    MaweSelection: { clearSelection() {}, selection: new Set() },
+    MaweCueListAnchor: { restoreCueListVisualAnchor() {}, rememberCueListMutation() {}, cueListScroll: {} },
+    MaweServerSave: { scheduleAutoSaveFlush() {} },
+    MawePlaybackLoop: { update() {}, updateWithoutCueListAutoScroll() {}, refreshSubtitlePreview() {} },
+    MaweTextCleanup: { cleanPunctuation() {}, seekFromWaveform() {} },
+    MaweContextMenus: { registerContextMenus() {}, showContextMenu() {}, hideContextMenu() {} },
+    MaweSplitCore: {}, MaweSplitMode: {}, MaweSplitTrim: {},
+    MaweSegmentOps: {}, MaweFindReplace: { findNext() {}, replaceAll() {} },
+    MaweSearch: { applySearch() {}, clearSearch() {} },
+    MaweColorFilter: { applyColorFilter() {}, clearColorFilter() {} },
+    MaweBoundDrag: {}, MaweMergeAdjacent: { mergeAdjacent() {} },
+    MaweAddCue: { addCue() {} }, MaweTimedTextEdit: {},
+    MaweMediaPlayback: { hasLoadedMedia: () => false, isAuditioning: false },
+    MaweMediaLoad: {}, MaweMediaStep: {}, MawePreviewGeometry: {}, MaweNavPreview: {},
+    MaweCueEvents: {}, MaweWorkspaces: {}, MaweHelpPanel: {}, MaweBehaviorHints: {},
+    MaweTheme: {}, MaweJsonRepair: {}, MaweStickerOverlay: {}, MaweStickerPicker: {},
+    MaweStickerRoot: {}, MaweStickerOtioExport: {}, MaweDisplaySettings: {},
+    MaweSettingsPanels: {}, MaweSettingsSearch: {}, MaweShortcuts: {},
+    MaweCueListAnchorExport: {}, MaweDynamicExports: {}, MaweExportMenus: {},
+    MaweLoadingProgress: {}, MaweDragDrop: {}, MaweServerConnection: {},
+    MaweProjectLoad: {}, MaweProjectSave: {}, MaweProjectMediaInputs: {},
+    MaweMultiSubtitleUi: {}, MaweAssStyleManager: {}, MaweAssExport: {},
+    MaweWaveformInit: {}, MaweCueList: {}, MaweCueListCount: {},
+    MaweStickerPicker: { renderStickerGrid() {}, clearStickerOnTargets() {} },
+    MaweInlineEdit: { editingState: null },
+    MaweKeyboardTargets: { isSpaceKey: () => false },
+    MaweJklPlayback: { stopJklReversePlayback() {}, isJklDirectionMode: () => false },
+    MaweWordTiming: { clearSelection() {} },
+    MaweMarkerEditing: { afterExternalMarkersChange() {} },
+    MaweExportSrt: {},
+    MaweExportTimeline: {},
+    MaweAssPreview: {},
+    MaweHost: {},
+    AsrEditorUtils: {},
+    AsrGapRemoveCore: {},
+    AsrWaveform: {},
+    ASS_STYLE_LIBRARY: [],
+  };
+  for (const [key, value] of Object.entries(earlyFacades)) {
+    context.window[key] = context.window[key] ?? value;
+    context[key] = context[key] ?? value;
+  }
+  // dom/settings 域前置所需的最小门面（后续 stubs 会再覆写）
+  context.window.MaweSettings = { EDITOR_SETTINGS: {} };
+  context.MaweSettings = context.window.MaweSettings;
+  context.MaweState.changes = context.window.MaweState.changes;
+  // 门面镜像：classic 裸名在 vm 全局解析，须先于任何 fixture 求值
+  const mirrorFacades = () => {
+    for (const key of Object.keys(context.window)) {
+      if (/^(Mawe|MAWE|Asr)/.test(key) && !(key in context)) context[key] = context.window[key];
+    }
+  };
+  mirrorFacades();
   loadEditorModule(context, 'shared/editor-utils.js');
+  // editor-state 是工厂：产品经 registry 挂 window.MaweState；单模块链给最小桩
+    vm.runInNewContext(compileEditorFixture('editor/state/editor-settings.js'), context);
+  vm.runInNewContext(compileEditorFixture('editor/ui/editor-dom.js'), context);
+  vm.runInNewContext(compileEditorFixture('editor/ui/editor-context-menus.js'), context);
+  vm.runInNewContext(compileEditorFixture('editor/state/editor-multi-subtitle-core.js'), context);
+  // provider 链前置：multi-subtitle-core 门面（export-context 消费它的方法）
   const core = context.window.AsrGapRemoveCore;
   const utils = context.window.AsrEditorUtils;
   const main = [source()];
@@ -37,7 +166,10 @@ function runtime() {
   const overlay = [{ id: 'main-001', start: 0, end: 2000, text: 'overlay untouched' }];
   Object.assign(context, {
     ASS_STYLE_LIBRARY: {},
-    MaweBoot: { DATA: { segments: main, gap_remove: localGap(), media: 'synthetic.mp4', waveform: { duration_ms: 2000 } } },
+    MaweBoot: { DATA: { segments: main, gap_remove: localGap(), media: 'synthetic.mp4', waveform: { duration_ms: 2000 } },
+      maweDomContractCheck: () => [], maweDebug() {}, PROJECT_NAME: 'test', FILENAME_BASE: 'test',
+      STICKERS: [], STICKER_ROOT: '', STICKER_URL_PREFIX: '', SERVER_CONFIG: {},
+      NINJA_SFX_BASE_URL: '', MAWE_DEBUG_ENABLED: false },
     MaweSettings: { EDITOR_SETTINGS: {} },
     MaweCoreState: { waveformEditor: { durationMs: 2000 }, player: { duration: 2, tagName: 'VIDEO' } },
     MaweGapRemoveData: { getRemovedGapRanges: () => core.getRemovedGapRanges(core.normalizeGapRemoveData(context.MaweBoot.DATA.gap_remove).gaps) },
@@ -53,8 +185,13 @@ function runtime() {
     mergedExportSegments: () => ({ segments: [...main, ...overlay], overlaySet: new Set(overlay), overlaySegments: overlay }),
     exportColorContextResolver: () => () => main,
   });
+  // classic 转换体裸名解析走 vm 全局：把 window 上的门面镜像到顶层
+  for (const key of Object.keys(context.window)) {
+    if (/^(Mawe|MAWE|Asr)/.test(key) && !(key in context)) context[key] = context.window[key];
+  }
+    mirrorFacades();
   for (const file of ['editor-export-srt.js', 'editor-export-timeline.js']) {
-    vm.runInNewContext(fs.readFileSync(new URL(`../web/editor/io/${file}`, import.meta.url), 'utf8'), context);
+    vm.runInNewContext(compileEditorFixture('editor/io/' + file), context);
   }
   context.MaweExportSrt = context.window.MaweExportSrt;
   return { context, core, utils, main, extension, overlay, srt: context.window.MaweExportSrt, timeline: context.window.MaweExportTimeline };
@@ -109,7 +246,7 @@ test('default built-in punctuation cleanup migrates only already-exact local sco
   const { context, core, main } = runtime();
   const stale = { start: 0, end: 770, cleanup_scope: { segment_id: 'main-001', item_start: 0, item_end: 2, text: 'stale' } };
   context.MaweBoot.DATA.gap_remove.provenance.sources.ai_cleanup.push(stale);
-  vm.runInNewContext(fs.readFileSync(new URL('../web/editor/cues/editor-text-cleanup.js', import.meta.url), 'utf8'), context);
+  vm.runInNewContext(compileEditorFixture('editor/cues/editor-text-cleanup.js'), context);
   context.window.MaweTextCleanup.cleanPunctuation();
   const ranges = context.MaweBoot.DATA.gap_remove.provenance.sources.ai_cleanup;
   assert.equal(ranges[0].cleanup_scope.text, '啊  我这……');
@@ -132,7 +269,7 @@ function neutralNormalizationRuntime() {
     { start: 0, end: 110, cleanup_scope: { segment_id: 'main-001', item_start: 0, item_end: 1, text: '我' } },
     { start: 810, end: 930, cleanup_scope: { segment_id: 'main-001', item_start: 4, item_end: 5, text: '嗯' } },
   ] } } };
-  vm.runInNewContext(fs.readFileSync(new URL('../web/editor/io/editor-json-repair.js', import.meta.url), 'utf8'), context);
+  vm.runInNewContext(compileEditorFixture('editor/io/editor-json-repair.js'), context);
   return setup;
 }
 

@@ -1,3 +1,8 @@
+import { legacyBindings as __mawImportedBindings0 } from "../boot/editor.js";
+import { legacyBindings as __mawImportedBindings1 } from "../cues/editor-wiring-overlay-transfer.js";
+import { legacyBindings as __mawImportedBindings2 } from "../ui/editor-wiring-dom-panels.js";
+export function* initialize() {
+yield;
 // 撤销/重做：历史栈、快照与各类型记录的入栈恢复。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweHistory 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -27,10 +32,10 @@
   function snapshotSegments() {
   // _dirty 也保留，恢复后能再次导出"工程文件"时正确标记；多字幕数据与主轨
   // 必须处于同一条记录中，绑定/成对删除/联动拆分才能原子撤销。
-  return EDITOR_SETTINGS_UTILS.buildSegmentsHistorySnapshot(
+  return __mawImportedBindings0.EDITOR_SETTINGS_UTILS.buildSegmentsHistorySnapshot(
     MaweBoot.DATA.segments,
     MaweMultiSubtitleCore.getMultiSubtitleState(),
-    getOverlayTrack(),
+    __mawImportedBindings1.getOverlayTrack(),
   );
 }
 
@@ -48,18 +53,18 @@
       ? [...MaweSelection.selectedExtensionIdxs].map((index) => extensionTrack.segments[index]?.id).filter(Boolean)
       : [],
     overlayIds: [...MaweState.selection.indices('overlay')]
-      .map((index) => getOverlayTrack()?.segments?.[index]?.id)
+      .map((index) => __mawImportedBindings1.getOverlayTrack()?.segments?.[index]?.id)
       .filter(Boolean),
     panelKind: MaweCuePanelState.currentCuePanelKind,
     panelTrackId: panelTrack?.id || MaweCuePanelState.currentCuePanelTrackId || null,
     panelId: MaweCuePanelState.currentCuePanelKind === 'extension'
       ? panelTrack?.segments?.[MaweCuePanelState.currentCuePanelIdx]?.id || null
       : MaweCuePanelState.currentCuePanelKind === 'overlay'
-      ? getOverlayTrack()?.segments?.[MaweCuePanelState.currentCuePanelIdx]?.id || null
+      ? __mawImportedBindings1.getOverlayTrack()?.segments?.[MaweCuePanelState.currentCuePanelIdx]?.id || null
       : MaweBoot.DATA.segments[MaweCuePanelState.currentCuePanelIdx]?.id || null,
     lastMainId: MaweBoot.DATA.segments[MaweSelection.lastClickedIdx]?.id || null,
     lastExtensionId: extensionTrack?.segments?.[MaweSelection.lastClickedExtensionIdx]?.id || null,
-    lastOverlayId: getOverlayTrack()?.segments?.[MaweState.selection.overlayAnchor]?.id || null,
+    lastOverlayId: __mawImportedBindings1.getOverlayTrack()?.segments?.[MaweState.selection.overlayAnchor]?.id || null,
   };
 }
 
@@ -186,7 +191,7 @@
     });
   }
   const overlayIds = new Set(snapshot.overlayIds || []);
-  (getOverlayTrack()?.segments || []).forEach((segment, index) => {
+  (__mawImportedBindings1.getOverlayTrack()?.segments || []).forEach((segment, index) => {
     if (overlayIds.has(segment?.id)) MaweState.selection.add('overlay', index);
   });
   MaweSelection.lastClickedIdx = snapshot.lastMainId
@@ -194,7 +199,7 @@
   MaweSelection.lastClickedExtensionIdx = extensionTrack && snapshot.lastExtensionId
     ? extensionTrack.segments.findIndex((segment) => segment?.id === snapshot.lastExtensionId) : -1;
   MaweState.selection.overlayAnchor = snapshot.lastOverlayId != null
-    ? (getOverlayTrack()?.segments || []).findIndex((segment) => segment?.id === snapshot.lastOverlayId) : -1;
+    ? (__mawImportedBindings1.getOverlayTrack()?.segments || []).findIndex((segment) => segment?.id === snapshot.lastOverlayId) : -1;
   const panelTrack = snapshot.panelTrackId ? MaweMultiSubtitleCore.getExtensionTrack(snapshot.panelTrackId) : null;
   if (snapshot.panelKind === 'extension' && panelTrack && snapshot.panelId) {
     MaweCuePanelState.currentCuePanelKind = 'extension';
@@ -207,7 +212,7 @@
   } else if (snapshot.panelKind === 'overlay' && snapshot.panelId) {
     MaweCuePanelState.currentCuePanelKind = 'overlay';
     MaweCuePanelState.currentCuePanelTrackId = null;
-    MaweCuePanelState.currentCuePanelIdx = (getOverlayTrack()?.segments || [])
+    MaweCuePanelState.currentCuePanelIdx = (__mawImportedBindings1.getOverlayTrack()?.segments || [])
       .findIndex((segment) => segment?.id === snapshot.panelId);
     if (MaweCuePanelState.currentCuePanelIdx < 0) {
       MaweCuePanelState.currentCuePanelKind = 'main';
@@ -276,7 +281,7 @@
   MaweBoot.DATA.multi_subtitle = snapshot.multi_subtitle || {
     schema: 'moy.asr.multi_subtitle.v1', enabled: false, display_mode: 'both', tracks: [], bindings: [],
   };
-  MaweBoot.DATA.overlay_track = MULTI_SUBTITLE_UTILS.normalizeOverlayTrack(snapshot.overlay_track);
+  MaweBoot.DATA.overlay_track = __mawImportedBindings0.MULTI_SUBTITLE_UTILS.normalizeOverlayTrack(snapshot.overlay_track);
   if (record.projectChanges) Object.assign(MaweState.changes, record.projectChanges);
   MaweMultiSubtitleCore.normalizeMultiSubtitleState();
   MaweState.reconcileSegmentsDirty();
@@ -361,7 +366,7 @@
       || MaweDom.stickerModal.classList.contains('show')
       || MaweDom.stickerPreviewModal.classList.contains('show')
       || MaweDom.projectMediaModal.classList.contains('show')
-      || assStyleWindow?.classList.contains('show');
+      || __mawImportedBindings2.assStyleWindow?.classList.contains('show');
 }
 
 
@@ -402,3 +407,5 @@
     updateUndoRedoButtons
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

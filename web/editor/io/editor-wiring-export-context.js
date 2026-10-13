@@ -1,3 +1,16 @@
+import { legacyBindings as __mawImportedBindings0 } from "../cues/editor-wiring-overlay-transfer.js";
+import { legacyBindings as __mawImportedBindings1 } from "../boot/editor.js";
+export let legacyBindings;
+export function* initialize() {
+legacyBindings = Object.freeze({
+get mergedExportSegments() { return mergedExportSegments; }, set mergedExportSegments(value) { mergedExportSegments = value; },
+get exportColorContextResolver() { return exportColorContextResolver; }, set exportColorContextResolver(value) { exportColorContextResolver = value; },
+get CANONICAL_PROJECT_FIELDS() { return CANONICAL_PROJECT_FIELDS; },
+get projectExtensionFields() { return projectExtensionFields; }, set projectExtensionFields(value) { projectExtensionFields = value; },
+get buildOverlaySubtitleOtioTrack() { return buildOverlaySubtitleOtioTrack; }, set buildOverlaySubtitleOtioTrack(value) { buildOverlaySubtitleOtioTrack = value; },
+get syncProjectBackupControls() { return syncProjectBackupControls; }, set syncProjectBackupControls(value) { syncProjectBackupControls = value; }
+});
+yield;
 
 // === 下载 ===
 // 程序内开关（不暴露 GUI）：导出 SRT 时保留禁用项的时间轴序号但内容替换为空白
@@ -9,12 +22,12 @@
 // 自身数组，不能在合并后的大数组里按下标解析，因此同时返回归属集合，
 // 由 colorContextResolver 提供每条段的颜色/说话人解析上下文。
 function mergedExportSegments() {
-  const overlaySegments = overlayTrackVisible() ? (getOverlayTrack()?.segments || []) : [];
+  const overlaySegments = __mawImportedBindings0.overlayTrackVisible() ? (__mawImportedBindings0.getOverlayTrack()?.segments || []) : [];
   if (!overlaySegments.length) {
     return { segments: MaweBoot.DATA.segments, overlaySet: new Set(), overlaySegments };
   }
   return {
-    segments: MULTI_SUBTITLE_UTILS.mergeMainAndOverlaySegments(MaweBoot.DATA.segments, overlaySegments),
+    segments: __mawImportedBindings1.MULTI_SUBTITLE_UTILS.mergeMainAndOverlaySegments(MaweBoot.DATA.segments, overlaySegments),
     overlaySet: new Set(overlaySegments),
     overlaySegments,
   };
@@ -289,3 +302,5 @@ document.getElementById('project-backup-open')?.addEventListener('click', async 
 // 把工程名与内容交给服务器，由它定位同目录同名工程并接管：
 // 成功后整页刷新，由服务器渲染出自动加载媒体且可直接保存的状态。
 // 任何失败都静默回退为「手动选择媒体」的便携流程。
+
+}

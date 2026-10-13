@@ -11,6 +11,11 @@ import { compileSources, validateSources } from './build-editor.mjs';
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 export const BUNDLE = 'launcher/boot/launcher-bundle.js';
 export const BUILD_INFO = 'launcher/boot/launcher-bundle.meta.json';
+// Launcher 页面以 classic script 引用共享 tooltip（web/launcher/index.html）。
+// 共享 tooltip 源码是 ESM 转换体，直引会挂——为 Launcher 单独产一个两阶段
+// bootstrap 的小产物（等价生产装配：initialize() 两 next）。
+export const TOOLTIP_BUNDLE = 'launcher/boot/tooltip-bundle.js';
+export const TOOLTIP_SOURCE = 'shared/tooltip.js';
 export const CONFIG = 'launcher-modules.json';
 export const BUILDERS = ['scripts/build-launcher.mjs', 'scripts/build-editor.mjs'];
 const sha = value => createHash('sha256').update(value).digest('hex');
@@ -53,9 +58,30 @@ export async function buildLauncher(root = ROOT) {
     // compileSources 来自 build-editor.mjs，它的变更同样要求重建产物。
     builderHash: sha(BUILDERS.map(name => fs.readFileSync(path.join(root, name), 'utf8')).join('\n')),
     metafile: result.metafile,
+    tooltipSourceHash: sha(fs.readFileSync(path.join(root, 'web', TOOLTIP_SOURCE), 'utf8')),
   };
   const identity = `/* MAW Launcher artifact: ${sha(result.code + json(metadata))} */`;
   return { ...result, code: identity + '\n' + result.code, identity, metadata };
+}
+
+// Launcher 页面的共享 tooltip classic 产物：转换体两阶段驱动（phase1 发布
+// 闭包，phase2 执行挂载——与原直引 script 的单一语义等价）。
+export async function buildTooltipBundle(root = ROOT) {
+  const result = await esbuild.build({
+    absWorkingDir: path.resolve(root),
+    stdin: {
+      contents: `import { initialize } from './${TOOLTIP_SOURCE}';\nconst step = initialize();\nstep.next();\nstep.next();\n`,
+      resolveDir: path.resolve(root, 'web'),
+      sourcefile: 'tooltip-entry.mjs',
+      loader: 'js',
+    },
+    bundle: true, format: 'iife', target: ['chrome120'], write: false,
+    legalComments: 'none', logLevel: 'silent', banner: { js: "'use strict';" },
+  });
+  const body = result.outputFiles[0].text;
+  const source = fs.readFileSync(path.join(root, 'web', TOOLTIP_SOURCE), 'utf8');
+  const identity = `/* MAW Launcher tooltip artifact: ${sha(body + sha(source))} */`;
+  return { code: identity + '\n' + body, identity };
 }
 
 export function assertFresh(actual, expected) {
@@ -69,15 +95,20 @@ export async function checkLauncher(root = ROOT) {
   if (!fs.existsSync(path.join(root, 'web', BUNDLE))) throw new Error('Launcher bundle missing; run pnpm run build:launcher');
   assertFresh(fs.readFileSync(path.join(root, 'web', BUNDLE), 'utf8'), built.code);
   assertFresh(fs.readFileSync(path.join(root, 'web', BUILD_INFO), 'utf8'), json(built.metadata));
+  const tooltip = await buildTooltipBundle(root);
+  if (!fs.existsSync(path.join(root, 'web', TOOLTIP_BUNDLE))) throw new Error('Launcher tooltip bundle missing; run pnpm run build:launcher');
+  assertFresh(fs.readFileSync(path.join(root, 'web', TOOLTIP_BUNDLE), 'utf8'), tooltip.code);
   return built;
 }
 
 async function writeLauncher(root) {
   const built = await buildLauncher(root);
+  const tooltip = await buildTooltipBundle(root);
   // Write only after the entire build succeeds; never repair while checking.
   fs.mkdirSync(path.join(root, 'web', path.dirname(BUNDLE)), { recursive: true });
   fs.writeFileSync(path.join(root, 'web', BUNDLE), built.code);
   fs.writeFileSync(path.join(root, 'web', BUILD_INFO), json(built.metadata));
+  fs.writeFileSync(path.join(root, 'web', TOOLTIP_BUNDLE), tooltip.code);
   console.log(`Launcher: ${built.modules.length} ESM factories / ${built.sourceFiles.length} sources`);
 }
 
@@ -99,7 +130,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
       running = false;
     };
     fs.watch(path.join(root, 'web'), { recursive: true }, (_event, file) => {
-      if (file && ![BUNDLE, BUILD_INFO].includes(file.replaceAll('\\', '/'))) void rebuild();
+      if (file && ![BUNDLE, BUILD_INFO, TOOLTIP_BUNDLE].includes(file.replaceAll('\\', '/'))) void rebuild();
     });
     for (const builder of BUILDERS) fs.watch(path.join(root, builder), () => {
       console.error('Build script changed; restart pnpm run watch:launcher');

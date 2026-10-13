@@ -1,3 +1,7 @@
+import { legacyBindings as __mawImportedBindings0 } from "../cues/editor-wiring-overlay-transfer.js";
+import { legacyBindings as __mawImportedBindings1 } from "../cues/editor-wiring-overlay-actions.js";
+export function* initialize() {
+yield;
 // 右键菜单：字幕/副字幕/空隙/波形空白菜单与定位。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweContextMenus 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -64,12 +68,12 @@
     );
     // 叠加轨启用时提供「创建叠加字幕」：主字幕占用的时间点也能创建
     // （落叠加轨），与主字幕共存；同时间点已有叠加字幕时置灰。
-    if (getOverlayTrack()?.enabled === true) {
+    if (__mawImportedBindings0.getOverlayTrack()?.enabled === true) {
       addItem(
         '创建叠加字幕',
         '',
-        () => addOverlayAtWaveformTime(timeMs, clickX, clickY),
-        findWaveformCueAtTime(timeMs, getOverlayTrack()?.segments) >= 0,
+        () => __mawImportedBindings1.addOverlayAtWaveformTime(timeMs, clickX, clickY),
+        findWaveformCueAtTime(timeMs, __mawImportedBindings0.getOverlayTrack()?.segments) >= 0,
       );
     }
   }
@@ -204,7 +208,7 @@
     convertOverlay.textContent = ids.length > 1 ? `转为叠加字幕 ${ids.length} 条` : '转为叠加字幕';
     convertOverlay.addEventListener('click', () => {
       MaweDom.ctxmenu.classList.remove('show');
-      convertMainCuesToOverlay(ids);
+      __mawImportedBindings0.convertMainCuesToOverlay(ids);
     });
     advancedList.appendChild(convertOverlay);
   };
@@ -359,8 +363,8 @@
       }, { danger: true });
     }
     addColorSubmenu(targetIdxs);
-    if (colorGroupHeadIndex(idx) >= 0) {
-      addItem('移出颜色组', '', () => detachColorFromGroup(idx));
+    if (__mawImportedBindings1.colorGroupHeadIndex(idx) >= 0) {
+      addItem('移出颜色组', '', () => __mawImportedBindings1.detachColorFromGroup(idx));
     }
     addSep();
     // 组 3：状态与删除
@@ -545,3 +549,5 @@
     closeContextMenuOnOutsidePointerDown
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}

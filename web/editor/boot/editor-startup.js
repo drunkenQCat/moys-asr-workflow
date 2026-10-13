@@ -1,3 +1,6 @@
+import { legacyBindings as __mawImportedBindings0 } from "../cues/editor-wiring-cue-panel.js";
+export function* initialize() {
+yield;
 
 // === 启动 ===
 // 兜底：工程可能带有上游写入的 0 长/倒挂段、词时间码（旧版工具或异常识别结果），
@@ -92,7 +95,7 @@ MaweDom.hideDisabledToggle?.addEventListener('change', () => {
       if (extensionTrack?.segments[index]?.disabled) MaweState.selection.remove('extension', index);
     });
     MaweSelection.updateMultiSelectionClasses();
-    updateSelectionCountText();
+    __mawImportedBindings0.updateSelectionCountText();
     if (MaweCoreState.waveformEditor) MaweCoreState.waveformEditor.updateSelection();
   }
   if (MaweCoreState.waveformEditor) MaweCoreState.waveformEditor.updateDisabledVisibility();
@@ -103,3 +106,5 @@ MaweDom.hideDisabledToggle?.addEventListener('change', () => {
 window.addEventListener('beforeunload', (e) => {
   if (MaweServerSave.hasUnsavedProjectChanges()) { e.preventDefault(); e.returnValue = ''; }
 });
+
+}

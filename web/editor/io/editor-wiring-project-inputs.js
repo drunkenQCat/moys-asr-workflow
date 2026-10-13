@@ -1,4 +1,7 @@
 
+export function* initialize() {
+yield;
+
 // === 打开工程 ===
 
 
@@ -118,3 +121,5 @@ MaweProjectMediaInputs.openProjectFileInput.addEventListener('change', async (e)
   }
   await MaweMultiImport.openProjectFile(file);
 });
+
+}

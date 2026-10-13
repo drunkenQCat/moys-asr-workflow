@@ -1,3 +1,6 @@
+
+export function* initialize() {
+yield;
 // 工作区：内置与服务器工作区选择、导航持久化与库管理。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweWorkspaces 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
@@ -392,3 +395,5 @@
     configureWorkspaceTransfer
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+
+}
