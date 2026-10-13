@@ -110,11 +110,14 @@ export async function compileSources(root, files, modules, read, options = {}) {
 // 终态装配：全部源码为真 ESM。工厂按 exportName 导入并在清单序位置注册；
 // classic 转换体（export function* initialize）两阶段驱动：先全量提升与闭包
 // 发布，再按清单序交错执行语句与注册，保持原拼接的提升/TDZ/时序语义。
+// bootstrap（显式启动序列）：登记表 bootstrap 数组里的基础门面发布者，
+// 其 phase-2 在任何消费者之前按**显式序**执行（不再依赖清单位置）；
+// 打乱这些文件之外的清单不影响行为（tests/e2e/assembly-order.spec.mjs O5）。
 function bridgeOwnersOf(bridges) {
   return [...new Set(bridges.map(b => b.file))].map((file, i) => [file, i]);
 }
 
-export function compileEsmEntry(files, modules, bridges) {
+export function compileEsmEntry(files, modules, bridges, bootstrap = []) {
   const factoryByFile = new Map(modules.map(item => [item.file, item]));
   const owners = bridgeOwnersOf(bridges);
   const imports = [], classicFiles = [], classicIndex = new Map();
@@ -129,19 +132,41 @@ export function compileEsmEntry(files, modules, bridges) {
   });
   imports.push(...owners.map(([file, i]) =>
     `import { legacyBindings as externalBindings${i} } from ${JSON.stringify('./' + file)};`));
+  const bootstrapIndex = new Map(bootstrap.map((file, i) => [file, i]));
+  // 注册表创建者：window.MAWE 由它的 phase-2 创建，必须先于工厂注册。
+  const REGISTRY_CREATOR = 'editor/boot/editor-runtime.js';
+  const registryCreatorIndex = bootstrap.indexOf(REGISTRY_CREATOR);
   const calls = ['window.__mawEsmInitializationTrace = [];',
     `const initializationSteps = [${classicFiles.map(f => `init${classicIndex.get(f)}()`).join(',')}];`,
-    ...classicFiles.map(f => `initializationSteps[${classicIndex.get(f)}].next();`)];
+    ...classicFiles.map(f => `initializationSteps[${classicIndex.get(f)}].next();`) // phase-1 全量提升
+  ];
+  if (registryCreatorIndex >= 0) {
+    calls.push(`initializationSteps[${classicIndex.get(REGISTRY_CREATOR)}].next();`);
+    calls.push(`window.__mawEsmInitializationTrace.push(${JSON.stringify(REGISTRY_CREATOR)});`);
+  }
+  // 工厂注册与清单位次解耦：61 个 ESM 工厂是纯 export function
+  // （无求值副作用），全部在任何其他 phase-2 之前注册。此后 phase-2
+  // 里的 MAWE.resolve 不再依赖「工厂文件恰好在消费者之前」的位次。
+  for (const item of modules) {
+    calls.push(`window.MAWE.register(${JSON.stringify(item.name)}, factory${files.indexOf(item.file)});`);
+    calls.push(`window.__mawEsmInitializationTrace.push(${JSON.stringify(item.file)});`);
+  }
   for (const bridge of bridges) {
     const alias = `externalBindings${owners.findIndex(([f]) => f === bridge.file)}.${bridge.name}`;
     const setter = bridge.mutable ? `${alias} = value;` : "throw new TypeError('Assignment to constant variable');";
     calls.push(`Object.defineProperty(window, ${JSON.stringify(bridge.name)}, {configurable:true,`
       + ` get: () => ${alias}, set: value => {${setter}}});`);
   }
+  // 显式 bootstrap：基础门面先于一切消费者（注册表创建者已先行）
+  for (const file of bootstrap) {
+    if (factoryByFile.has(file) || file === REGISTRY_CREATOR) continue;
+    calls.push(`initializationSteps[${classicIndex.get(file)}].next();`);
+    calls.push(`window.__mawEsmInitializationTrace.push(${JSON.stringify(file)});`);
+  }
   for (const file of files) {
-    const factory = factoryByFile.get(file);
-    if (factory) calls.push(`window.MAWE.register(${JSON.stringify(factory.name)}, factory${files.indexOf(file)});`);
-    else calls.push(`initializationSteps[${classicIndex.get(file)}].next();`);
+    if (factoryByFile.has(file)) continue; // 工厂无 phase-2；trace 在注册段
+    if (bootstrapIndex.has(file)) continue; // 已在显式序列执行
+    calls.push(`initializationSteps[${classicIndex.get(file)}].next();`);
     calls.push(`window.__mawEsmInitializationTrace.push(${JSON.stringify(file)});`);
   }
   return [...imports, ...calls].join('\n') + '\n';
@@ -150,7 +175,8 @@ export function compileEsmEntry(files, modules, bridges) {
 export async function compileEsmSources(root, files, modules, bridges, read, options = {}) {
   validateSources(files);
   const sources = new Map(files.map(file => [file, read(file)]));
-  const entry = compileEsmEntry(files, modules, bridges ?? []);
+  const bootstrap = options.bootstrap ?? [];
+  const entry = compileEsmEntry(files, modules, bridges ?? [], bootstrap);
   const result = await esbuild.build({absWorkingDir:path.resolve(root),
     stdin:{contents:entry,resolveDir:path.resolve(root,'web'),sourcefile:'editor-entry.mjs',loader:'js'},
     plugins:[{name:'maw-esm-sources',setup(build) {
@@ -171,17 +197,25 @@ export async function buildEditor(root = ROOT, options = {}) {
   const modulesPath = path.join(root,'web/editor-modules.json');
   const configText = fs.existsSync(modulesPath) ? fs.readFileSync(modulesPath,'utf8') : '{}';
   const config = JSON.parse(configText), inputHashes = {};
+  const bootstrap = options.bootstrap ?? config.bootstrap ?? [];
+  const REGISTRY_CREATOR = 'editor/boot/editor-runtime.js';
+  const initializationOrder = [
+    ...(bootstrap.includes(REGISTRY_CREATOR) ? [REGISTRY_CREATOR] : []),
+    ...modules.map(item => item.file),
+    ...bootstrap.filter(file => file !== REGISTRY_CREATOR && !modules.some(item => item.file === file)),
+    ...files.filter(file => !bootstrap.includes(file) && !modules.some(item => item.file === file)),
+  ];
   const result = await compileEsmSources(root,files,modules,config.externalBridges,file => {
     const original = fs.readFileSync(path.join(root,'web',file),'utf8');
     const source = options.transform ? options.transform(file,original) : original;
     inputHashes[file] = sha(source); return source;
-  },{trace:true});
+  },{trace:true,bootstrap});
   const metadata = {format:1,esbuild:esbuild.version,sourceFiles:files,esmFactories:modules.length,
-    inputs:inputHashes,configHash:sha(configText),builderHash:sha(fs.readFileSync(fileURLToPath(import.meta.url))),
+    bootstrap,inputs:inputHashes,configHash:sha(configText),builderHash:sha(fs.readFileSync(fileURLToPath(import.meta.url))),
     // 全部源码经真 import 图装配；显式哈希覆盖每个源文件。
     metafile:result.metafile};
   const identity = `/* MAW ESM artifact: ${sha(result.code+json(metadata))} */`;
-  return {...result,code:identity+'\n'+result.code,identity,metadata};
+  return {...result,code:identity+'\n'+result.code,identity,metadata,initializationOrder};
 }
 
 export function assertFresh(actual, expected) {

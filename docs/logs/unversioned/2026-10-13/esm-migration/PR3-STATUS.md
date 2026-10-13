@@ -37,3 +37,47 @@
   - O5 顺序红灯：PR1 classic 树打乱（boot 后置）→ 真页面启动崩溃
     （bridge=false、trace 停在 1、pageerror reading 'DATA'）。
 - 验证：node 2/2、e2e 5/5、check:editor 新鲜。
+
+## 批 2a：入口显式化（已完成）
+
+入口不再按清单位次消费初始化：`compileEsmEntry` 重构为
+注册表创建 → 61 工厂统一注册 → 桥 → **显式 bootstrap 序** →
+其余 classic phase-2 清单序。登记表新增 `bootstrap` 数组（14 文件，
+注册表创建者 editor-runtime 固定头部先行）。
+
+### 顺序敏感面实测（分析工具见 .worktrees/replay/analyze-order*.mjs，不入库）
+
+- 直接跨文件门面边 112 条（IIFE 立即执行体计为顶层）；
+- 发布者子图内部仅 1 条边（editor-state 读 MaweBoot）；
+- utils/waveform phase-2 在顶层 resolve 工厂 → 注册先行的前提；
+- utils-ass-canvas-layout 等 7 个 phase-2 自注册门面不在 61 工厂表内；
+- editor-dom 等 40+ 发布者由消费者延迟读取（存储型函数体）。
+
+### 契约（O2 更新为显式序）
+
+trace = [runtime] + 61 工厂（登记表序）+ bootstrap（登记表序）+
+其余清单序；`buildEditor` 返回 `initializationOrder` 作为权威，
+E6（full-verify）与 e2e O2 都与它比对；E6 bootShape 的注册名
+比较改为集合语义（次序归 initializationOrder 管）。
+
+### 红灯与绿灯
+
+- O5a（红）：bootstrap 序内把 editor-boot 挪到消费者之后 →
+  真页面启动崩溃（bridge=false、trace 停 62、pageerror reading DATA）。
+- O5b（绿）：bootstrap 内无耦合相邻对（i18n↔tooltip）互换次序 →
+  行为完全一致。
+- 全量打乱在当前代码下必然红（wiring 层 109 条跨文件边仍依赖
+  位次，接线的读写大多在事件回调里延迟执行，静态分析无法证明
+  「叶」），故全量打乱绿灯是批 4 终态目标，不提前伪造。
+
+### 验证
+
+| 层 | 结果 |
+| --- | --- |
+| node 全量 | 608/608（+2 契约） |
+| 装配契约 E1-E10 | 9/9 |
+| e2e assembly-order | 6/6（O1-O4、O5a 红、O5b 绿） |
+| e2e waveform-history | 53/2*（*两失败与 PR-2 账本记录的 main 既有失败同名同数） |
+| e2e click-behavior | 36/36 |
+| typecheck | 110 基线 / 新增 0 |
+| check:editor / check:launcher | 新鲜（launcher bundle 因构建器哈希联动重建） |

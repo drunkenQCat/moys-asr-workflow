@@ -84,12 +84,22 @@ test('O1 boot completes: bridge, waveform, render, export, merge+undo', async ()
   expect(result.undoRestored, JSON.stringify(result)).toBe(true);
 });
 
-test('O2 startup trace matches manifest order, boot first / startup last', async () => {
+test('O2 startup trace: registry creator, factories, bootstrap, then manifest', async () => {
   const trace = await page.evaluate(() => window.__mawEsmInitializationTrace);
   const manifest = readFileSync(join(repoRoot, 'web/editor-scripts.txt'), 'utf8')
     .split('\n').map((line) => line.split('#')[0].trim()).filter(Boolean);
-  expect(trace).toEqual(manifest);
-  expect(trace[0]).toBe('editor/boot/editor-boot.js');
+  const config = moduleConfig();
+  const bootstrap = config.bootstrap ?? [];
+  const factoryFiles = config.modules.map((m) => m.file);
+  const registryCreator = 'editor/boot/editor-runtime.js';
+  const expected = [
+    ...(bootstrap.includes(registryCreator) ? [registryCreator] : []),
+    ...factoryFiles,
+    ...bootstrap.filter((f) => f !== registryCreator && !factoryFiles.includes(f)),
+    ...manifest.filter((f) => !bootstrap.includes(f) && !factoryFiles.includes(f)),
+  ];
+  expect(trace).toEqual(expected);
+  expect(trace[0]).toBe('editor/boot/editor-runtime.js');
   expect(trace.at(-1)).toBe('editor/boot/editor-onboarding.js');
   expect(trace.at(-2)).toBe('editor/boot/editor-startup.js');
 });
@@ -133,63 +143,96 @@ test('O4 bridges: 8 external bridges are live accessors on the page', async () =
   }
 });
 
-test('O5 order red light: shuffled manifest breaks boot', async () => {
-  test.setTimeout(300_000);
-  const sandbox = join(dir, 'shuffle-copy');
+// O5 家族共用：PR1 classic 树副本 + 转换 + 打乱清单 + 构建 + 渲染探测。
+// 打乱基线必须是 classic 源（当前仓库 web/ 已是转换产物）；整树提取
+// （render 需要 edit.py 与 maw/）；tests/e2e 与 editor-modules.json 用
+// 当前版本（消费点扫描与 bootstrap 序都以当前配置为准）。
+async function buildShuffledCopy(sandbox, shuffle, shuffleBootstrap = null) {
   mkdirSync(sandbox, { recursive: true });
-  try {
-    // 打乱基线必须是 classic 源（当前仓库 web/ 已是转换产物）。
-    // PR1 分支检出的是转换前 classic 全量；整树提取（render 需要
-    // edit.py 与 maw/）；tests/e2e 用当前版本（消费点扫描决定
-    // externalBridges）。
-    execFileSync('git', ['archive', 'feat/editor-esm-pr1-foundation'],
-      { cwd: repoRoot, stdio: ['ignore', openSync(join(sandbox, 'base.tar'), 'w'), 'pipe'] });
-    execFileSync('tar', ['-xf', 'base.tar'], { stdio: 'pipe', cwd: sandbox });
-    rmSync(join(sandbox, 'base.tar'));
-    cpSync(join(repoRoot, 'tests'), join(sandbox, 'tests'), { recursive: true });
-    // 打乱：boot 挪到最后（触发 phase-2 先执行消费者）
-    const manifest = readFileSync(join(sandbox, 'web/editor-scripts.txt'), 'utf8')
-      .split('\n').map((line) => line.split('#')[0].trim()).filter(Boolean);
-    const boot = 'editor/boot/editor-boot.js';
-    const shuffled = manifest.filter((f) => f !== boot).concat([boot]);
-    writeFileSync(join(sandbox, 'web/editor-scripts.txt'), shuffled.join('\n') + '\n');
-    // 副本需要 node_modules（acorn/eslint-scope/esbuild 解析）；Windows
-    // 上用目录 junction 复用主仓库依赖（无需管理员权限；目标不得预先存在）。
-    execFileSync('cmd', ['/c', 'mklink', '/J',
-      join(sandbox, 'node_modules').replaceAll('/','\\'),
-      join(repoRoot, 'node_modules').replaceAll('/','\\')], { stdio: 'pipe' });
-    // 转换器锁 sandbox 标记
-    writeFileSync(join(sandbox, '.esm-mechanical-sandbox.json'),
-      '{"purpose":"esm-mechanical-research"}\n');
-    execFileSync(process.execPath, [join(repoRoot, 'scripts/esm-mechanical/full-convert.mjs'),
-      sandbox, '--sources-only'], { stdio: 'pipe', cwd: sandbox });
-    execFileSync(process.execPath, [join(repoRoot, 'scripts/build-editor.mjs'), '--write', sandbox],
-      { stdio: 'pipe', cwd: sandbox });
-    // 渲染打乱副本页面并探测：boot 后置 → 启动崩溃（页面无桥接）
-    const python = process.env.MAW_E2E_PYTHON ?? 'python';
-    const renderPage = join(sandbox, 'probe-page.html');
-    execFileSync(python, ['-c',
-      'import edit, pathlib, sys\n'
-      + 'original = edit.render_editor_page\n'
-      + 'def render(**context):\n'
-      + '    context[\'data_json\'] = \'{"segments":[]}\'\n'
-      + '    return original(**context)\n'
-      + 'edit.render_editor_page = render\n'
-      + 'pathlib.Path(sys.argv[1]).write_text(edit.build_blank_html(), encoding=\'utf-8\', newline=\'\\n\')\n',
-      renderPage], { stdio: 'pipe', cwd: sandbox });
-    const probe = await page.goto(`file:///${renderPage.replaceAll('\\', '/')}`);
-    expect(probe).toBeTruthy();
-    await page.waitForTimeout(2500);
-    const broken = await page.evaluate(() => ({
-      bridge: Boolean(window.MAWE_EDITOR_BRIDGE),
-      traceLength: (window.__mawEsmInitializationTrace ?? []).length,
-    }));
-    // 打乱后的行为差异就是红灯：桥接未建立、初始化远未走完
-    // （真页面实测：bridge=false、trace 停在 1、registry 只有 1 项，
-    // pageerror 为 reading 'DATA'——boot 的 phase-2 消费点先执行）。
-    expect(broken.bridge).toBe(false);
-    expect(broken.traceLength).toBeLessThan(shuffled.length);
-  } finally {
-    rmSync(sandbox, { recursive: true, force: true });
+  execFileSync('git', ['archive', 'feat/editor-esm-pr1-foundation'],
+    { cwd: repoRoot, stdio: ['ignore', openSync(join(sandbox, 'base.tar'), 'w'), 'pipe'] });
+  execFileSync('tar', ['-xf', 'base.tar'], { stdio: 'pipe', cwd: sandbox });
+  rmSync(join(sandbox, 'base.tar'));
+  cpSync(join(repoRoot, 'tests'), join(sandbox, 'tests'), { recursive: true });
+  cpSync(join(repoRoot, 'web/editor-modules.json'), join(sandbox, 'web/editor-modules.json'));
+  const manifest = readFileSync(join(sandbox, 'web/editor-scripts.txt'), 'utf8')
+    .split('\n').map((line) => line.split('#')[0].trim()).filter(Boolean);
+  writeFileSync(join(sandbox, 'web/editor-scripts.txt'), shuffle(manifest).join('\n') + '\n');
+  if (shuffleBootstrap) {
+    const sandboxConfig = JSON.parse(readFileSync(join(sandbox, 'web/editor-modules.json'), 'utf8'));
+    sandboxConfig.bootstrap = shuffleBootstrap(sandboxConfig.bootstrap);
+    writeFileSync(join(sandbox, 'web/editor-modules.json'), JSON.stringify(sandboxConfig, null, 2) + '\n');
   }
+  execFileSync('cmd', ['/c', 'mklink', '/J',
+    join(sandbox, 'node_modules').replaceAll('/','\\'),
+    join(repoRoot, 'node_modules').replaceAll('/','\\')], { stdio: 'pipe' });
+  writeFileSync(join(sandbox, '.esm-mechanical-sandbox.json'),
+    '{"purpose":"esm-mechanical-research"}\n');
+  execFileSync(process.execPath, [join(repoRoot, 'scripts/esm-mechanical/full-convert.mjs'),
+    sandbox, '--sources-only'], { stdio: 'pipe', cwd: sandbox });
+  execFileSync(process.execPath, [join(repoRoot, 'scripts/build-editor.mjs'), '--write', sandbox],
+    { stdio: 'pipe', cwd: sandbox });
+  const python = process.env.MAW_E2E_PYTHON ?? 'python';
+  const renderPage = join(sandbox, 'probe-page.html');
+  execFileSync(python, ['-c',
+    'import edit, pathlib, sys\n'
+    + 'original = edit.render_editor_page\n'
+    + 'def render(**context):\n'
+    + '    context[\'data_json\'] = \'{"segments":[]}\'\n'
+    + '    return original(**context)\n'
+    + 'edit.render_editor_page = render\n'
+    + 'pathlib.Path(sys.argv[1]).write_text(edit.build_blank_html(), encoding=\'utf-8\', newline=\'\\n\')\n',
+    renderPage], { stdio: 'pipe', cwd: sandbox });
+  await page.goto(`file:///${renderPage.replaceAll('\\', '/')}`);
+  await page.waitForTimeout(2500);
+  return page.evaluate(() => ({
+    bridge: Boolean(window.MAWE_EDITOR_BRIDGE),
+    traceLength: (window.__mawEsmInitializationTrace ?? []).length,
+    registry: window.MAWE?.list?.().length ?? 0,
+    waveform: Boolean(window.MaweCoreState?.waveformEditor),
+    utilsFacade: typeof window.AsrEditorUtils === 'object',
+  }));
+}
+
+test('O5a order red light: bootstrap file after consumers breaks boot', async () => {
+  test.setTimeout(300_000);
+  const sandbox = join(dir, 'shuffle-red');
+  try {
+    const boot = 'editor/boot/editor-boot.js';
+    const state = await buildShuffledCopy(sandbox,
+      (manifest) => manifest.filter((f) => f !== boot).concat([boot]),
+      (bootstrap) => bootstrap.filter((f) => f !== boot).concat([boot]));
+    // 真页面实测：boot 在 bootstrap 序里被挪到消费者（state/utils）
+    // 之后 → 消费者 phase-2 读 MaweBoot.DATA 崩溃，桥接未建立。
+    expect(state.bridge).toBe(false);
+    expect(state.traceLength).toBeLessThan(188);
+  } finally { rmSync(sandbox, { recursive: true, force: true }); }
+});
+
+test('O5b order independence: bootstrap sibling order swap keeps behavior', async () => {
+  test.setTimeout(300_000);
+  const sandbox = join(dir, 'shuffle-green');
+  try {
+    // bootstrap 内部相邻无耦合对（i18n <-> tooltip）互换次序：两者
+    // phase-2 互不读取，仅发布各自门面。行为必须与原序一致——
+    // 证明显式 bootstrap 序只约束真实依赖对，不要求全体固定位次。
+    // 批次推进：每消除一对 bootstrap 内部依赖约束，可交换对随之增多；
+    // 批 4 终态（清单删除）时本测试演进为「全量打乱后行为不变」。
+    const state = await buildShuffledCopy(sandbox,
+      (manifest) => manifest, // 清单保持原序
+      (bootstrap) => {
+        const i18n = bootstrap.indexOf('shared/editor-i18n.js');
+        const tooltip = bootstrap.indexOf('shared/tooltip.js');
+        expect(i18n, 'i18n in bootstrap').toBeGreaterThanOrEqual(0);
+        expect(tooltip, 'tooltip in bootstrap').toBeGreaterThanOrEqual(0);
+        const swapped = [...bootstrap];
+        [swapped[i18n], swapped[tooltip]] = [swapped[tooltip], swapped[i18n]];
+        return swapped;
+      });
+    expect(state.bridge, JSON.stringify(state)).toBe(true);
+    expect(state.registry, JSON.stringify(state)).toBeGreaterThanOrEqual(61);
+    expect(state.waveform, JSON.stringify(state)).toBe(true);
+    expect(state.utilsFacade, JSON.stringify(state)).toBe(true);
+    expect(state.traceLength, JSON.stringify(state)).toBe(188);
+  } finally { rmSync(sandbox, { recursive: true, force: true }); }
 });
