@@ -29,8 +29,18 @@ if (!fs.existsSync(path.join(baseline, 'tests/e2e'))) {
 }
 const { crossFileReferences } = await convertAll(baseline);
 
-const manifest = fs.readFileSync(path.join(repo, 'web/editor-scripts.txt'), 'utf8')
-  .split('\n').map((line) => line.split('#')[0].trim()).filter(Boolean);
+// 与 build-editor.deriveSources 同口径：editor/+shared/ 全部 .js，
+// 排除 bundle 产物。
+const manifest = ['editor', 'shared'].flatMap((base) =>
+  (function walk(dir) {
+    return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) return walk(full);
+      if (!entry.name.endsWith('.js')) return [];
+      return [path.relative(path.join(repo, 'web'), full).replaceAll('\\', '/')];
+    });
+  })(path.join(repo, 'web', base))
+).filter((file) => !file.endsWith('.bundle.js')).sort();
 let checked = 0; const mismatches = [];
 for (const file of manifest) {
   const converted = path.join(baseline, 'web', file);

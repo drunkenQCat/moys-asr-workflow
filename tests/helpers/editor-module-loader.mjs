@@ -1,7 +1,8 @@
 // 编辑器模块测试加载器：把 classic/ESM 源按生产同构的入口装配成 bundle 并在 vm 中执行。
 //
-// 单一事实源：清单只读 web/editor-scripts.txt（与 build-editor.readSources 相同），
-// 闭包只从源码 import 语句推导（转换体的 provider 边 = import 边）。不依赖
+// 单一事实源：源文件集合从 web/editor+web/shared 目录推导
+// （与 build-editor.deriveSources 同口径，清单已退役），闭包只从
+// 源码 import 语句推导（转换体的 provider 边 = import 边）。不依赖
 // 任何转换期副产物（full-conversion.json / editor-sources.txt）。
 //
 // 语义与生产装配一致（scripts/build-editor.mjs compileEsmEntry）：
@@ -19,10 +20,27 @@ import * as acorn from 'acorn';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const web = path.join(root, 'web');
-const manifest = fs.readFileSync(path.join(web, 'editor-scripts.txt'), 'utf8')
-  .split('\n').map((line) => line.split('#')[0].trim()).filter(Boolean);
-const manifestIndex = new Map(manifest.map((file, i) => [file, i]));
+// 与 build-editor.deriveSources 同口径：editor/ 与 shared/ 全部 .js，
+// 排除 bundle 产物，排序保证确定性。
+const manifest = ['editor', 'shared'].flatMap((base) =>
+  (function walk(dir) {
+    return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) return walk(full);
+      if (!entry.name.endsWith('.js')) return [];
+      return [path.relative(web, full).replaceAll('\\', '/')];
+    });
+  })(path.join(web, base))
+).filter((file) => !file.endsWith('.bundle.js')).sort();
 const modulesConfig = JSON.parse(fs.readFileSync(path.join(web, 'editor-modules.json'), 'utf8'));
+// phase-2 位次以登记表 bootstrap 显式序为准（清单退役）；不在
+// bootstrap 的文件排在其后（字母序）。
+const bootstrapOrder = modulesConfig.bootstrap ?? [];
+const manifestIndex = new Map([
+  ...bootstrapOrder.map((file, i) => [file, i]),
+  ...manifest.filter((file) => !bootstrapOrder.includes(file))
+    .map((file, i) => [file, bootstrapOrder.length + i]),
+]);
 const factoryByFile = new Map(modulesConfig.modules.map((item) => [item.file, item]));
 
 // provider 边：文件源码里的相对 import（转换体与工厂都适用）。解析失败或
@@ -125,13 +143,22 @@ const IDENTITY_SOURCE = '(() => { const w = globalThis.window;'
   const statements = [IDENTITY_SOURCE,
     'const steps = [' + classicFiles.map((f) => `init${classicIndex.get(f)}()`).join(',') + '];',
     'for (const step of steps) step.next();',
+    // 注册表创建者先行（与生产一致）：runtime 的 phase-2 创建 window.MAWE
+    ...files.filter((file) => file === 'editor/boot/editor-runtime.js' && classicIndex.has(file))
+      .map((file) => `steps[${classicIndex.get(file)}].next();`),
+    // 与生产 compileEsmEntry 同语义：全部工厂注册先于任何其余
+    // classic phase-2（工厂是纯 export function，注册与位置无关）。
+    ...files.filter((file) => factoryByFile.has(file) && file !== 'editor/boot/editor-runtime.js')
+      .map((file) => `window.MAWE.register(${JSON.stringify(factoryByFile.get(file).name)},`
+        + ` factory${files.indexOf(file)});`),
     ...files.flatMap((file, i) => {
       const factory = factoryByFile.get(file);
       const isTarget = file === entry;
       const ops = [];
       if (factory) {
-        if (phase2All || isTarget) ops.push(`window.MAWE.register(${JSON.stringify(factory.name)}, factory${i});`);
+        // 工厂已在上方统一注册（与生产一致）
       } else {
+        if (file !== 'editor/boot/editor-runtime.js') { if (phase2All || isTarget) ops.push(`steps[${classicIndex.get(file)}].next();`); }
         if (phase2All || isTarget) ops.push(`steps[${classicIndex.get(file)}].next();`);
       }
       if (isTarget) ops.unshift('globalThis.__mawBeforeFixture?.(window);');
@@ -217,9 +244,18 @@ export function loadEditorModule(context, entry, beforeEntry = () => {}) {
   // + 目标。import 闭包只用于 compileEditorFixture；此处不并入，避免改变既有
   // 测试的加载范围。
   const directories = entry === 'shared/editor-utils.js' ? ['shared/utils/'] : ['editor/media/waveform/'];
-  const files = manifest.filter((name) => name === 'editor/boot/editor-runtime.js' || name === 'editor/boot/editor-host.js'
+  const selected = manifest.filter((name) => name === 'editor/boot/editor-runtime.js' || name === 'editor/boot/editor-host.js'
     || name.startsWith('shared/host/') || name === 'shared/gap-remove-core.js' || name === entry
     || directories.some((prefix) => name.startsWith(prefix)));
+  // phase-2 序：注册表创建者（editor-runtime）必须最先——host 的
+  // phase-2 自注册需要 window.MAWE；其余按稳定序。
+  const files = [...selected].sort((a, b) => {
+    const rank = (name) => name === 'editor/boot/editor-runtime.js' ? 0
+      : name === 'editor/boot/editor-host.js' ? 1
+      : name === 'shared/gap-remove-core.js' ? 2
+      : name === 'shared/utils/ass-canvas-layout.js' ? 3 : 4;
+    return rank(a) - rank(b) || (a < b ? -1 : a > b ? 1 : 0);
+  });
   context.__mawBeforeFixture = beforeEntry;
   try { vm.runInNewContext(compile(files, entry), context); }
   finally { delete context.__mawBeforeFixture; }

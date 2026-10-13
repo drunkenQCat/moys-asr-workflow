@@ -23,10 +23,26 @@ export function validateSources(files) {
   return files;
 }
 
-export function readSources(root = ROOT) {
+// 源码集合从目录推导（批 4 终态）：web/editor/** 与 web/shared/**
+// 的全部 .js，排除 bundle/meta 产物。清单位次已由登记表 bootstrap
+// 显式序接管，清单文件退役（web/editor-scripts.txt 不再存在）。
+export function deriveSources(root = ROOT) {
   const web = fs.realpathSync(path.join(root,'web'));
-  const files = validateSources(fs.readFileSync(path.join(web,'editor-scripts.txt'),'utf8').split('\n')
-    .map(line => line.split('#')[0].trim()).filter(Boolean));
+  const collected = [];
+  const walk = dir => fs.readdirSync(dir,{withFileTypes:true}).flatMap(entry => {
+    const full = path.join(dir,entry.name);
+    if (entry.isDirectory()) return walk(full);
+    if (!entry.name.endsWith('.js')) return [];
+    const relative = path.relative(web,full).replaceAll('\\','/');
+    if (relative.endsWith('.bundle.js') || relative === BUNDLE || relative.endsWith('.meta.json')) return [];
+    return [relative];
+  });
+  for (const dir of ['editor','shared']) {
+    const base = path.join(web,dir);
+    if (!fs.existsSync(base)) continue; // 语义夹具可能只有 editor/
+    collected.push(...walk(base));
+  }
+  const files = validateSources(collected.sort());
   for (const file of files) {
     const canonical = fs.realpathSync(path.join(web,file));
     if (!canonical.startsWith(web+path.sep) || !fs.statSync(canonical).isFile()) {
@@ -117,18 +133,21 @@ function bridgeOwnersOf(bridges) {
   return [...new Set(bridges.map(b => b.file))].map((file, i) => [file, i]);
 }
 
-export function compileEsmEntry(files, modules, bridges, bootstrap = []) {
+export function compileEsmEntry(files, modules, bridges, bootstrap = [],
+    classicPredicate = null) {
   const factoryByFile = new Map(modules.map(item => [item.file, item]));
   const owners = bridgeOwnersOf(bridges);
   const imports = [], classicFiles = [], classicIndex = new Map();
   files.forEach((file, i) => {
     const factory = factoryByFile.get(file);
     if (factory) imports.push(`import { ${factory.exportName} as factory${i} } from ${JSON.stringify('./' + file)};`);
-    else {
+    else if (!classicPredicate || classicPredicate(file)) {
       imports.push(`import { initialize as init${classicFiles.length} } from ${JSON.stringify('./' + file)};`);
       classicIndex.set(file, classicFiles.length);
       classicFiles.push(file);
     }
+    // 既非工厂也非转换体（纯注释/常量文件）：不产生语句，
+    // 仅作为 bundle 成员被打包与追踪。
   });
   imports.push(...owners.map(([file, i]) =>
     `import { legacyBindings as externalBindings${i} } from ${JSON.stringify('./' + file)};`));
@@ -166,6 +185,10 @@ export function compileEsmEntry(files, modules, bridges, bootstrap = []) {
   for (const file of files) {
     if (factoryByFile.has(file)) continue; // 工厂无 phase-2；trace 在注册段
     if (bootstrapIndex.has(file)) continue; // 已在显式序列执行
+    if (classicPredicate && !classicPredicate(file)) {
+      calls.push(`window.__mawEsmInitializationTrace.push(${JSON.stringify(file)});`);
+      continue; // 纯成员文件：无初始化语句，仅追踪
+    }
     calls.push(`initializationSteps[${classicIndex.get(file)}].next();`);
     calls.push(`window.__mawEsmInitializationTrace.push(${JSON.stringify(file)});`);
   }
@@ -176,7 +199,9 @@ export async function compileEsmSources(root, files, modules, bridges, read, opt
   validateSources(files);
   const sources = new Map(files.map(file => [file, read(file)]));
   const bootstrap = options.bootstrap ?? [];
-  const entry = compileEsmEntry(files, modules, bridges ?? [], bootstrap);
+  const classicPredicate = options.classicPredicate
+    ?? (options.classicFiles ? (file) => options.classicFiles.includes(file) : null);
+  const entry = compileEsmEntry(files, modules, bridges ?? [], bootstrap, classicPredicate);
   const result = await esbuild.build({absWorkingDir:path.resolve(root),
     stdin:{contents:entry,resolveDir:path.resolve(root,'web'),sourcefile:'editor-entry.mjs',loader:'js'},
     plugins:[{name:'maw-esm-sources',setup(build) {
@@ -227,7 +252,7 @@ function validateRegistry(files, modules, bridges, read) {
 }
 
 export async function buildEditor(root = ROOT, options = {}) {
-  const files = readSources(root), modules = readModules(root);
+  const files = deriveSources(root), modules = readModules(root);
   const modulesPath = path.join(root,'web/editor-modules.json');
   const configText = fs.existsSync(modulesPath) ? fs.readFileSync(modulesPath,'utf8') : '{}';
   const config = JSON.parse(configText), inputHashes = {};
@@ -241,11 +266,14 @@ export async function buildEditor(root = ROOT, options = {}) {
     ...bootstrap.filter(file => file !== REGISTRY_CREATOR && !modules.some(item => item.file === file)),
     ...files.filter(file => !bootstrap.includes(file) && !modules.some(item => item.file === file)),
   ];
+  const classicFiles = [];
   const result = await compileEsmSources(root,files,modules,config.externalBridges,file => {
     const original = fs.readFileSync(path.join(root,'web',file),'utf8');
     const source = options.transform ? options.transform(file,original) : original;
+    if (!modules.some(item => item.file === file)
+        && /export function\*\s+initialize\s*\(/.test(source)) classicFiles.push(file);
     inputHashes[file] = sha(source); return source;
-  },{trace:true,bootstrap});
+  },{trace:true,bootstrap,classicFiles});
   const metadata = {format:1,esbuild:esbuild.version,sourceFiles:files,esmFactories:modules.length,
     bootstrap,inputs:inputHashes,configHash:sha(configText),builderHash:sha(fs.readFileSync(fileURLToPath(import.meta.url))),
     // 全部源码经真 import 图装配；显式哈希覆盖每个源文件。

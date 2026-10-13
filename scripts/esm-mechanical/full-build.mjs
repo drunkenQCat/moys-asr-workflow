@@ -3,12 +3,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { buildEditor } from '../../scripts/build-editor.mjs';
-export { buildEditor };
+import { buildEditor, deriveSources } from '../../scripts/build-editor.mjs';
+export { buildEditor, deriveSources };
 export const BUNDLE = 'editor/boot/editor-bundle.js';
 export function sourceFiles(root) {
-  return fs.readFileSync(path.join(root, 'web/editor-scripts.txt'), 'utf8')
-    .split('\n')
+  return deriveSources(root);
 }
 const invokedDirectly = process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href;
 if (invokedDirectly) {

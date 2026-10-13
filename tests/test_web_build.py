@@ -31,17 +31,21 @@ class _FakeRepo:
         self.root = root
         self.kind = kind
         spec = web_build._SPECS[kind]
-        self.manifest = root / spec.manifest
+        self.manifest = None if spec.manifest is None else root / spec.manifest
         self.config = root / spec.config
         self.bundle = root / spec.bundle
         self.meta = root / spec.meta
-        self.sources = [f"src/{name}.js" for name in ("a", "b")]
+        # 编辑器清单退役：源文件放在目录推导可见的 web/editor/ 下；
+        # launcher 仍走清单。
+        prefix = "editor" if kind == "editor" else "src"
+        self.sources = [f"{prefix}/{name}.js" for name in ("a", "b")]
         for relative in self.sources:
             path = root / "web" / relative
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(f"// {relative}\n", encoding="utf-8")
-        self.manifest.parent.mkdir(parents=True, exist_ok=True)
-        self.manifest.write_text("\n".join(self.sources) + "\n", encoding="utf-8")
+        if self.manifest is not None:
+            self.manifest.parent.mkdir(parents=True, exist_ok=True)
+            self.manifest.write_text("\n".join(self.sources) + "\n", encoding="utf-8")
         self.config.write_text('{\n  "modules": []\n}\n', encoding="utf-8")
         self.builders = [root / builder for builder in spec.builders]
         for builder in self.builders:
@@ -99,20 +103,17 @@ class BundleStatusTests(unittest.TestCase):
     def test_stale_when_source_changes(self) -> None:
         """Given 源文件被修改, When 预检, Then stale 且说明指向该文件。"""
         self.repo.materialize()
-        (self.root / "web" / "src" / "a.js").write_text("// changed\n", encoding="utf-8")
+        (self.root / "web" / "editor" / "a.js").write_text("// changed\n", encoding="utf-8")
 
         status, reason = web_build.bundle_status(self.root, "editor")
 
         self.assertEqual(status, "stale")
-        self.assertIn("src/a.js", reason)
+        self.assertIn("源码已变更: web/editor/a.js", reason)
 
-    def test_stale_when_manifest_gains_file(self) -> None:
-        """Given 清单新增源文件, When 预检, Then stale（清单与构建时不一致）。"""
+    def test_stale_when_source_set_gains_file(self) -> None:
+        """Given 目录新增源文件（清单退役）, When 预检, Then stale。"""
         self.repo.materialize()
-        (self.root / "web" / "src" / "c.js").write_text("// new\n", encoding="utf-8")
-        self.repo.manifest.write_text(
-            "\n".join([*self.repo.sources, "src/c.js"]) + "\n", encoding="utf-8"
-        )
+        (self.root / "web" / "editor" / "c.js").write_text("// new\n", encoding="utf-8")
 
         status, _ = web_build.bundle_status(self.root, "editor")
 

@@ -41,7 +41,7 @@ class _BundleSpec:
     bundle: Path
     meta: Path
     config: Path
-    manifest: Path
+    manifest: Path | None
     builders: tuple[Path, ...]
     build_script: str
     pnpm_script: str
@@ -53,7 +53,8 @@ _SPECS: Final[dict[str, _BundleSpec]] = {
         bundle=Path("web/editor/boot/editor-bundle.js"),
         meta=Path("web/editor/boot/editor-bundle.meta.json"),
         config=Path("web/editor-modules.json"),
-        manifest=Path("web/editor-scripts.txt"),
+        # 清单退役（批 4）：源文件集合从 web/editor+web/shared 目录推导。
+        manifest=None,
         builders=(Path("scripts/build-editor.mjs"),),
         build_script="scripts/build-editor.mjs",
         pnpm_script="build:editor",
@@ -87,6 +88,20 @@ def _manifest_files(manifest_path: Path) -> list[str]:
     return entries
 
 
+def _editor_source_files(root: Path) -> list[str]:
+    """与 build-editor.deriveSources 同口径：web/editor+web/shared 的
+    全部 .js，排除 bundle 产物（含 editor-bundle）。"""
+    collected: list[str] = []
+    web = root / "web"
+    for base in ("editor", "shared"):
+        for path_in_base in (web / base).rglob("*.js"):
+            relative = path_in_base.relative_to(web).as_posix()
+            if relative.endswith(".bundle.js") or relative == "editor/boot/editor-bundle.js":
+                continue
+            collected.append(relative)
+    return sorted(collected)
+
+
 def _read_or_none(path: Path) -> str | None:
     try:
         return path.read_text(encoding="utf-8")
@@ -113,11 +128,19 @@ def bundle_status(root: Path, kind: str) -> tuple[str, str]:
     if not isinstance(inputs, dict) or not isinstance(source_files, list):
         return "stale", f"{spec.meta.as_posix()} 缺少 inputs/sourceFiles"
 
-    manifest_text = _read_or_none(root / spec.manifest)
-    if manifest_text is None:
-        return "stale", f"无法读取清单 {spec.manifest.as_posix()}"
-    if _manifest_files(root / spec.manifest) != source_files:
-        return "stale", f"清单 {spec.manifest.as_posix()} 与构建时不一致"
+    if spec.manifest is not None:
+        manifest_text = _read_or_none(root / spec.manifest)
+        if manifest_text is None:
+            return "stale", f"无法读取清单 {spec.manifest.as_posix()}"
+        if _manifest_files(root / spec.manifest) != source_files:
+            return "stale", f"清单 {spec.manifest.as_posix()} 与构建时不一致"
+    else:
+        derived = _editor_source_files(root)
+        if derived != sorted(source_files):
+            missing = sorted(set(derived) - set(source_files))
+            extra = sorted(set(source_files) - set(derived))
+            detail = (f"新增 {missing[:3]}" if missing else "") + (f" 移除 {extra[:3]}" if extra else "")
+            return "stale", f"编辑器源码集合与构建时不一致 {detail}"
 
     for relative, expected in inputs.items():
         text = _read_or_none(root / "web" / relative)

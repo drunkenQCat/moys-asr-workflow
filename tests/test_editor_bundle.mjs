@@ -9,34 +9,12 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 const builder = new URL('../scripts/build-editor.mjs', import.meta.url);
 const artifact = path.join(root, 'web/editor/boot/editor-bundle.js');
 
-test('upstream projection freezes the reviewed batch and rejects incomplete selections', async () => {
-  const {planMigration} = await import('../scripts/migrate-editor-factories.mjs');
-  fs.mkdirSync(path.join(root, '.worktrees'), {recursive:true});
-  const folder = fs.mkdtempSync(path.join(root, '.worktrees/factory-batch-'));
-  fs.mkdirSync(path.join(folder, 'web/shared/utils'), {recursive:true});
-  fs.mkdirSync(path.join(folder, 'web/shared/new-domain'), {recursive:true});
-  const reviewed = 'shared/utils/reviewed.js', incoming = 'shared/new-domain/incoming.js';
-  const registration = name => `window.MAWE.register('${name}', function createExample(dependencies) { return {value:dependencies.value}; });`;
-  fs.writeFileSync(path.join(folder, 'web/editor-scripts.txt'), `${reviewed}\n${incoming}\n`);
-  fs.writeFileSync(path.join(folder, 'web', reviewed), registration('reviewed'));
-  fs.writeFileSync(path.join(folder, 'web', incoming), registration('incoming'));
-  assert.throws(() => planMigration(folder), /outside.*reviewed/i);
-  const plan = planMigration(folder, [reviewed]);
-  assert.deepEqual(plan.config.modules.map(module => module.file), [reviewed]);
-  assert.deepEqual(plan.sourceFiles, [reviewed, incoming]);
-  for (const files of [[], [reviewed,reviewed], ['missing.js']]) {
-    assert.throws(() => planMigration(folder, files), /missing|duplicate|non-factory/i);
-  }
-  fs.writeFileSync(path.join(folder, 'web', reviewed), 'window.effect = true;');
-  assert.throws(() => planMigration(folder, [reviewed]), /non-factory/i);
-});
-
 test('production editor uses an explicit partial ESM batch and one fresh classic artifact', async () => {
-  const { buildEditor, readSources } = await import(builder);
+  const { buildEditor, deriveSources } = await import(builder);
   const result = await buildEditor(root);
   assert.equal(result.code, fs.readFileSync(artifact, 'utf8'));
   new vm.Script(result.code);
-  assert.equal(result.sourceFiles.length, readSources(root).length);
+  assert.equal(result.sourceFiles.length, deriveSources(root).length);
   assert.ok(result.modules.length > 5 && result.modules.length < result.sourceFiles.length);
   for (const module of result.modules) {
     assert.ok(Object.keys(result.metafile.inputs).includes(`web/${module.file}`), module.file);

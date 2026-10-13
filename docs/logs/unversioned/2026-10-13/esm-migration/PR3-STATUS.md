@@ -125,3 +125,66 @@ E6（full-verify）与 e2e O2 都与它比对；E6 bootShape 的注册名
   清点入账本，O3 契约按「登记表工厂必须全部在列」断言。
 
 ### 验证：node 契约 2/2、装配契约 9/9（复跑）、e2e assembly-order 6/6、check:editor 新鲜。
+
+## 批 4：编辑器清单退役（已完成）
+
+editor-scripts.txt 已删除（移入回收站）。文件集与次序的
+职责拆分落地：
+
+- **文件集 = 目录推导**：`build-editor.deriveSources` 遍历
+  `web/editor` + `web/shared` 全部 `.js`（排除 `*.bundle.js`
+  产物与 `.meta.json`，排序后 `validateSources` 逐文件校验
+  realpath 不逃逸 web）。派生消费者全部同口径改写：
+  edit.py `_editor_source_files`、maw/web_build.py、
+  tests/helpers/editor-module-loader.mjs、
+  tests/test_editor_script_syntax.mjs、
+  scripts/refactor-tools/editor-sources.mjs、
+  replay-verify（提交侧文件列表改为推导）。
+- **次序 = 登记表 bootstrap 显式序**（批 2b 已承接），入口/
+  加载器不再读清单任何字段。
+- **新鲜度**：web_build.bundle_status 对 editor 走
+  「推导集合 vs meta.sourceFiles」比对（集合差异报新增/移除
+  明细），launcher 清单路径不变；stray-file 场景由
+  test_stale_when_source_set_gains_file 守护。
+- **行为独立于发现顺序**：e2e O5b 从「清单反转」升级为
+  **仓库级 stray-file 金丝雀**——向 web/editor/boot 新增
+  zz-derived-canary.js → 重建 → 页面正常启动且 trace 含
+  金丝雀（189 条）→ 清理恢复。文件集由目录推导不再
+  依赖任何人工列表。
+- 排序口径陷阱（已修 + 注释）：python `sorted(Path)` 按
+  分段比较（`waveform` < `waveform.js`），与 node 全串
+  排序（`.` < `/`，`waveform.js` 在前）不一致——
+  `_editor_source_files` 改为对完整相对路径字符串排序，
+  与 deriveSources 逐元素一致（188/188 全等验证）。
+- 删除 `tests/test_editor_manifest.py`（清单契约随清单退役）；
+  test_editor_assets 门面序断言从 index 序放宽为成员序
+  （bundle 文本序≠执行序，执行序由 O2 契约覆盖）。
+
+### 消费者清点（editor-scripts.txt → 0）
+
+| 消费者 | 改造后 |
+| --- | --- |
+| build-editor | deriveSources 目录推导 |
+| edit.py | _editor_source_files 推导（保留 read_editor_script_manifest 兼容名） |
+| maw/web_build | editor 推导集合比对；launcher 清单未动 |
+| editor-module-loader.mjs | 推导 walk + bootstrap 序 |
+| replay-verify | 推导集合 |
+| refactor-tools | editor-sources.mjs / rebuild-contract.py 推导 |
+
+### 验证
+
+| 层 | 结果 |
+| --- | --- |
+| python 全量 | 2134 通过（skip 21） |
+| node 全量 | 607/607 |
+| 装配契约 E1-E10 | 9/9 |
+| e2e assembly-order | 6/6（含 O5b 金丝雀） |
+| check:editor / check:launcher | 双新鲜 |
+| typecheck | 110 基线 / 新增 0 |
+
+### 遗留边界
+
+- launcher classic 清单（launcher-scripts.txt）按 /goal 明确
+  另开一批，本 PR 未动。
+- modules 登记表仍是显式人工列表（批 3 结论：注册名↔文件
+  配对无可靠推导信号），由构建期校验兜底。

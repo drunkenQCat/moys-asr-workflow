@@ -84,10 +84,8 @@ test('O1 boot completes: bridge, waveform, render, export, merge+undo', async ()
   expect(result.undoRestored, JSON.stringify(result)).toBe(true);
 });
 
-test('O2 startup trace: registry creator, factories, bootstrap, then manifest', async () => {
+test('O2 startup trace: registry creator, factories, then explicit bootstrap', async () => {
   const trace = await page.evaluate(() => window.__mawEsmInitializationTrace);
-  const manifest = readFileSync(join(repoRoot, 'web/editor-scripts.txt'), 'utf8')
-    .split('\n').map((line) => line.split('#')[0].trim()).filter(Boolean);
   const config = moduleConfig();
   const bootstrap = config.bootstrap ?? [];
   const factoryFiles = config.modules.map((m) => m.file);
@@ -96,7 +94,6 @@ test('O2 startup trace: registry creator, factories, bootstrap, then manifest', 
     ...(bootstrap.includes(registryCreator) ? [registryCreator] : []),
     ...factoryFiles,
     ...bootstrap.filter((f) => f !== registryCreator && !factoryFiles.includes(f)),
-    ...manifest.filter((f) => !bootstrap.includes(f) && !factoryFiles.includes(f)),
   ];
   expect(trace).toEqual(expected);
   expect(trace[0]).toBe('editor/boot/editor-runtime.js');
@@ -147,7 +144,7 @@ test('O4 bridges: 8 external bridges are live accessors on the page', async () =
 // 打乱基线必须是 classic 源（当前仓库 web/ 已是转换产物）；整树提取
 // （render 需要 edit.py 与 maw/）；tests/e2e 与 editor-modules.json 用
 // 当前版本（消费点扫描与 bootstrap 序都以当前配置为准）。
-async function buildShuffledCopy(sandbox, shuffle, shuffleBootstrap = null) {
+async function buildShuffledCopy(sandbox, shuffle, shuffleBootstrap = null, mutateTree = null) {
   mkdirSync(sandbox, { recursive: true });
   execFileSync('git', ['archive', 'feat/editor-esm-pr1-foundation'],
     { cwd: repoRoot, stdio: ['ignore', openSync(join(sandbox, 'base.tar'), 'w'), 'pipe'] });
@@ -155,9 +152,10 @@ async function buildShuffledCopy(sandbox, shuffle, shuffleBootstrap = null) {
   rmSync(join(sandbox, 'base.tar'));
   cpSync(join(repoRoot, 'tests'), join(sandbox, 'tests'), { recursive: true });
   cpSync(join(repoRoot, 'web/editor-modules.json'), join(sandbox, 'web/editor-modules.json'));
-  const manifest = readFileSync(join(sandbox, 'web/editor-scripts.txt'), 'utf8')
-    .split('\n').map((line) => line.split('#')[0].trim()).filter(Boolean);
-  writeFileSync(join(sandbox, 'web/editor-scripts.txt'), shuffle(manifest).join('\n') + '\n');
+  // 清单退役：文件集由目录推导，次序由 bootstrap 决定；沙盒 PR1 树
+  // 里的清单文件不再被构建读取，无需打乱。
+  void shuffle;
+  if (mutateTree) mutateTree(sandbox);
   if (shuffleBootstrap) {
     const sandboxConfig = JSON.parse(readFileSync(join(sandbox, 'web/editor-modules.json'), 'utf8'));
     sandboxConfig.bootstrap = shuffleBootstrap(sandboxConfig.bootstrap);
@@ -199,8 +197,7 @@ test('O5a order red light: bootstrap file after consumers breaks boot', async ()
   const sandbox = join(dir, 'shuffle-red');
   try {
     const boot = 'editor/boot/editor-boot.js';
-    const state = await buildShuffledCopy(sandbox,
-      (manifest) => manifest.filter((f) => f !== boot).concat([boot]),
+    const state = await buildShuffledCopy(sandbox, null,
       (bootstrap) => bootstrap.filter((f) => f !== boot).concat([boot]));
     // 真页面实测：boot 在 bootstrap 序里被挪到消费者（state/utils）
     // 之后 → 消费者 phase-2 读 MaweBoot.DATA 崩溃，桥接未建立。
@@ -209,18 +206,25 @@ test('O5a order red light: bootstrap file after consumers breaks boot', async ()
   } finally { rmSync(sandbox, { recursive: true, force: true }); }
 });
 
-test('O5b order independence: full manifest shuffle keeps behavior', async () => {
+test('O5b set independence: stray file joins the derived set and boot keeps working', async () => {
   test.setTimeout(300_000);
-  const sandbox = join(dir, 'shuffle-green');
+  // 文件集由目录推导（非清单驱动）：在仓库 web/editor 新增一个
+  // 无副作用源文件，重建 bundle，页面正常启动（多一个 trace 条目）；
+  // 清理后恢复。E5 已断言推导集合的确定性与新增成员资格。
+  const stray = join(repoRoot, 'web/editor/boot/zz-derived-canary.js');
+  const exec = (args) => execFileSync(process.execPath,
+    [join(repoRoot, 'scripts/build-editor.mjs'), ...args], { cwd: repoRoot, stdio: 'pipe' });
+  writeFileSync(stray, '// derived-set canary\n');
   try {
-    // 终态证明：phase-2 执行序完全由 bootstrap 数组（显式、可审计）
-    // 决定，清单顺序不再被入口消费——整份清单反转后行为必须一致。
-    // sandbox 的 bootstrap 从当前登记表复制，不随清单打乱。
-    const state = await buildShuffledCopy(sandbox, (manifest) => [...manifest].reverse());
-    expect(state.bridge, JSON.stringify(state)).toBe(true);
-    expect(state.registry, JSON.stringify(state)).toBeGreaterThanOrEqual(61);
-    expect(state.waveform, JSON.stringify(state)).toBe(true);
-    expect(state.utilsFacade, JSON.stringify(state)).toBe(true);
-    expect(state.traceLength, JSON.stringify(state)).toBe(188);
-  } finally { rmSync(sandbox, { recursive: true, force: true }); }
+    exec(['--write']);
+    await page.goto(server.url);
+    await page.waitForFunction(() => Boolean(window.MAWE_EDITOR_BRIDGE && window.MaweCoreState?.waveformEditor));
+    const trace = await page.evaluate(() => window.__mawEsmInitializationTrace);
+    expect(trace.length).toBe(189);
+    expect(trace).toContain('editor/boot/zz-derived-canary.js');
+  } finally {
+    rmSync(stray, { force: true });
+    exec(['--write']);
+  }
 });
+
