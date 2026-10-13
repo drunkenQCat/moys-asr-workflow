@@ -106,3 +106,22 @@ E6（full-verify）与 e2e O2 都与它比对；E6 bootShape 的注册名
 | e2e assembly-order | 6/6（O5b=全量清单反转绿灯） |
 | e2e 全量复跑 | waveform-history 53/2*（*与 main 既有同名同数）、click-behavior 36/36、ai-cleanup+multi-subtitle 90/90、i18n/drop/new-project/keyboard/ass-export 88/88 |
 | typecheck | 110 基线 / 新增 0 |
+
+## 批 3：登记表收缩（已完成）
+
+- 构建期校验 `validateRegistry`：①工厂注册名必须有消费来源
+  （某源码存在 `MAWE.resolve('<name>')` 字面量，61/61 全命中）；
+  ②注册名查重；③externalBridges 的 mutable 标记与 owner 绑定
+  种类强校验——函数名声明（转换器 getter-only）与 const 绑定
+  不得声明 mutable。
+- mutable 假标记修正：6 个函数名桥（loadAssStyleLibrary 等）
+  mutable true→false；ASS_STYLE_LIBRARY（let）保持 true。
+  O4 桥写语义契约与登记表现已一致。
+- modules 列表保留为显式登记（注册名↔文件配对无可靠推导信号，
+  「单 export create*」约定仅覆盖导出名推导）；来源存在性+查重
+  由构建期强制，人工维护面收缩为「新增工厂时同步 resolve 消费」。
+- 代码内自注册门面（editor-host/waveform/editor-commands/
+  editor-state/editor-view-updates/editor-utils/utils-ass-canvas-layout）
+  清点入账本，O3 契约按「登记表工厂必须全部在列」断言。
+
+### 验证：node 契约 2/2、装配契约 9/9（复跑）、e2e assembly-order 6/6、check:editor 新鲜。

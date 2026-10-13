@@ -311,7 +311,7 @@
     {
       "file": "editor/styles/editor-wiring-ass-storage.js",
       "name": "loadAssStyleLibrary",
-      "mutable": true
+      "mutable": false
     },
     {
       "file": "editor/styles/editor-wiring-ass-storage.js",
@@ -326,27 +326,27 @@
     {
       "file": "editor/styles/editor-wiring-ass-manager.js",
       "name": "assStyleManagerSetSelection",
-      "mutable": true
+      "mutable": false
     },
     {
       "file": "editor/styles/editor-wiring-ass-manager.js",
       "name": "updateAssStyleManagerLibrary",
-      "mutable": true
+      "mutable": false
     },
     {
       "file": "editor/styles/editor-wiring-ass-manager.js",
       "name": "syncAssStyleForm",
-      "mutable": true
+      "mutable": false
     },
     {
       "file": "editor/cues/editor-wiring-overlay-transfer.js",
       "name": "convertOverlayCueToMain",
-      "mutable": true
+      "mutable": false
     },
     {
       "file": "editor/cues/editor-wiring-overlay-split-merge.js",
       "name": "openOverlaySplitModal",
-      "mutable": true
+      "mutable": false
     }
   ],
   "bootstrap": [

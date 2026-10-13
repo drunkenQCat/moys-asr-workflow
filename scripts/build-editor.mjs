@@ -192,11 +192,47 @@ export async function compileEsmSources(root, files, modules, bridges, read, opt
   return {code:result.outputFiles[0].text,metafile:result.metafile,sourceFiles:files,modules,entry};
 }
 
+// 登记表收缩的构建期校验：
+// - 工厂注册名必须有明确来源：某处源码以 MAWE.resolve('<name>') 消费它；
+// - 导出名可从「单 export function create*」约定推导（validateModule）；
+// - 桥的 mutable 标记必须与 owner 绑定种类一致：函数名声明只读
+//   （转换器 getter-only），可变标记仅允许 let/var 绑定，const 必须 false。
+function validateRegistry(files, modules, bridges, read) {
+  const sources = new Map(files.map(file => [file, read(file)]));
+  const concatenated = [...sources.values()].join('\n');
+  for (const item of modules) {
+    const needle = `MAWE.resolve('${item.name}'`;
+    const needle2 = `MAWE.resolve("${item.name}"`;
+    if (!concatenated.includes(needle) && !concatenated.includes(needle2)) {
+      throw new Error(`Factory name has no consumer source (resolve literal): ${item.name}`);
+    }
+  }
+  const names = new Set();
+  for (const item of modules) {
+    if (names.has(item.name)) throw new Error(`Duplicate factory name: ${item.name}`);
+    names.add(item.name);
+  }
+  for (const bridge of bridges ?? []) {
+    const source = sources.get(bridge.file);
+    if (!source) throw new Error(`Bridge owner not in manifest: ${bridge.file}`);
+    const isFunction = new RegExp(`function\\s+${bridge.name}\\s*\\(`).test(source);
+    const isConst = new RegExp(`const\\s+${bridge.name}\\b`).test(source);
+    if (isFunction && bridge.mutable) {
+      throw new Error(`Bridge ${bridge.name} is a function declaration (getter-only); mutable must be false`);
+    }
+    if (isConst && bridge.mutable) {
+      throw new Error(`Bridge ${bridge.name} is a const binding; mutable must be false`);
+    }
+  }
+}
+
 export async function buildEditor(root = ROOT, options = {}) {
   const files = readSources(root), modules = readModules(root);
   const modulesPath = path.join(root,'web/editor-modules.json');
   const configText = fs.existsSync(modulesPath) ? fs.readFileSync(modulesPath,'utf8') : '{}';
   const config = JSON.parse(configText), inputHashes = {};
+  const registryRead = file => fs.readFileSync(path.join(root,'web',file),'utf8');
+  validateRegistry(files, modules, config.externalBridges, registryRead);
   const bootstrap = options.bootstrap ?? config.bootstrap ?? [];
   const REGISTRY_CREATOR = 'editor/boot/editor-runtime.js';
   const initializationOrder = [
