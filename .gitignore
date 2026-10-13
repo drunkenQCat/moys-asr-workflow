@@ -80,3 +80,4 @@ build-appimage/
 # Local diagnostic output (never source or test fixtures).
 /.debug-runs/
 /debug.log
+full-probe-settings/
