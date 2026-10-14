@@ -261,3 +261,58 @@ check:editor 新鲜、git diff --check 干净。
 运行日志：.artifacts/checks/20261013T191156Z-3f8f85b8/。
 评审未复跑的装配契约 9/9 沙盒配方见上节（三环境变量 +
 full/baseline 根制备步骤）。
+
+## PR-2/PR-3 提交链重写（10-14，维护者指令）
+
+应维护者要求整理 PR-2 链：剔除两条红灯 WIP 提交（6aa3eed4、
+6a3ead04，其内容已由落地提交 fb4beec9 完整覆盖），并从历史中
+彻底移除赃物 blob——根 package-lock.json（WIP1 引入）、
+web/launcher/boot/tooltip-bundle.js（落地提交误入库、3b13dee6
+删除）、E6 探针三件（full-baseline/current-probe.html、
+full-browser-verdict.json）、E8/E9 夹具目录（hoisting-probe/、
+live-binding-probe/）、full-probe-settings/（E6 服务器设置目录
+误捕的 fnm 临时命令文件）。website/、desktop/ 的 lockfile 与
+probe-projection.py、probe-namespace.mjs 是 PR1 之前的既有跟踪
+文件，不在清理范围。
+
+方法：commit-tree 逐棵重建保留链六提交（fb4beec9→3b13dee6→
+17fa4082→2d2aa9d4→fcf840aa→5ddf45b5），临时索引过滤赃物路径，
+保留原作者/日期；PR-3 七提交 rebase --onto 新链，零冲突。
+仅两条消息因探针 diff 消失而失准，微调措辞（2d2aa9d4、
+5ddf45b5）。重写前建本地备份分支 backup/pr2-pre-rewrite、
+backup/pr3-pre-rewrite。
+
+### SHA 映射（旧 → 新）
+
+| PR-2 | 旧 | 新 |
+| --- | --- | --- |
+| 落地 | fb4beec9 | f28cee36 |
+| tooltip-bundle 忽略 | 3b13dee6 | ef6485ae |
+| 类型门基线 | 17fa4082 | abd5a18f |
+| probe-settings 清理 | 2d2aa9d4 | 0af7971f |
+| 终态账本 | fcf840aa | 48aa7103 |
+| getter 规则+重放 | 5ddf45b5 | 85ba4260 |
+
+| PR-3 | 旧 | 新 |
+| --- | --- | --- |
+| 批1 | 7c418fce | 46925ba4 |
+| 批2a | dd9653c1 | 54484fab |
+| 批2b | 93d6b46e | c339f604 |
+| 批3 | ff797db2 | 24e8beb5 |
+| 批4 | 5ba310f9 | d16653e9 |
+| 形态门 | 5d106208 | 0bfc4cfd |
+| O5 worktree 修复 | 048be3ce | 8d1d77ea |
+
+### 验证
+
+| 项 | 结果 |
+| --- | --- |
+| 新 PR-2 终树 vs 旧 5ddf45b5 | 逐字节一致（git diff 空） |
+| 新 PR-3 终树 vs 旧 048be3ce | 逐字节一致（git diff 空） |
+| 赃物 blob 可达性（WIP lock/tooltip-bundle/探针） | 新 PR-2/PR-3 链均 0 可达 |
+| check:editor / check:launcher | 双新鲜 |
+| node 抽验（bundle+syntax） | 5/5 |
+| e2e O5 沙盒基线 | feat/editor-esm-pr1-foundation 未参与重写，不受影响 |
+
+两分支强推 cat（--force-with-lease）。旧对象在远端 GC 前仍可能
+暂存，本地备份分支确认后可删。
