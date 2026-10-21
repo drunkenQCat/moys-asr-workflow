@@ -54,46 +54,8 @@ class EditorAssetContractTests(CompactContainerAssertions, unittest.TestCase):
                 "editor/state/editor-state.js",
                 "editor/state/editor-view-updates.js",
                 "editor/state/editor-commands.js",
-                "shared/host/storage.js",
-                "shared/host/files.js",
-                "shared/host/server-api.js",
                 "editor/boot/editor-host.js",
                 "shared/gap-remove-core.js",
-                "shared/utils/data.js",
-                "shared/utils/fonts.js",
-                "shared/utils/speakers.js",
-                "shared/utils/media-metadata.js",
-                "shared/utils/navigation.js",
-                "shared/utils/text-processing.js",
-                "shared/utils/timed-text-core.js",
-                "shared/utils/timed-text-plans.js",
-                "shared/utils/timed-text-edit.js",
-                "shared/utils/text-metrics.js",
-                "shared/utils/segment-timing.js",
-                "shared/utils/split-alignment.js",
-                "shared/utils/split-trim.js",
-                "shared/utils/timeline.js",
-                "shared/utils/settings.js",
-                "shared/utils/gap-remove.js",
-                "shared/utils/history.js",
-                "shared/utils/markers.js",
-                "shared/utils/multi-subtitle.js",
-                "shared/utils/word-timing.js",
-                "shared/utils/word-split.js",
-                "shared/utils/srt.js",
-                "shared/utils/lrc.js",
-                "shared/utils/ass-style.js",
-                "shared/utils/ass-animation.js",
-                "shared/utils/ass-canvas-layout.js",
-                "shared/utils/sticker-placement.js",
-                "shared/utils/ass-export.js",
-                "shared/utils/export-plan.js",
-                "shared/utils/fcp7.js",
-                "shared/utils/export-workflow.js",
-                "shared/utils/platform.js",
-                "shared/utils/preview-geometry.js",
-                "shared/utils/lottie.js",
-                "shared/utils/ograf.js",
                 "shared/editor-utils.js",
                 "shared/editor-i18n.js",
                 "shared/tooltip.js",
@@ -243,7 +205,7 @@ class EditorAssetContractTests(CompactContainerAssertions, unittest.TestCase):
                 "editor/io/editor-wiring-file-drop.js",
                 "editor/boot/editor-startup.js",
                 "editor/boot/editor-onboarding.js",
-        ),
+        )
         )
 
     # bundle 是构建产物（不入库）：本地未跑 pnpm install 时跳过，CI / 开发机在
@@ -260,10 +222,38 @@ class EditorAssetContractTests(CompactContainerAssertions, unittest.TestCase):
         self.assertIn(payload.splitlines()[0], page)
         metadata = json.loads(edit.read_web_asset("editor/boot/editor-bundle.meta.json"))
         self.assertEqual(metadata["sourceFiles"], list(edit.read_editor_script_manifest()))
-        self.assertEqual(set(metadata["inputs"]), set(metadata["sourceFiles"]))
+        # G04 后清单不再是全部输入：retired 工厂经 import graph
+        # 进入 bundle，inputs 是 sourceFiles 的超集。
+        self.assertTrue(set(metadata["sourceFiles"]) <= set(metadata["inputs"]))
         modules = json.loads(edit.read_web_asset("editor-modules.json"))["modules"]
-        positions = [payload.index(f'MAWE.register({json.dumps(item["name"])},') for item in modules]
+        # init 条目没有 MAWE.register 字面量（minify 也剥掉构建器注释）；
+        # 统一用 __mawEsmInitializationTrace.push 序列核对执行顺序，
+        # trace 覆盖全部清单文件且顺序即清单位次。
+        trace = re.findall(r'__mawEsmInitializationTrace\.push\("([^"]+)"\)', payload)
+        positions = [trace.index(item["file"]) for item in modules]
         self.assertEqual(positions, sorted(positions))
+
+    def test_ass_pop_animation_binds_template_profile_fields_and_unlocks_params(self) -> None:
+        # 单句放大出现：模板 pop 卡片、解析/导出/预览接线与 fad/pop 参数解耦
+        # 必须同时存在；解耦逻辑按组名放行，fade/move/t 保持开关联动。
+        template = (ROOT / "web" / "editor-template.html").read_text(encoding="utf-8")
+        self.assertIn('data-ass-animation="pop.enabled"', template)
+        self.assertIn('data-ass-animation="pop.fromScale"', template)
+        self.assertIn('data-ass-animation="pop.inMs"', template)
+        self.assertIn('data-ass-animation="pop.accel"', template)
+        manager = edit.read_web_asset("editor/styles/editor-wiring-ass-manager.js")
+        self.assertIn("group !== 'fad' && group !== 'pop'", manager)
+        self.assertIn("data-ass-animation", manager)
+        animation = edit.read_web_asset("shared/utils/ass-animation.js")
+        self.assertIn("assSentenceAnimationTags", animation)
+        self.assertIn("assPopTransformTag", animation)
+        preview = edit.read_web_asset("editor/styles/editor-wiring-ass-preview.js")
+        self.assertIn("stripSentencePopMarkers", preview)
+        self.assertIn("pop: item.pop || null", preview)
+        canvas = edit.read_web_asset("editor/styles/editor-wiring-ass-canvas.js")
+        self.assertIn("animation.popScale", canvas)
+        styles_py = (ROOT / "maw" / "ass_styles.py").read_text(encoding="utf-8")
+        self.assertIn('"pop": {"enabled": False, "fromScale": 1.4, "inMs": 250, "accel": 1}', styles_py)
 
     def test_ass_frame_preview_wires_template_module_and_styles(self) -> None:
         # 单帧实际画面预览：设置页入口按钮、浮层窗口、接线模块与样式必须同时存在。
@@ -517,10 +507,18 @@ class EditorAssetContractTests(CompactContainerAssertions, unittest.TestCase):
         self.assertNotRegex(page, r"生成时间\s*[:：]")
         # Bundle minification can rename local parameters and remove whitespace;
         # assert the public facade assignments and their order, not source spelling.
+        # editor-utils 已是 init 模块：esbuild 把定义提升到 bundle 顶部，
+        # 静态扫描函数体内的 window.AsrEditorUtils= 不再反映运行时顺序。
+        # editor-utils 的顺序用 __mawEsmInitializationTrace.push 序列核对；
+        # 尚未 init 化的门面仍按静态标记核对相对位置。
+        pushed = re.findall(r'__mawEsmInitializationTrace\.push\("([^"]+)"\)', page)
+        self.assertIn("shared/gap-remove-core.js", pushed)
+        self.assertIn("shared/editor-utils.js", pushed)
+        self.assertLess(pushed.index("shared/gap-remove-core.js"),
+                        pushed.index("shared/editor-utils.js"))
         markers = (
             r'Object\.defineProperty\([^,]+,\s*["\']MAWE["\']',
             r'\b[A-Za-z_$][\w$]*\.AsrGapRemoveCore\s*=',
-            r'\bwindow\.AsrEditorUtils\s*=',
             r'\b[A-Za-z_$][\w$]*\.MAWE_I18N\s*=',
             r'\bwindow\.AsrWaveform\s*=',
             r'\bwindow\.MAWE_EDITOR_BRIDGE\s*=',
