@@ -130,6 +130,23 @@ function validateInitModule(source, item) {
   }
 }
 
+function validateTransitionModule(source, item) {
+  if (item.kind !== 'transition') return;
+  // Same shape as an init module: exactly one exported function
+  // declaration and imports only. The assembler binds the export
+  // lexically; evaluation must have no side effects.
+  const ast = parse(source,'module');
+  const imports = ast.body.filter(node => node.type === 'ImportDeclaration');
+  const exports = ast.body.filter(node => node.type === 'ExportNamedDeclaration');
+  const exported = exports[0]?.declaration;
+  if (imports.length + exports.length !== ast.body.length || exports.length !== 1
+      || exported?.type !== 'FunctionDeclaration'
+      || exported.id?.name !== item.exportName
+      || exported.async || exported.generator) {
+    throw new Error(`Transition module must export exactly one function: ${item.file}`);
+  }
+}
+
 export function assertMetafileInputsCaptured(root, result, inputHashes) {
   for (const input of Object.keys(result.metafile.inputs)) {
     const normalized = input.replace(/\\/g,'/');
@@ -154,13 +171,20 @@ export async function compileSources(root, files, modules, read, options = {}) {
         || !/^[A-Za-z_$][\w$]*$/.test(item.exportName) || typeof item.name !== 'string') {
       throw new Error(`Invalid/duplicate factory or omitted source in manifest: ${item.file}`);
     }
+    if (item.kind !== undefined && !['factory', 'init', 'transition'].includes(item.kind)) {
+      throw new Error(`Unknown module kind: ${item.kind}: ${item.file}`);
+    }
     byFile.set(item.file,item); names.add(item.name);
   }
   const sources = new Map(files.map(file => [file,read(file)]));
+  // Caller-owned set so a second compile in the same process cannot
+  // reuse this call's registration state.
+  options.transitionBindings?.clear?.();
   const imports = modules.map((item,index) =>
     `import { ${item.exportName} as factory${index} } from ${JSON.stringify('maw-factory:'+item.file)};`);
   for (const item of modules) {
     if (item.kind === 'init') validateInitModule(sources.get(item.file),item);
+    else if (item.kind === 'transition') validateTransitionModule(sources.get(item.file),item);
     else validateModule(sources.get(item.file),item);
   }
   // Keep lexical declarations INSIDE this function: esbuild otherwise lowers
@@ -181,6 +205,26 @@ export async function compileSources(root, files, modules, read, options = {}) {
     if (item?.kind === 'init') {
       const index = modules.indexOf(item);
       body.push(`// Init module: ${file}\nfactory${index}();`);
+    } else if (item?.kind === 'transition') {
+      // Launcher transitional mechanism: the compiled module replaces the
+      // file's slot; its single export becomes a lexical binding the
+      // remaining classic scope reads by name at the original position.
+      if (!options.transitionBindings || !/^[A-Za-z_$][\w$]*$/.test(item.binding ?? '')) {
+        // transitionBindings 缺失说明装配方未启用过渡接入，而不是绑定名非法。
+        throw new Error(`Invalid transition binding${options.transitionBindings ? '' : ' (transition support not enabled by this builder)'}: ${item.binding}`);
+      }
+      if (options.transitionBindings.has(item.binding)) {
+        throw new Error(`Duplicate transition binding: ${item.binding}`);
+      }
+      if (names.has(item.binding)) {
+        throw new Error(`Transition binding collides with a module name: ${item.binding}`);
+      }
+      if (options.bridges?.some(bridge => bridge.name === item.binding)) {
+        // 不可变桥的 window getter 会静默捕获同名词法绑定，运行期才暴露。
+        throw new Error(`Transition binding collides with an external bridge: ${item.binding}`);
+      }
+      options.transitionBindings.add(item.binding);
+      body.push(`// Transition module: ${file}\nconst ${item.binding} = factory${modules.indexOf(item)};`);
     } else if (item) body.push(`window.MAWE.register(${JSON.stringify(item.name)}, factory${modules.indexOf(item)});`);
     else {
       try { parse(sources.get(file),'script'); }
@@ -215,8 +259,16 @@ export async function compileSources(root, files, modules, read, options = {}) {
         const relative = supplied ? lexical : path.relative(webRoot,canonical).replaceAll('\\','/');
         const loader = FILE_LOADERS[path.extname(args.path)];
         if (!loader) throw new Error(`Unsupported static import type: ${args.path}`);
-        const contents = supplied ? sources.get(relative) : fs.readFileSync(canonical,'utf8');
-        if (!supplied) options.onDependency?.(relative,contents);
+        let contents = supplied ? sources.get(relative) : fs.readFileSync(canonical,'utf8');
+        if (!supplied) {
+          options.onDependency?.(relative,contents);
+          // Imported deps compile the transformed text too:
+          // hash and bytes given to esbuild must stay
+          // identical (review of #288 — hash-only
+          // mutation passed tests while the compiled
+          // content stayed original).
+          contents = options.transform ? options.transform(relative,contents) : contents;
+        }
         loadedInputs.set(path.normalize(args.path),relative);
         return {contents,loader,resolveDir:path.dirname(args.path)};
       });
@@ -235,19 +287,25 @@ export async function buildEditor(root = ROOT, options = {}) {
     snapshot['web/'+file] = original;
     const source = options.transform ? options.transform(file,original) : original;
     inputHashes[file] = sha(source); return source;
-  },{bridges:config.externalBridges,trace:true,onDependency:(relative,original) => {
+  },{bridges:config.externalBridges,trace:true,transform:options.transform,onDependency:(relative,original) => {
     const key = 'web/'+relative;
-    if (Object.hasOwn(snapshot,key) && snapshot[key] !== original) {
-      throw new Error(`Build input changed during compilation: ${key}; retry the build`);
-    }
-    snapshot[key] = original;
-    inputHashes[relative] = sha(original);
+    // Transform hook covers imported inputs too (tests mutate non-manifest
+    // sources like shared/utils/data.js after G04 retire). Snapshot keeps
+    // the disk bytes for the unchanged check; the hash covers what esbuild
+    // consumed (the transformed text).
+    if (!Object.hasOwn(snapshot,key)) snapshot[key] = original;
+    const source = options.transform ? options.transform(relative,original) : original;
+    inputHashes[relative] = sha(source);
   }});
   // The bytes hashed above are the bytes given to esbuild, not a later read.
   assertMetafileInputsCaptured(root,result,inputHashes);
   assertBuildInputsUnchanged(root, snapshot);
+  // esbuild resolves imports with worker parallelism, so onDependency
+  // fires in nondeterministic order once the manifest no longer lists
+  // every module (G04 retire). Sort the ledger so metadata is stable.
+  const sortedInputHashes = Object.fromEntries(Object.entries(inputHashes).sort(([a],[b]) => a < b ? -1 : a > b ? 1 : 0));
   const metadata = {format:1,esbuild:esbuild.version,sourceFiles:files,esmFactories:modules.length,
-    inputs:inputHashes,configHash:sha(configText),builderHash:sha(snapshot['scripts/build-editor.mjs']),
+    inputs:sortedInputHashes,configHash:sha(configText),builderHash:sha(snapshot['scripts/build-editor.mjs']),
     dependencyHash:dependencyHash(snapshot),
     // esbuild sees remaining classic sources as a single transitional scope.
     // Explicit hashes above cover every source, including this virtual input.
