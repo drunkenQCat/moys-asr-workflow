@@ -66,3 +66,17 @@
 教训：G07 的 legacy 自由引用扫描器只查了 window 门面与顶层函数，
 漏了 **const 别名绑定** 与 **classic DOM 常量** 两类；G08 补齐扫描维度
 （scan-aliases.mjs），全量清零后 e2e 16/16。
+
+### 缝合修复 3（overlay-track e2e 驱动）：io 域别名断链
+
+project-load(5) + multi-import(6) 对 MULTI_SUBTITLE_UTILS 的
+裸引用在 G10 转换时漏扫（扫描器当时只覆盖 cues 27 文件）。
+症状：导入工程后 overlay_track 归一化中断 → 叠加行不渲染
+（overlay-track 27 spec 全红）。改 window.AsrEditorUtils。
+
+**扫描范围教训**：legacy 自由引用扫描必须覆盖所有已转换域
+（cues + io + state），不是只扫当前批次。
+
+最终 e2e：overlay-track 27/27、split-style-markers 16/16、
+project-async-lifecycle + sticker-preview-lifecycle 17/17、
+editor-i18n-save 15/16（140:1 = main 既有 #290 文案缺口）。
