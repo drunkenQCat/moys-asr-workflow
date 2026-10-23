@@ -135,18 +135,18 @@ export function initMaweMultiImport() {
   function commitMultiSubtitleImport() {
   const pending = pendingMultiImport;
   if (!pending) return false;
-  const match = pending.match || MULTI_SUBTITLE_UTILS.matchSubtitleSegments(
+  const match = pending.match || window.AsrEditorUtils.matchSubtitleSegments(
     MaweBoot.DATA.segments, pending.segments, MaweMultiSubtitleCore.MULTI_SUBTITLE_TOLERANCE_MS,
   );
   const multi = MaweMultiSubtitleCore.getMultiSubtitleState();
   const replacing = Boolean(pending.existingTrackId);
   const oldTrack = replacing ? MaweMultiSubtitleCore.getExtensionTrack(pending.existingTrackId) : null;
-  const trackId = oldTrack?.id || MULTI_SUBTITLE_UTILS.uniqueStableSegmentId(
+  const trackId = oldTrack?.id || window.AsrEditorUtils.uniqueStableSegmentId(
     multi.tracks || [], 'extension-1', 'extension',
   );
   const extensionSegments = pending.segments.map((segment, index) => ({
     ...segment,
-    id: MULTI_SUBTITLE_UTILS.uniqueStableSegmentId(
+    id: window.AsrEditorUtils.uniqueStableSegmentId(
       pending.segments.slice(0, index), `${trackId}-segment-${String(index + 1).padStart(3, '0')}`, `${trackId}-segment`,
     ),
     _dirty: true,
@@ -157,7 +157,7 @@ export function initMaweMultiImport() {
     name: pending.file.name.replace(/\.[^.]+$/i, '') || '副字幕',
     language: '',
     source_name: pending.file.name,
-    split_mode: MULTI_SUBTITLE_UTILS.detectSubtitleSplitMode(
+    split_mode: window.AsrEditorUtils.detectSubtitleSplitMode(
       extensionSegments.map((segment) => segment.text).join('\n'),
     ),
     segments: extensionSegments,
@@ -178,7 +178,7 @@ export function initMaweMultiImport() {
       const main = MaweBoot.DATA.segments[candidate.mainIndex];
       const extension = extensionSegments[candidate.extensionIndex];
       if (main && extension) multi.bindings.push(
-        MULTI_SUBTITLE_UTILS.buildSubtitleBinding(main, extension, trackId),
+        window.AsrEditorUtils.buildSubtitleBinding(main, extension, trackId),
       );
     });
     multi.enabled = true;
@@ -213,7 +213,7 @@ export function initMaweMultiImport() {
     return false;
   }
   return MaweCommands.run('交换主副字幕', (command) => {
-    const result = MULTI_SUBTITLE_UTILS.swapMainAndExtensionSubtitle(MaweBoot.DATA, track.id);
+    const result = window.AsrEditorUtils.swapMainAndExtensionSubtitle(MaweBoot.DATA, track.id);
     if (!result.swapped) {
       MaweHint.flashHint('交换主副字幕失败', 'warning');
       return false;

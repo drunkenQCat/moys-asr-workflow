@@ -136,8 +136,8 @@ function applyCanonicalProject(data, filename, { loadGeneration = null } = {}) {
   MaweBoot.DATA.sticker_root = typeof data.sticker_root === 'string' ? data.sticker_root : '';
   MaweBoot.DATA.segments.length = 0;
   data.segments.forEach((segment) => MaweBoot.DATA.segments.push(segment));
-  MaweBoot.DATA.multi_subtitle = MULTI_SUBTITLE_UTILS.normalizeMultiSubtitle(data.multi_subtitle, MaweBoot.DATA.segments);
-  MaweBoot.DATA.overlay_track = MULTI_SUBTITLE_UTILS.normalizeOverlayTrack(data.overlay_track);
+  MaweBoot.DATA.multi_subtitle = window.AsrEditorUtils.normalizeMultiSubtitle(data.multi_subtitle, MaweBoot.DATA.segments);
+  MaweBoot.DATA.overlay_track = window.AsrEditorUtils.normalizeOverlayTrack(data.overlay_track);
   MaweTimeline.syncProjectTimebaseAndBindingOffsets(MaweBoot.DATA, { preferFrames: MaweBoot.DATA.timebase.unit === 'frames' });
   // 载入即归一分组区间：旧版本多句绑定曾把 head.sticker 写成首句范围（拖动才
   // 被同步修正），落盘工程重开后预览仍按首句区间显示；打开时就对齐组契约。
@@ -400,19 +400,19 @@ function applyCanonicalProject(data, filename, { loadGeneration = null } = {}) {
     // 替换语义同时接管叠加轨：导入双层 SRT 时第二层落到叠加轨；
     // 导入普通 SRT（未提供 overlaySegments）时清空旧叠加轨，避免残留混入新工程。
     const overlayLayer = Array.isArray(overlaySegments) ? overlaySegments : [];
-    MaweBoot.DATA.overlay_track = MULTI_SUBTITLE_UTILS.normalizeOverlayTrack({
+    MaweBoot.DATA.overlay_track = window.AsrEditorUtils.normalizeOverlayTrack({
       enabled: overlayLayer.length > 0,
       segments: overlayLayer,
     });
     MaweBoot.DATA.overlay_track._dirty = true;
     MaweBoot.DATA.multi_subtitle = {
-      schema: MULTI_SUBTITLE_UTILS.MULTI_SUBTITLE_SCHEMA,
+      schema: window.AsrEditorUtils.MULTI_SUBTITLE_SCHEMA,
       enabled: false,
       display_mode: 'both',
       tracks: [],
       bindings: [],
     };
-    MULTI_SUBTITLE_UTILS.normalizeMultiSubtitleProject(MaweBoot.DATA);
+    window.AsrEditorUtils.normalizeMultiSubtitleProject(MaweBoot.DATA);
     MaweBoot.DATA.gap_remove = null;
     MaweHistory.gapRemoveDirty = false;
     MaweState.changes.markersDirty = false;
