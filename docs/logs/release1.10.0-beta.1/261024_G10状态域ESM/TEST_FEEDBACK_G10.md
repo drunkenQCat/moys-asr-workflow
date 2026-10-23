@@ -54,3 +54,15 @@
 - 撞名处理：word-timing 顶层 import clearSelection 与本地 IIFE 内同名函数、导出段三方撞——
   删除未使用 import 绑定（本地函数语义不变）。
 - 注册表残留：cues 域 27 文件零 MAWE.register；唯一残留是 overlay-track 的 e2e 数据层注册（G06 约定）。
+
+### G08-b 缝合修复记录（e2e 驱动，两轮）
+
+| 轮 | 缺口 | 修复 |
+|---|---|---|
+| 1 | MULTI_SUBTITLE_UTILS（boot/editor.js const 别名）断链：split-core 32 + binding-align 2 | 改 window.AsrEditorUtils（AST 扫描器清零） |
+| 1 | isPlaybackActive（wiring-keyboard-guards 顶层函数）：cue-events 1 处 | 走 MaweKeyboardGuards 门面 |
+| 2 | multiSubtitleSplitDuplicate（dom-panels DOM 常量，不在 MaweDom）：split-core 1 处 | 函数体内 getElementById 直查 |
+
+教训：G07 的 legacy 自由引用扫描器只查了 window 门面与顶层函数，
+漏了 **const 别名绑定** 与 **classic DOM 常量** 两类；G08 补齐扫描维度
+（scan-aliases.mjs），全量清零后 e2e 16/16。
