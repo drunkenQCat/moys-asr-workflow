@@ -1,3 +1,5 @@
+import { finishEdit } from './editor-inline-edit.js';
+
 // 查找替换：目标收集、正则构建、预览与范围控制。
 // ESM init 模块：initMaweFindReplace 在原清单位次执行原 IIFE 体（挂
 // window.MaweFindReplace 冻结门面——classic 侧出接口）；底部具名导出经门面
@@ -135,7 +137,7 @@ export function initMaweFindReplace() {
 
 
   function openReplaceModal(scope) {
-    if (MaweInlineEdit.editingState) MaweInlineEdit.finishEdit(true);
+    if (MaweInlineEdit.editingState) finishEdit(true);
     replaceSelectionSnapshot = normalizeBatchSelection(
       Array.isArray(scope) && scope.length ? scope : [...MaweSelection.selectedIdxs],
     );
