@@ -1,7 +1,17 @@
+import { finishEdit } from './editor-inline-edit.js';
+
 // 文本处理：处理项选择、预览与确认应用。
 // 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
 // window.MaweTextProcess 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
 // 清单位置在 editor.js 之前；editor.js 全局仅在延迟执行的回调中访问。
+// 文本处理：处理项选择、预览与确认应用。 ESM init 模块：initMaweTextProcess 在原清单位次执行原 IIFE 体（挂
+// 由 split-cluster codemod 自 editor.js 拆出：状态为本模块私有，外部仅经
+// window.MaweTextProcess 冻结门面访问（可变状态为访问器属性，赋值语义不变）。
+// 清单位置在 editor.js 之前；editor.js 全局仅在延迟执行的回调中访问。
+
+// window.MaweTextProcess 冻结门面——classic 侧出接口）；底部具名导出经门面在调用时转发，
+// 兄弟模块可静态 import。
+export function initMaweTextProcess() {
 (function initMaweTextProcess(global) {
   'use strict';
 
@@ -270,7 +280,7 @@
   // warnWordTimings=false 时不再提示字词时间码失配：右键快捷包裹属于刻意
   // 加装饰符号，字词时间码必然对不上，警告只会造成困扰。
   function applyWrapChars(scope, left, right, label = '左右添加字符', { warnWordTimings = true } = {}) {
-    if (MaweInlineEdit.editingState) MaweInlineEdit.finishEdit(true);
+    if (MaweInlineEdit.editingState) finishEdit(true);
     const indexes = [...new Set((Array.isArray(scope) ? scope : [])
       .filter((index) => Number.isInteger(index) && index >= 0 && index < MaweBoot.DATA.segments.length))]
       .sort((a, b) => a - b);
@@ -311,7 +321,7 @@
 
 
   function openWrapCharsModal(scope) {
-    if (MaweInlineEdit.editingState) MaweInlineEdit.finishEdit(true);
+    if (MaweInlineEdit.editingState) finishEdit(true);
     wrapCharsScope = (Array.isArray(scope) ? scope : [...MaweSelection.selectedIdxs])
       .filter((index) => Number.isInteger(index) && index >= 0 && index < MaweBoot.DATA.segments.length);
     if (!wrapCharsScope.length) {
@@ -344,7 +354,7 @@
       MaweHint.flashHint('当前没有可处理的字幕', 'invalid');
       return;
     }
-    if (MaweInlineEdit.editingState) MaweInlineEdit.finishEdit(true);
+    if (MaweInlineEdit.editingState) finishEdit(true);
     textProcessSelectionSnapshot = textProcessSelectionTargets();
     textProcessSelectedOnlyCb.checked = textProcessSelectionSnapshot.length > 0;
     refreshTextProcessSelectionControl();
@@ -402,3 +412,37 @@
     closeWrapCharsModal
   });
 })(typeof window !== 'undefined' ? window : globalThis);
+}
+
+export function textProcessButton(...args) { return window.MaweTextProcess.textProcessButton(...args); }
+export function textProcessSelectedOnlyCb(...args) { return window.MaweTextProcess.textProcessSelectedOnlyCb(...args); }
+export function textProcessSelectedOnlyHint(...args) { return window.MaweTextProcess.textProcessSelectedOnlyHint(...args); }
+export function textProcessScopeInfo(...args) { return window.MaweTextProcess.textProcessScopeInfo(...args); }
+export function textProcessPreview(...args) { return window.MaweTextProcess.textProcessPreview(...args); }
+export function textProcessConfirm(...args) { return window.MaweTextProcess.textProcessConfirm(...args); }
+export function textProcessTrim(...args) { return window.MaweTextProcess.textProcessTrim(...args); }
+export function textProcessCapitalize(...args) { return window.MaweTextProcess.textProcessCapitalize(...args); }
+export function textProcessConvertNumbers(...args) { return window.MaweTextProcess.textProcessConvertNumbers(...args); }
+export function textProcessPrefixInput(...args) { return window.MaweTextProcess.textProcessPrefixInput(...args); }
+export function textProcessSuffixInput(...args) { return window.MaweTextProcess.textProcessSuffixInput(...args); }
+export function textProcessCustomWrapFields(...args) { return window.MaweTextProcess.textProcessCustomWrapFields(...args); }
+export function textProcessStripMarkdown(...args) { return window.MaweTextProcess.textProcessStripMarkdown(...args); }
+export function textProcessSelectionTargets(...args) { return window.MaweTextProcess.textProcessSelectionTargets(...args); }
+export function textProcessAllTargets(...args) { return window.MaweTextProcess.textProcessAllTargets(...args); }
+export function textProcessTargetSegments(...args) { return window.MaweTextProcess.textProcessTargetSegments(...args); }
+export function textProcessTargetLabel(...args) { return window.MaweTextProcess.textProcessTargetLabel(...args); }
+export function textProcessTargets(...args) { return window.MaweTextProcess.textProcessTargets(...args); }
+export function buildTextProcessPreview(...args) { return window.MaweTextProcess.buildTextProcessPreview(...args); }
+export function getTextProcessOptions(...args) { return window.MaweTextProcess.getTextProcessOptions(...args); }
+export function refreshTextProcessScopeInfo(...args) { return window.MaweTextProcess.refreshTextProcessScopeInfo(...args); }
+export function refreshTextProcessSelectionControl(...args) { return window.MaweTextProcess.refreshTextProcessSelectionControl(...args); }
+export function renderTextProcessPreview(...args) { return window.MaweTextProcess.renderTextProcessPreview(...args); }
+export function refreshTextProcessInputState(...args) { return window.MaweTextProcess.refreshTextProcessInputState(...args); }
+export function closeTextProcessModal(...args) { return window.MaweTextProcess.closeTextProcessModal(...args); }
+export function openTextProcessModal(...args) { return window.MaweTextProcess.openTextProcessModal(...args); }
+export function wrapCharsModal(...args) { return window.MaweTextProcess.wrapCharsModal(...args); }
+export function wrapCharsLeftInput(...args) { return window.MaweTextProcess.wrapCharsLeftInput(...args); }
+export function wrapCharsRightInput(...args) { return window.MaweTextProcess.wrapCharsRightInput(...args); }
+export function applyWrapChars(...args) { return window.MaweTextProcess.applyWrapChars(...args); }
+export function openWrapCharsModal(...args) { return window.MaweTextProcess.openWrapCharsModal(...args); }
+export function closeWrapCharsModal(...args) { return window.MaweTextProcess.closeWrapCharsModal(...args); }
