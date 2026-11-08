@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+      - 'ci-fcp7-formats-*'
   workflow_dispatch:
 
 permissions:
