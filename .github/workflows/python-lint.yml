@@ -4,6 +4,7 @@ on:
   pull_request:
   push:
     branches: [main]
+    tags: ['ci-g08-*']
 
 permissions:
   contents: read
