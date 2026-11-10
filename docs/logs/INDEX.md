@@ -15,6 +15,7 @@
 | 版本 / 范围 | 任务日期 | 主题与原文 | 说明 |
 | --- | --- | --- | --- |
 | 1.11.0 之后 | 2026-11-10 | [G09 样式域 ESM 迁移](release1.11.0/261110_G09样式域ESM/G09_ASS_STYLE_ESM.md) / [独立自审](release1.11.0/261110_G09样式域ESM/REVIEW_FINDINGS.md) / [人工核验](release1.11.0/261110_G09样式域ESM/G09样式域ESM.checklist.md) | ASS 样式与预览静态依赖、classic 接线兼容与分层验证 |
+| 1.11.0 之后 | 2026-11-10 | [G11 与 G16-F ESM 迁移](release1.11.0/261110_G11与G16F迁移/G11_G16F_ESM.md) / [独立自审](release1.11.0/261110_G11与G16F迁移/REVIEW_FINDINGS.md) / [人工核验](release1.11.0/261110_G11与G16F迁移/G11_G16F.checklist.md) | 导入导出、媒体控制与 ASS 预览接线的模块迁移和回归证据 |
 | 1.11.0 之后 | 2026-11-10 | [PR 343 合并审阅](release1.11.0/261110_PR343审阅/REVIEW_FINDINGS.md) | 字幕域 ESM 设计与组合回归、main 失败对照、CHANGELOG 收敛 |
 | 1.10.0-beta.2 之后 | 2026-11-09 | [G08-b 播放头与 PR 反馈](release1.10.0-beta.2/261109_G08B播放头与PR反馈/TEST_FEEDBACK_G08B.md) / [独立自审](release1.10.0-beta.2/261109_G08B播放头与PR反馈/REVIEW_FINDINGS.md) / [人工核验](release1.10.0-beta.2/261109_G08B播放头与PR反馈/G08B反馈.checklist.md) | 旧线清理、正确 PR 分支 rebase、字词转换误选修复；播放头归因为跳转目标设置 |
 | 1.10.0-beta.2 之后 | 2026-11-06 | [便携模式回归分析](release1.10.0-beta.2/261106_便携模式回归弃维护/回归分析.md) | 核查 #336 与 #339 的提交及存储路径；记录 file:// 测试弃维护边界、CI 证据限制与本地复验 |
