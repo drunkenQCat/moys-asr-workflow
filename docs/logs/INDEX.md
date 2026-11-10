@@ -14,6 +14,7 @@
 
 | 版本 / 范围 | 任务日期 | 主题与原文 | 说明 |
 | --- | --- | --- | --- |
+| 1.11.0 之后 | 2026-11-10 | [G16-A/C Editor ESM 迁移](release1.11.0/261110_G16AC迁移/G16_AC_ESM.md) / [独立自审](release1.11.0/261110_G16AC迁移/REVIEW_FINDINGS.md) / [人工核验](release1.11.0/261110_G16AC迁移/G16_AC.checklist.md) | ASS 预览刷新与 DOM 面板接线迁移、回归验证和人工核验 |
 | 1.11.0 之后 | 2026-11-10 | [G09 样式域 ESM 迁移](release1.11.0/261110_G09样式域ESM/G09_ASS_STYLE_ESM.md) / [独立自审](release1.11.0/261110_G09样式域ESM/REVIEW_FINDINGS.md) / [人工核验](release1.11.0/261110_G09样式域ESM/G09样式域ESM.checklist.md) | ASS 样式与预览静态依赖、classic 接线兼容与分层验证 |
 | 1.11.0 之后 | 2026-11-10 | [G11 与 G16-F ESM 迁移](release1.11.0/261110_G11与G16F迁移/G11_G16F_ESM.md) / [独立自审](release1.11.0/261110_G11与G16F迁移/REVIEW_FINDINGS.md) / [人工核验](release1.11.0/261110_G11与G16F迁移/G11_G16F.checklist.md) | 导入导出、媒体控制与 ASS 预览接线的模块迁移和回归证据 |
 | 1.11.0 之后 | 2026-11-10 | [PR 343 合并审阅](release1.11.0/261110_PR343审阅/REVIEW_FINDINGS.md) | 字幕域 ESM 设计与组合回归、main 失败对照、CHANGELOG 收敛 |
