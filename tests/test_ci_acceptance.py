@@ -340,4 +340,4 @@ class WorkflowPolicyTests(CompactContainerAssertions, unittest.TestCase):
         # would be absent from a shallow CI checkout. Intentional release changes
         # must review/update this boundary explicitly.
         self.assertEqual(hashlib.sha256((ROOT / '.github/workflows/release.yml').read_bytes()).hexdigest(),
-                         'b80066d70ab4ce77186dfa36988314fc096476249e39831f37d2a7212a883ed6')
+                         '6f6930a5c4e08bc94969dcccc8cc1877ddcafa38b9aa56fea6d92ae1e3676d4b')

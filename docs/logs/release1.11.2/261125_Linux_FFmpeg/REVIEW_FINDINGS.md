@@ -7,3 +7,5 @@
 - 复审无 blocker 或 major。接受两项边界。上游发布或命名规则改变后，找不到有效的日期构建或归档会明确报错。迁移前留下的 AppImage 目录缓存缺少归档记录时，`SOURCE.txt` 将相应字段标为不可用。
 
 两项打包契约在旧实现上失败。更新后，解析、打包契约和 SHA-256 回归共 49 项通过。实时发布列表成功解析 `autobuild-2026-11-25-12-41` 的版本化归档，清单与发布元数据的 SHA-256 一致。本机完整归档下载超时，Linux 编解码和 AppImage 产物以 Cat Fork 发布工作流的实跑记录为准。
+
+Cat Fork 首轮下载和 SHA-256 验证通过。全量用例发现 `WorkflowPolicyTests` 的正式工作流基线摘要仍指向旧文件，导致 AppImage 步骤跳过。已核对正式工作流 diff 仅涉及 Linux FFmpeg 下载，更新摘要并保留字节一致性断言。[Cat Fork 首轮 Linux 日志](https://github.com/drunkenQCat/moys-asr-workflow/actions/runs/45623648500/job/139238051094)
