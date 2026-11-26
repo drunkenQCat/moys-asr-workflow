@@ -15,3 +15,9 @@ OCR 和本地 ASR 通过真实 Launcher 的后端接口按需安装。安装就�
 `8158dd17` 的构建与两项验收均通过。测试机只安装 Freedesktop Platform `26.08`，包内入口解析到 `/app/bin/python3` 3.11.18。Launcher 冷安装 OCR 后，包内 FFmpeg 解码的两帧均识别出 `MAW TEST 123`。本地 ASR 冷安装后，以 Whisper `tiny.en` 在 CPU 上转写合成语音，生成 SRT 和 `.mosp`，SRT 包含预期文本。[OCR 作业](https://github.com/drunkenQCat/moys-asr-workflow/actions/runs/45749828481/job/139678217479) · [ASR 作业](https://github.com/drunkenQCat/moys-asr-workflow/actions/runs/45749828481/job/139678217380) · [试验包](https://github.com/drunkenQCat/moys-asr-workflow/actions/runs/45749828481/artifacts/15085626500)
 
 CI 使用沙箱私有目录中的合成素材。runner 的文档 portal 出现挂载错误，桌面文件选择和外部路径存取未验证。GPU、应用升级后已有 venv 的复用及其他宿主发行版也未覆盖。
+
+## Flatpak 平台的 FFmpeg
+
+Python 验证包使用 AppImage 里的静态 FFmpeg。另增独立探针，只安装 Freedesktop Platform `26.08` 和 `codecs-extra`，直接执行平台的 `/usr/bin/ffmpeg` 和 `/usr/bin/ffprobe`。独立复审核对了工具来源、实际编解码、硬字幕和 glibc 记录，无 blocker 或 major。
+
+首轮两台 runner 拿到相同的 Platform `df26daaf` 和 `codecs-extra` `2b9f95bc`，均使用 FFmpeg／FFprobe 8.1.3，动态链接扩展目录下的 libav 库。Ubuntu 22.04 和 24.04 的宿主 glibc 分别是 2.35 和 2.39，沙箱内均为 2.44。AAC 编解码、16 kHz PCM、libx264 编码和 H.264 抽帧通过，字幕烧录失败。[探针首轮](https://github.com/drunkenQCat/moys-asr-workflow/actions/runs/45771410500)

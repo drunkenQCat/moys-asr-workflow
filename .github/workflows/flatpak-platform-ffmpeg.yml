@@ -61,8 +61,12 @@ jobs:
             result=1
           fi
 
+          ffmpeg -hide_banner -filters > ffmpeg-filters.txt
           printf '1\n00:00:00,000 --> 00:00:00,800\nMAW test\n' > fixture.srt
-          if ! ffmpeg -nostdin -v error -f lavfi -i color=s=320x240:r=5 -t 1 -vf subtitles=fixture.srt -f null -; then
+          if ! grep -E '[[:space:]]subtitles[[:space:]]' ffmpeg-filters.txt; then
+            echo 'The platform FFmpeg does not provide the subtitles filter'
+            result=1
+          elif ! ffmpeg -nostdin -v error -f lavfi -i color=s=320x240:r=5 -t 1 -vf subtitles=filename=fixture.srt -f null -; then
             echo 'Hard subtitle rendering via the subtitles filter failed'
             result=1
           fi
