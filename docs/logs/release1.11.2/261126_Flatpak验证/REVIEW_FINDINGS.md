@@ -7,3 +7,5 @@ OCR 和本地 ASR 通过真实 Launcher 的后端接口按需安装。安装就�
 独立复审核对了应用入口、批量事件、工作流条件与 Platform-only 安装，无结构性 blocker。实际执行需核对 Platform 的 Python 与 ensurepip、原生 wheel 和 Qt 动态库是否可用。
 
 本次验证覆盖有网络的 CPU 冷安装和真实推理。正式发布、Flathub 提交、GPU、已有 runtime 迁移和升级留待分别验收。输入产物是有保留期限的 CI 工件。[AppImage 构建证据](https://github.com/drunkenQCat/moys-asr-workflow/actions/runs/45625061279/job/139251698331)
+
+第一轮成功导出 Flatpak，测试机准备时受 Node 自动 pnpm 缓存探测阻塞。关闭缓存后复用原包。只装 Platform 的 OCR 测试识别了两帧预期文本。普通本地 ASR 安装下载 CPU wheel 时收到 `ENOSPC`，验证脚本改用应用私有磁盘目录作为临时目录，并记录沙箱内两处容量。[导出运行](https://github.com/drunkenQCat/moys-asr-workflow/actions/runs/45747011812) · [Platform 默认环境运行](https://github.com/drunkenQCat/moys-asr-workflow/actions/runs/45748296097)

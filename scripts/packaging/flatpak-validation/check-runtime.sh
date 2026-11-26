@@ -5,9 +5,13 @@ feature=${1:?Expected ocr or local}
 case $feature in ocr|local) ;; *) exit 2 ;; esac
 data="$HOME/.var/app/$APP_ID/data/MAW"
 evidence="$PWD/flatpak-evidence"
-mkdir -p "$data/fixture" "$evidence"
+mkdir -p "$data/fixture" "$data/tmp" "$evidence"
+
+flatpak run --user --command=sh "$APP_ID" -ec 'df -h /tmp "$XDG_DATA_HOME"' \
+    | tee "$evidence/space.log"
 
 flatpak run --user --env=QTWEBENGINE_REMOTE_DEBUGGING=127.0.0.1:9222 \
+    --env=TMPDIR="$data/tmp" \
     --env=MAW_PIP_INDEX=https://pypi.org/simple "$APP_ID" >"$evidence/launcher.log" 2>&1 &
 launcher=$!
 finish() {
