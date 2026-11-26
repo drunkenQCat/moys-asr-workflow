@@ -11,3 +11,7 @@ OCR 和本地 ASR 通过真实 Launcher 的后端接口按需安装。安装就�
 第一轮成功导出 Flatpak，测试机准备时受 Node 自动 pnpm 缓存探测阻塞。关闭缓存后复用原包。只装 Platform 的 OCR 测试识别了两帧预期文本。普通本地 ASR 安装下载 CPU wheel 时收到 `ENOSPC`，验证脚本改用应用私有磁盘目录作为临时目录，并记录沙箱内两处容量。[导出运行](https://github.com/drunkenQCat/moys-asr-workflow/actions/runs/45747011812) · [Platform 默认环境运行](https://github.com/drunkenQCat/moys-asr-workflow/actions/runs/45748296097)
 
 改用磁盘目录后，ASR 安装从空间错误推进到依赖校验。Platform 的 Python 3.14.9 需要 `audioread` 的额外依赖 `standard-aifc`，已冻结的 CPU 清单没有它的固定版本和哈希。验证包改为随包提供固定并校验的 CPython 3.11.18，启动命令把临时目录指向应用私有缓存目录。验收使用打包后的入口，不注入临时目录或解释器覆盖。[磁盘临时目录运行](https://github.com/drunkenQCat/moys-asr-workflow/actions/runs/45748973953)
+
+`8158dd17` 的构建与两项验收均通过。测试机只安装 Freedesktop Platform `26.08`，包内入口解析到 `/app/bin/python3` 3.11.18。Launcher 冷安装 OCR 后，包内 FFmpeg 解码的两帧均识别出 `MAW TEST 123`。本地 ASR 冷安装后，以 Whisper `tiny.en` 在 CPU 上转写合成语音，生成 SRT 和 `.mosp`，SRT 包含预期文本。[OCR 作业](https://github.com/drunkenQCat/moys-asr-workflow/actions/runs/45749828481/job/139678217479) · [ASR 作业](https://github.com/drunkenQCat/moys-asr-workflow/actions/runs/45749828481/job/139678217380) · [试验包](https://github.com/drunkenQCat/moys-asr-workflow/actions/runs/45749828481/artifacts/15085626500)
+
+CI 使用沙箱私有目录中的合成素材。runner 的文档 portal 出现挂载错误，桌面文件选择和外部路径存取未验证。GPU、应用升级后已有 venv 的复用及其他宿主发行版也未覆盖。
