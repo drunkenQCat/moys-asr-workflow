@@ -1,0 +1,71 @@
+name: Cat Fork Flatpak platform FFmpeg
+
+on:
+  push:
+    branches: [ci/linux-ffmpeg-drift-20261125]
+    paths: [.github/workflows/flatpak-platform-ffmpeg.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  platform-media:
+    if: github.repository == 'drunkenQCat/moys-asr-workflow' && github.ref_name == 'ci/linux-ffmpeg-drift-20261125'
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [ubuntu-22.04, ubuntu-24.04]
+    runs-on: ${{ matrix.host }}
+    timeout-minutes: 12
+    env:
+      PLATFORM: org.freedesktop.Platform//26.08
+      CODECS: org.freedesktop.Platform.codecs-extra//26.08-extra
+    steps:
+      - name: Install the Platform and codecs extension from Flathub
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y flatpak
+          flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+          flatpak install --user -y flathub "$PLATFORM" "$CODECS"
+          getconf GNU_LIBC_VERSION
+          flatpak info --user --show-commit "$PLATFORM"
+          flatpak info --user --show-commit "$CODECS"
+      - name: Verify the Platform binaries and test MAW media requirements
+        run: |
+          flatpak run --user --command=sh "$PLATFORM" -s <<'SH'
+          set -eu
+          cd "$(mktemp -d)"
+          test "$(command -v ffmpeg)" = /usr/bin/ffmpeg
+          test "$(command -v ffprobe)" = /usr/bin/ffprobe
+          getconf GNU_LIBC_VERSION
+          grep -E '^runtime(-extensions)?=' /.flatpak-info || true
+          ffmpeg -version > ffmpeg-version.txt
+          ffprobe -version > ffprobe-version.txt
+          head -n 1 ffmpeg-version.txt ffprobe-version.txt
+          ldd /usr/bin/ffmpeg > ffmpeg-ldd.txt
+          grep -E 'libc\.so|libav(codec|filter|format)\.so|not found' ffmpeg-ldd.txt
+
+          ffmpeg -nostdin -v error -f lavfi -i sine=frequency=440 -t 1 -c:a aac tone.m4a
+          ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of csv=p=0 tone.m4a | grep -Fx aac
+          ffmpeg -nostdin -v error -i tone.m4a -ar 16000 -ac 1 -c:a pcm_s16le speech.wav
+          ffprobe -v error -select_streams a:0 -show_entries stream=sample_rate -of csv=p=0 speech.wav | grep -Fx 16000
+
+          result=0
+          if ffmpeg -nostdin -v error -f lavfi -i color=s=320x240:r=5 -t 1 -c:v libx264 clip.mp4; then
+            ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of csv=p=0 clip.mp4 | grep -Fx h264
+            ffmpeg -nostdin -v error -i clip.mp4 -frames:v 1 frame.png
+            test -s frame.png
+          else
+            echo 'CPU H.264 encoding via libx264 failed'
+            result=1
+          fi
+
+          printf '1\n00:00:00,000 --> 00:00:00,800\nMAW test\n' > fixture.srt
+          if ! ffmpeg -nostdin -v error -f lavfi -i color=s=320x240:r=5 -t 1 -vf subtitles=fixture.srt -f null -; then
+            echo 'Hard subtitle rendering via the subtitles filter failed'
+            result=1
+          fi
+          exit "$result"
+          SH
+        shell: bash
