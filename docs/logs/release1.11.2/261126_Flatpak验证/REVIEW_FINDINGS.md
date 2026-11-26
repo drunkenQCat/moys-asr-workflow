@@ -27,3 +27,5 @@ Python 验证包使用 AppImage 里的静态 FFmpeg。另增独立探针，只�
 ## 供维护者安装的 Freedesktop 试验包
 
 复用已验证的 MAW 与 Python 3.11.18，组装时排除 AppImage 的 FFmpeg，使用独立应用 ID 和桌面入口。CI 检查沙箱与 Launcher 均选用平台的 `/usr/bin/ffmpeg` 和 `/usr/bin/ffprobe`，再实测 OCR 和本地 ASR。独立复审核对了打包排除规则、桌面入口及安装与验收路径，无 blocker 或 major。
+
+`f9c7d7b3` 完成导出、安装和两项验收。仅装 Platform 的测试机确认 Launcher 选用平台 FFmpeg／FFprobe 8.1.3，OCR 两帧识别预期文本，本地 ASR 转写合成语音并生成 SRT 与 `.mosp`。桌面 portal 在 CI 无法挂载，交互选文件未验证。[完整运行](https://github.com/drunkenQCat/moys-asr-workflow/actions/runs/45779491194) · [x86_64 试装包](https://github.com/drunkenQCat/moys-asr-workflow/actions/runs/45779491194/artifacts/15098221660)
