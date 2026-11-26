@@ -7,6 +7,11 @@ on:
       - .github/workflows/flatpak-validation.yml
       - scripts/packaging/flatpak-validation/**
   workflow_dispatch:
+    inputs:
+      rebuild:
+        description: Rebuild the Flatpak from the pinned AppImage
+        type: boolean
+        default: false
 
 permissions:
   actions: read
@@ -19,7 +24,7 @@ env:
 
 jobs:
   build:
-    if: github.repository == 'drunkenQCat/moys-asr-workflow' && github.ref_name == 'ci/linux-ffmpeg-drift-20261125'
+    if: github.repository == 'drunkenQCat/moys-asr-workflow' && github.ref_name == 'ci/linux-ffmpeg-drift-20261125' && inputs.rebuild
     runs-on: ubuntu-22.04
     timeout-minutes: 20
     steps:
@@ -60,6 +65,7 @@ jobs:
           compression-level: 0
 
   runtime:
+    if: ${{ !cancelled() && github.repository == 'drunkenQCat/moys-asr-workflow' && github.ref_name == 'ci/linux-ffmpeg-drift-20261125' && (needs.build.result == 'success' || needs.build.result == 'skipped') }}
     needs: build
     runs-on: ubuntu-22.04
     timeout-minutes: 28
@@ -72,9 +78,12 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '22.23.4'
+          package-manager-cache: false
       - uses: actions/download-artifact@v7
         with:
           name: maw-flatpak-validation
+          run-id: ${{ inputs.rebuild && github.run_id || '45747011812' }}
+          github-token: ${{ github.token }}
       - name: Install the bundle with the consumer runtime only
         run: |
           set -euo pipefail
