@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 env:
-  APP_ID: io.github.drunkenQCat.MAW.Validation
+  APP_ID: io.github.drunkenQCat.MAW.PlatformValidation
   PLATFORM_BRANCH: '26.08'
   FLATHUB: https://dl.flathub.org/repo/flathub.flatpakrepo
 
@@ -44,8 +44,9 @@ jobs:
           chmod +x "${images[0]}"
           "${images[0]}" --appimage-extract >/dev/null
           flatpak build-init stage "$APP_ID" org.freedesktop.Sdk org.freedesktop.Platform "$PLATFORM_BRANCH"
-          mkdir -p stage/files/bin stage/files/python
-          mv squashfs-root stage/files/maw
+          mkdir -p stage/files/bin stage/files/python stage/files/maw
+          tar -C squashfs-root --exclude=./ffmpeg -cf - . | tar -C stage/files/maw -xf -
+          test ! -e stage/files/maw/ffmpeg
           curl --fail --location --silent --show-error --retry 3 -o cpython.tar.gz \
             'https://github.com/astral-sh/python-build-standalone/releases/download/20261124/cpython-3.11.18%2B20261124-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz'
           printf '%s  %s\n' d873f435e58d396a18858d4f52a335f1abe8cea385cb9d411ec511f958249d54 cpython.tar.gz | sha256sum --check --strict
@@ -60,14 +61,20 @@ jobs:
           exec /app/maw/AppRun "$@"
           EOF
           chmod +x stage/files/bin/maw
+          desktop_dir=stage/files/share/applications
+          icon_dir=stage/files/share/icons/hicolor/256x256/apps
+          mkdir -p "$desktop_dir" "$icon_dir"
+          sed -e 's/^Exec=.*/Exec=maw/' -e "s/^Icon=.*/Icon=$APP_ID/" \
+            squashfs-root/MAW.desktop > "$desktop_dir/$APP_ID.desktop"
+          cp squashfs-root/MAW.png "$icon_dir/$APP_ID.png"
           flatpak build-finish --command=maw --socket=x11 --share=ipc --share=network stage
           flatpak build-export repo stage
-          flatpak build-bundle --runtime-repo="$FLATHUB" repo MAW-Validation.flatpak "$APP_ID"
+          flatpak build-bundle --runtime-repo="$FLATHUB" repo MAW-Freedesktop-x86_64.flatpak "$APP_ID"
       - name: Store test bundle
         uses: actions/upload-artifact@v6
         with:
-          name: maw-flatpak-validation
-          path: MAW-Validation.flatpak
+          name: maw-freedesktop-x86_64
+          path: MAW-Freedesktop-x86_64.flatpak
           if-no-files-found: error
           retention-days: 7
           compression-level: 0
@@ -88,7 +95,7 @@ jobs:
           package-manager-cache: false
       - uses: actions/download-artifact@v7
         with:
-          name: maw-flatpak-validation
+          name: maw-freedesktop-x86_64
       - name: Install the bundle with the consumer runtime only
         run: |
           set -euo pipefail
@@ -96,12 +103,19 @@ jobs:
           sudo apt-get install -y flatpak xvfb xauth dbus-x11 ffmpeg espeak-ng fonts-dejavu-core
           flatpak remote-add --user --if-not-exists flathub "$FLATHUB"
           flatpak install --user -y flathub "org.freedesktop.Platform//$PLATFORM_BRANCH"
-          flatpak install --user -y --bundle MAW-Validation.flatpak
+          flatpak install --user -y --bundle MAW-Freedesktop-x86_64.flatpak
           if flatpak info --user "org.freedesktop.Sdk//$PLATFORM_BRANCH" >/dev/null 2>&1; then
             echo 'Consumer validation requires a Platform-only installation.' >&2
             exit 1
           fi
           flatpak info --user --show-commit "org.freedesktop.Platform//$PLATFORM_BRANCH"
+          flatpak run --user --command=sh "$APP_ID" -ec '
+            test ! -e /app/maw/ffmpeg
+            test "$(command -v ffmpeg)" = /usr/bin/ffmpeg
+            test "$(command -v ffprobe)" = /usr/bin/ffprobe
+            ffmpeg -version
+            ffprobe -version
+          '
           flatpak run --user --command=/usr/bin/python3 "$APP_ID" --version
           flatpak run --user --command=python3 "$APP_ID" -c 'import ensurepip, sys, venv; print(sys.executable, sys.version); assert sys.version_info[:2] == (3, 11)'
       - name: Use the installed Launcher to install and exercise the CPU runtime

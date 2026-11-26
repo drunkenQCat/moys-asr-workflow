@@ -50,6 +50,9 @@ try {
     await delay(500);
   }
   assert(real, 'Launcher did not connect to its real backend');
+  const tools = await evaluate('window.MAWLauncher.callBackend("check_ffmpeg")');
+  assert.equal(tools.ffmpeg, '/usr/bin/ffmpeg');
+  assert.equal(tools.ffprobe, '/usr/bin/ffprobe');
 
   const result = await evaluate(`new Promise(async (resolve) => {
     const launcher = window.MAWLauncher;

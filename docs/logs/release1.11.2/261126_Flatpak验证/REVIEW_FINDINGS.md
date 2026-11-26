@@ -23,3 +23,7 @@ Python 验证包使用 AppImage 里的静态 FFmpeg。另增独立探针，只�
 首轮两台 runner 拿到相同的 Platform `df26daaf` 和 `codecs-extra` `2b9f95bc`，均使用 FFmpeg／FFprobe 8.1.3，动态链接扩展目录下的 libav 库。Ubuntu 22.04 和 24.04 的宿主 glibc 分别是 2.35 和 2.39，沙箱内均为 2.44。AAC 编解码、16 kHz PCM、libx264 编码和 H.264 抽帧通过，字幕烧录失败。[探针首轮](https://github.com/drunkenQCat/moys-asr-workflow/actions/runs/45771410500)
 
 复测两台 runner 都重复了媒体处理结果。两台的 `ffmpeg -filters` 均无 `subtitles`，工作流因这项 MAW 功能缺失返回失败。Platform 提供的二进制足以验证所测媒体操作和宿主 glibc 隔离，ASS 烧录仍缺平台支持。本次没有改变应用的 FFmpeg 来源。[复测](https://github.com/drunkenQCat/moys-asr-workflow/actions/runs/45771688204)
+
+## 供维护者安装的 Freedesktop 试验包
+
+复用已验证的 MAW 与 Python 3.11.18，组装时排除 AppImage 的 FFmpeg，使用独立应用 ID 和桌面入口。CI 检查沙箱与 Launcher 均选用平台的 `/usr/bin/ffmpeg` 和 `/usr/bin/ffprobe`，再实测 OCR 和本地 ASR。独立复审核对了打包排除规则、桌面入口及安装与验收路径，无 blocker 或 major。

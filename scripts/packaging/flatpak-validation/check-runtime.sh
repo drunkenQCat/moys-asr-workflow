@@ -31,7 +31,7 @@ case $feature in
             root="$XDG_DATA_HOME/MAW"
             exec "$root/ocr-runtime/bin/python" /app/maw/_internal/ocr-runtime/maw/ocr_runtime_worker.py scan \
               --model-id pp-ocrv6-tiny --video-path "$root/fixture/input.mp4" \
-              --ffmpeg-path /app/maw/ffmpeg/bin/ffmpeg --duration-ms 2000 --max-frames 2
+              --ffmpeg-path /usr/bin/ffmpeg --duration-ms 2000 --max-frames 2
         ' | tee "$evidence/ocr.log"
         grep -q '"type": "result"' "$evidence/ocr.log"
         grep -Eqi 'MAW[[:space:]]*TEST[[:space:]]*123' "$evidence/ocr.log"
@@ -40,7 +40,6 @@ case $feature in
         espeak-ng -v en-us -s 140 -w "$data/fixture/input.wav" 'Hello world. This is a subtitle test.'
         timeout 420 flatpak run --user --command=sh "$APP_ID" -ec '
             root="$XDG_DATA_HOME/MAW"
-            export PATH="/app/maw/ffmpeg/bin:$PATH"
             cd /app/maw/_internal/local-runtime
             exec "$root/local-runtime/bin/python" -m maw.asr.local "$root/fixture/input.wav" \
               --engine whisper --model tiny.en --device cpu --language en \
