@@ -1,0 +1,101 @@
+name: Cat Fork Flatpak validation
+
+on:
+  push:
+    branches: [ci/linux-ffmpeg-drift-20261125]
+    paths:
+      - .github/workflows/flatpak-validation.yml
+      - scripts/packaging/flatpak-validation/**
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+env:
+  APP_ID: io.github.drunkenQCat.MAW.Validation
+  PLATFORM_BRANCH: '26.08'
+  FLATHUB: https://dl.flathub.org/repo/flathub.flatpakrepo
+
+jobs:
+  build:
+    if: github.repository == 'drunkenQCat/moys-asr-workflow' && github.ref_name == 'ci/linux-ffmpeg-drift-20261125'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - name: Download verified AppImage payload
+        uses: actions/download-artifact@v7
+        with:
+          artifact-ids: '15029231996'
+          run-id: '45625061279'
+          github-token: ${{ github.token }}
+          path: input
+      - name: Install Flatpak build tools and runtime
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y flatpak
+          flatpak remote-add --user --if-not-exists flathub "$FLATHUB"
+          flatpak install --user -y flathub "org.freedesktop.Platform//$PLATFORM_BRANCH" "org.freedesktop.Sdk//$PLATFORM_BRANCH"
+      - name: Export Flatpak validation bundle
+        run: |
+          set -euo pipefail
+          mapfile -t images < <(find input -type f -name '*.AppImage')
+          test "${#images[@]}" -eq 1
+          chmod +x "${images[0]}"
+          "${images[0]}" --appimage-extract >/dev/null
+          flatpak build-init stage "$APP_ID" org.freedesktop.Sdk org.freedesktop.Platform "$PLATFORM_BRANCH"
+          mkdir -p stage/files/bin
+          mv squashfs-root stage/files/maw
+          ln -s ../maw/AppRun stage/files/bin/maw
+          flatpak build-finish --command=maw --socket=x11 --share=ipc --share=network stage
+          flatpak build-export repo stage
+          flatpak build-bundle --runtime-repo="$FLATHUB" repo MAW-Validation.flatpak "$APP_ID"
+      - name: Store test bundle
+        uses: actions/upload-artifact@v6
+        with:
+          name: maw-flatpak-validation
+          path: MAW-Validation.flatpak
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
+  runtime:
+    needs: build
+    runs-on: ubuntu-22.04
+    timeout-minutes: 28
+    strategy:
+      fail-fast: false
+      matrix:
+        feature: [ocr, local]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22.23.4'
+      - uses: actions/download-artifact@v7
+        with:
+          name: maw-flatpak-validation
+      - name: Install the bundle with the consumer runtime only
+        run: |
+          set -euo pipefail
+          sudo apt-get update -q
+          sudo apt-get install -y flatpak xvfb xauth dbus-x11 ffmpeg espeak-ng fonts-dejavu-core
+          flatpak remote-add --user --if-not-exists flathub "$FLATHUB"
+          flatpak install --user -y flathub "org.freedesktop.Platform//$PLATFORM_BRANCH"
+          flatpak install --user -y --bundle MAW-Validation.flatpak
+          if flatpak info --user "org.freedesktop.Sdk//$PLATFORM_BRANCH" >/dev/null 2>&1; then
+            echo 'Consumer validation requires a Platform-only installation.' >&2
+            exit 1
+          fi
+          flatpak info --user --show-commit "org.freedesktop.Platform//$PLATFORM_BRANCH"
+          flatpak run --user --command=python3 "$APP_ID" -c 'import importlib.util, sys; print(sys.version); print({name: importlib.util.find_spec(name) is not None for name in ("venv", "ensurepip")})'
+      - name: Use the installed Launcher to install and exercise the CPU runtime
+        run: dbus-run-session -- xvfb-run -a bash scripts/packaging/flatpak-validation/check-runtime.sh '${{ matrix.feature }}'
+      - name: Preserve validation diagnostics
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: maw-flatpak-${{ matrix.feature }}-evidence
+          path: flatpak-evidence/
+          if-no-files-found: warn
+          retention-days: 7
