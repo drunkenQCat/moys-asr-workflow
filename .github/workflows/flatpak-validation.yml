@@ -7,11 +7,6 @@ on:
       - .github/workflows/flatpak-validation.yml
       - scripts/packaging/flatpak-validation/**
   workflow_dispatch:
-    inputs:
-      rebuild:
-        description: Rebuild the Flatpak from the pinned AppImage
-        type: boolean
-        default: false
 
 permissions:
   actions: read
@@ -24,7 +19,7 @@ env:
 
 jobs:
   build:
-    if: github.repository == 'drunkenQCat/moys-asr-workflow' && github.ref_name == 'ci/linux-ffmpeg-drift-20261125' && inputs.rebuild
+    if: github.repository == 'drunkenQCat/moys-asr-workflow' && github.ref_name == 'ci/linux-ffmpeg-drift-20261125'
     runs-on: ubuntu-22.04
     timeout-minutes: 20
     steps:
@@ -49,9 +44,22 @@ jobs:
           chmod +x "${images[0]}"
           "${images[0]}" --appimage-extract >/dev/null
           flatpak build-init stage "$APP_ID" org.freedesktop.Sdk org.freedesktop.Platform "$PLATFORM_BRANCH"
-          mkdir -p stage/files/bin
+          mkdir -p stage/files/bin stage/files/python
           mv squashfs-root stage/files/maw
-          ln -s ../maw/AppRun stage/files/bin/maw
+          curl --fail --location --silent --show-error --retry 3 -o cpython.tar.gz \
+            'https://github.com/astral-sh/python-build-standalone/releases/download/20261124/cpython-3.11.18%2B20261124-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz'
+          printf '%s  %s\n' d873f435e58d396a18858d4f52a335f1abe8cea385cb9d411ec511f958249d54 cpython.tar.gz | sha256sum --check --strict
+          tar -xf cpython.tar.gz -C stage/files/python --strip-components=1
+          test -x stage/files/python/bin/python3
+          ln -s ../python/bin/python3 stage/files/bin/python3
+          cat > stage/files/bin/maw <<'EOF'
+          #!/bin/sh
+          set -eu
+          export TMPDIR="$XDG_CACHE_HOME/maw-runtime-tmp"
+          mkdir -p "$TMPDIR"
+          exec /app/maw/AppRun "$@"
+          EOF
+          chmod +x stage/files/bin/maw
           flatpak build-finish --command=maw --socket=x11 --share=ipc --share=network stage
           flatpak build-export repo stage
           flatpak build-bundle --runtime-repo="$FLATHUB" repo MAW-Validation.flatpak "$APP_ID"
@@ -65,7 +73,6 @@ jobs:
           compression-level: 0
 
   runtime:
-    if: ${{ !cancelled() && github.repository == 'drunkenQCat/moys-asr-workflow' && github.ref_name == 'ci/linux-ffmpeg-drift-20261125' && (needs.build.result == 'success' || needs.build.result == 'skipped') }}
     needs: build
     runs-on: ubuntu-22.04
     timeout-minutes: 28
@@ -82,8 +89,6 @@ jobs:
       - uses: actions/download-artifact@v7
         with:
           name: maw-flatpak-validation
-          run-id: ${{ inputs.rebuild && github.run_id || '45747011812' }}
-          github-token: ${{ github.token }}
       - name: Install the bundle with the consumer runtime only
         run: |
           set -euo pipefail
@@ -97,7 +102,8 @@ jobs:
             exit 1
           fi
           flatpak info --user --show-commit "org.freedesktop.Platform//$PLATFORM_BRANCH"
-          flatpak run --user --command=python3 "$APP_ID" -c 'import importlib.util, sys; print(sys.version); print({name: importlib.util.find_spec(name) is not None for name in ("venv", "ensurepip")})'
+          flatpak run --user --command=/usr/bin/python3 "$APP_ID" --version
+          flatpak run --user --command=python3 "$APP_ID" -c 'import ensurepip, sys, venv; print(sys.executable, sys.version); assert sys.version_info[:2] == (3, 11)'
       - name: Use the installed Launcher to install and exercise the CPU runtime
         run: dbus-run-session -- xvfb-run -a bash scripts/packaging/flatpak-validation/check-runtime.sh '${{ matrix.feature }}'
       - name: Preserve validation diagnostics
